@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.env
+.env.*
+
+# Logs
+*.log
+*.pid
+
+# Database
+*.db
+*.db.backup
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Instance folder
+instance/
+
+# Archives (optional - large files)
+# archives/

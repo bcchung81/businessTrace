@@ -1,0 +1,11 @@
+flask==3.0.3
+requests==2.32.3
+beautifulsoup4==4.12.3
+feedparser>=6.0.11
+pytz==2024.1
+python-dateutil==2.9.0
+openai==1.51.0
+openpyxl==3.1.5
+flask-sqlalchemy==3.1.1
+urllib3>=1.26.19
+werkzeug>=3.0.3 

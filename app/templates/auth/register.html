@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - 뉴스 홈페이지</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .auth-header h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .auth-header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #4285f4;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.1);
+        }
+        
+        .btn-auth {
+            width: 100%;
+            padding: 12px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .btn-auth:hover {
+            background: #3367d6;
+        }
+        
+        .btn-auth:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .auth-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .auth-links a {
+            color: #4285f4;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-message {
+            color: #d32f2f;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #388e3c;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .password-requirements {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1><i class="fas fa-user-plus"></i> 회원가입</h1>
+            <p>뉴스 홈페이지에 가입하여 서비스를 이용하세요</p>
+        </div>
+        
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="email">이메일 주소</label>
+                <input type="email" id="email" name="email" required>
+                <div class="error-message" id="emailError"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" name="password" required>
+                <div class="password-requirements">
+                    • 최소 8자 이상<br>
+                    • 영문, 숫자, 특수문자 중 최소 2가지 조합
+                </div>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">비밀번호 확인</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+                <div class="error-message" id="confirmPasswordError"></div>
+            </div>
+            
+            <button type="submit" class="btn-auth" id="registerBtn">
+                <i class="fas fa-user-plus"></i> 회원가입
+            </button>
+        </form>
+        
+        <div class="auth-links">
+            <a href="/auth/login">이미 계정이 있으신가요? 로그인</a>
+        </div>
+        
+        <div class="success-message" id="successMessage"></div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // 에러 메시지 초기화
+            clearErrors();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // 기본 검증
+            let hasError = false;
+            
+            if (!email) {
+                showError('emailError', '이메일 주소를 입력해주세요.');
+                hasError = true;
+            }
+            
+            if (!password) {
+                showError('passwordError', '비밀번호를 입력해주세요.');
+                hasError = true;
+            }
+            
+            if (!confirmPassword) {
+                showError('confirmPasswordError', '비밀번호 확인을 입력해주세요.');
+                hasError = true;
+            }
+            
+            if (password !== confirmPassword) {
+                showError('confirmPasswordError', '비밀번호가 일치하지 않습니다.');
+                hasError = true;
+            }
+            
+            if (hasError) return;
+            
+            // 버튼 비활성화
+            const registerBtn = document.getElementById('registerBtn');
+            registerBtn.disabled = true;
+            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 가입 중...';
+            
+            try {
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess('회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.');
+                    setTimeout(() => {
+                        window.location.href = '/auth/login';
+                    }, 2000);
+                } else {
+                    showError('emailError', data.error || '회원가입 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('회원가입 오류:', error);
+                showError('emailError', '네트워크 오류가 발생했습니다.');
+            } finally {
+                // 버튼 활성화
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> 회원가입';
+            }
+        });
+        
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+        }
+        
+        function clearErrors() {
+            const errorElements = document.querySelectorAll('.error-message');
+            errorElements.forEach(element => {
+                element.style.display = 'none';
+            });
+            
+            const successElement = document.getElementById('successMessage');
+            successElement.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+

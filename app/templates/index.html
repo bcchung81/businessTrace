@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초격차 스타트업 성과돋보기</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'><path fill='%234285f4' d='M192 0L176 16v80l-64-48L96 64v78.2L30.1 96.7c-6.2-4.9-12.8-7.8-19.7-9.3C-2.2 85.1-13.2 92.6-15.5 106c-2.3 13.4 5.1 24.4 18.4 26.7 .8 .1 1.6 .3 2.4 .5L112 160l16 32 48-48 16 16v288c0 17.7 14.3 32 32 32s32-14.3 32-32V176l16-16 48 48 16-32 106.7-26.7c .8-.2 1.6-.4 2.4-.5 13.3-2.3 20.7-13.3 18.4-26.7s-13.3-20.7-26.7-18.4c-6.9 1.5-13.5 4.4-19.7 9.3L288 142.2V64l-16-16-64 48V16L192 0z'/></svg>" type="image/svg+xml">
+    
+
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ range(1, 999999) | random }}&t={{ range(1, 999999) | random }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 설정 모달 강제 스타일 적용 -->
+    <style>
+        .modal-content.settings-modal-modern,
+        #settingsModal .modal-content.settings-modal-modern {
+            max-width: 900px !important;
+            width: 90% !important;
+            max-height: 90vh !important;
+            background: #ffffff !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            padding: 0 !important;
+        }
+        
+        #settingsModal .settings-header {
+            padding: 24px 32px !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            background: #ffffff !important;
+        }
+        
+        #settingsModal .settings-header h2 {
+            margin: 0 !important;
+            font-size: 20px !important;
+            font-weight: 600 !important;
+            color: #1f2937 !important;
+        }
+        
+        #settingsModal .settings-body {
+            flex: 1 !important;
+            overflow-y: auto !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+        }
+        
+        #settingsModal .setting-row {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            padding: 24px 32px !important;
+            border-bottom: 1px solid #f3f4f6 !important;
+            gap: 32px !important;
+            background: #ffffff !important;
+        }
+        
+        #settingsModal .setting-row:hover {
+            background: #f9fafb !important;
+        }
+        
+        #settingsModal .setting-left {
+            flex: 1 !important;
+            min-width: 0 !important;
+        }
+        
+        #settingsModal .setting-title {
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            color: #1f2937 !important;
+            margin-bottom: 4px !important;
+        }
+        
+        #settingsModal .setting-description {
+            font-size: 13px !important;
+            color: #6b7280 !important;
+            line-height: 1.5 !important;
+        }
+        
+        #settingsModal .setting-right {
+            flex-shrink: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-end !important;
+            gap: 8px !important;
+            min-width: 320px !important;
+            max-width: 400px !important;
+        }
+        
+        #settingsModal .checkbox-list {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+            width: 100% !important;
+        }
+        
+        #settingsModal .modern-check {
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            cursor: pointer !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            position: relative !important;
+        }
+        
+        #settingsModal .modern-check input[type="checkbox"] {
+            position: absolute !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+            pointer-events: none !important;
+        }
+        
+        #settingsModal .modern-check:hover {
+            background: #f3f4f6 !important;
+        }
+        
+        #settingsModal .check-mark {
+            width: 18px !important;
+            height: 18px !important;
+            min-width: 18px !important;
+            border: 2px solid #d1d5db !important;
+            border-radius: 4px !important;
+            background: #ffffff !important;
+            position: relative !important;
+            flex-shrink: 0 !important;
+        }
+        
+        #settingsModal .modern-check input[type="checkbox"]:checked ~ .check-mark {
+            background: #3b82f6 !important;
+            border-color: #3b82f6 !important;
+        }
+        
+        #settingsModal .modern-check input[type="checkbox"]:checked ~ .check-mark::after {
+            content: '' !important;
+            position: absolute !important;
+            left: 5px !important;
+            top: 2px !important;
+            width: 4px !important;
+            height: 8px !important;
+            border: solid white !important;
+            border-width: 0 2px 2px 0 !important;
+            transform: rotate(45deg) !important;
+        }
+        
+        #settingsModal .check-label {
+            font-size: 14px !important;
+            color: #374151 !important;
+            font-weight: 500 !important;
+        }
+        
+        #settingsModal .toggle-switch {
+            position: relative !important;
+            display: inline-block !important;
+            width: 44px !important;
+            height: 24px !important;
+        }
+        
+        #settingsModal .toggle-switch input[type="checkbox"] {
+            position: absolute !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+            pointer-events: none !important;
+        }
+        
+        #settingsModal .toggle-slider {
+            position: absolute !important;
+            cursor: pointer !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background-color: #d1d5db !important;
+            border-radius: 24px !important;
+            transition: 0.3s !important;
+        }
+        
+        #settingsModal .toggle-slider:before {
+            position: absolute !important;
+            content: "" !important;
+            height: 18px !important;
+            width: 18px !important;
+            left: 3px !important;
+            bottom: 3px !important;
+            background-color: white !important;
+            border-radius: 50% !important;
+            transition: 0.3s !important;
+        }
+        
+        #settingsModal .toggle-switch input:checked + .toggle-slider {
+            background-color: #3b82f6 !important;
+        }
+        
+        #settingsModal .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(20px) !important;
+        }
+        
+        #settingsModal .modern-select {
+            width: 100% !important;
+            padding: 8px 32px 8px 12px !important;
+            font-size: 14px !important;
+            color: #374151 !important;
+            background: #ffffff !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+        }
+        
+        #settingsModal .price-info {
+            font-size: 12px !important;
+            color: #6b7280 !important;
+            text-align: right !important;
+        }
+        
+        #settingsModal .modern-range {
+            width: 100% !important;
+            height: 4px !important;
+            border-radius: 2px !important;
+            background: #e5e7eb !important;
+            outline: none !important;
+            cursor: pointer !important;
+            margin-bottom: 8px !important;
+        }
+        
+        #settingsModal .slider-labels {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            font-size: 12px !important;
+            color: #6b7280 !important;
+        }
+        
+        #settingsModal .current-value {
+            font-weight: 600 !important;
+            color: #3b82f6 !important;
+            padding: 2px 8px !important;
+            background: #eff6ff !important;
+            border-radius: 4px !important;
+        }
+        
+        #settingsModal .settings-footer {
+            padding: 16px 32px !important;
+            border-top: 1px solid #e5e7eb !important;
+            display: flex !important;
+            justify-content: flex-end !important;
+            gap: 12px !important;
+            background: #ffffff !important;
+        }
+        
+        #settingsModal .btn-cancel,
+        #settingsModal .btn-save {
+            padding: 8px 16px !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+        }
+        
+        #settingsModal .btn-cancel {
+            background: #ffffff !important;
+            color: #374151 !important;
+            border: 1px solid #d1d5db !important;
+        }
+        
+        #settingsModal .btn-save {
+            background: #3b82f6 !important;
+            color: #ffffff !important;
+            border: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            #settingsModal .setting-row {
+                flex-direction: column !important;
+                gap: 16px !important;
+            }
+            
+            #settingsModal .setting-right {
+                width: 100% !important;
+                align-items: stretch !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+
+    <!-- 중앙 메인 타이틀 -->
+    <div class="main-title-area">
+        <!-- 상단 오른쪽 아이콘 영역 -->
+        <div class="top-icons">
+            <div class="user-info" id="userInfo" style="display: none;">
+                <div class="user-dropdown">
+                    <button class="user-email-btn" id="userEmailBtn">
+                        <span class="user-email" id="userEmail"></span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <a href="/auth/change-password" class="dropdown-item">
+                            <i class="fas fa-key"></i>
+                            비밀번호 변경
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i>
+                            로그아웃
+                        </button>
+                    </div>
+                </div>
+            </div>
+                            <button class="icon-btn" id="archiveBtn" title="AI 분석결과 자료실"><i class="fas fa-robot"></i></button>
+            <button class="icon-btn" id="settingsBtn" title="설정"><i class="fas fa-cog"></i></button>
+        </div>
+        
+        <h1 class="main-title">
+            <i class="fas fa-rocket"></i>
+            초격차 스타트업 성과돋보기
+        </h1>
+    </div>
+
+
+
+    <!-- 상단 레이아웃 (2등분) -->
+    <div class="top-layout">
+        <!-- 좌측: 기업 목록 영역 -->
+        <div class="left-panel">
+            <div class="company-list-container">
+                <div class="company-list-header">
+                    <h3><i class="fas fa-building"></i> 초격차 스타트업 목록</h3>
+                    <div class="year-filter" id="yearFilter">
+                        <button class="year-btn active" data-year="all">전체</button>
+                        <!-- 연도 버튼이 동적으로 생성됩니다 -->
+                    </div>
+                </div>
+                <div class="company-grid" id="companyGrid">
+                    <!-- 기업 목록이 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 우측: 검색 관련 콘텐츠 -->
+        <div class="right-panel">
+            <!-- 검색 영역 -->
+            <div class="search-section">
+                <div class="search-header">
+                    <h3><i class="fas fa-search"></i> 개별 기업 검색</h3>
+                </div>
+                <div class="search-box-wrapper google-style">
+                    <input type="text" id="searchInput" placeholder="기업명을 입력하거나 좌측 목록에서 선택하세요..." autocomplete="off">
+                    <div class="search-options">
+                        <button id="searchBtn" class="search-btn"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+                
+                <!-- 기간 설정 영역 -->
+                <div class="period-settings google-style">
+                    <div class="period-header">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>기간 설정</span>
+                    </div>
+                    <div class="period-content" id="periodContent">
+                        <div class="period-inputs">
+                            <div class="period-input-group">
+                                <label for="startDate">시작일:</label>
+                                <input type="date" id="startDate" value="2024-01-01">
+                            </div>
+                            <div class="period-input-group">
+                                <label for="endDate">종료일:</label>
+                                <input type="date" id="endDate">
+                            </div>
+                        </div>
+                        <div class="period-presets">
+                            <button class="period-preset-btn" data-days="7">최근 7일</button>
+                            <button class="period-preset-btn" data-days="30">최근 30일</button>
+                            <button class="period-preset-btn" data-days="90">최근 3개월</button>
+                            <button class="period-preset-btn" data-days="365">최근 1년</button>
+                            <button class="period-preset-btn" data-preset="all">기본설정기간</button>
+                        </div>
+
+                        
+
+                        
+                        <div class="period-actions">
+                            <!-- 초기화 버튼 제거 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 검색 결과 정보 영역 -->
+                <div class="search-results-info" id="searchResultsInfo" style="display: none;">
+                    <div class="results-info-content">
+                        <i class="fas fa-chart-bar"></i>
+                        <span id="resultsCount">0</span>
+                        <span id="resultsText">개의 뉴스</span>
+                        <span id="resultsPeriod" class="results-period"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 다수 기업 검색 영역 -->
+            <div class="search-section multi-company-section">
+                <div class="search-header" style="display: flex; align-items: center; gap: 100px; flex-wrap: nowrap;">
+                    <h3 style="margin: 0; white-space: nowrap;"><i class="fas fa-building"></i> 다수 기업 검색</h3>
+                    <button id="multiCompanySearchBtn" class="btn-multi-search" style="padding: 10px 14px; font-size: 12px; height: auto; white-space: nowrap; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <i class="fas fa-list-check" style="font-size: 11px; margin-right: 4px;"></i>
+                        <span>일괄검색</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 메인 콘텐츠 -->
+            <main class="main-content">
+                <div class="container">
+            <!-- 로딩 스피너 -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>뉴스를 불러오는 중...</p>
+            </div>
+
+            <!-- 뉴스 그리드 -->
+            <div class="news-grid" id="newsGrid"></div>
+
+            <!-- 초기 안내 메시지 제거됨 -->
+
+            <!-- 검색 결과 없음 메시지 (숨김처리) -->
+            <div class="no-results" id="noResults" style="display: none;">
+                <i class="fas fa-search"></i>
+                <h3>검색 결과가 없습니다</h3>
+                <p>다른 기업명으로 검색해보세요.</p>
+            </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content settings-modal-modern">
+            <div class="settings-header">
+                <h2>설정</h2>
+                <button class="close-btn" id="closeSettingsModal">&times;</button>
+            </div>
+            
+            <div class="settings-body">
+                <!-- 검색 소스 -->
+                <div class="setting-row">
+                    <div class="setting-left">
+                        <div class="setting-title">검색 소스</div>
+                        <div class="setting-description">뉴스를 검색할 소스를 선택하세요</div>
+                    </div>
+                    <div class="setting-right">
+                        <div class="checkbox-list">
+                            <label class="modern-check">
+                                <input type="checkbox" id="naverSearchEnabled" checked>
+                                <span class="check-mark"></span>
+                                <span class="check-label">네이버 뉴스</span>
+                            </label>
+                            <label class="modern-check">
+                                <input type="checkbox" id="googleSearchEnabled" checked>
+                                <span class="check-mark"></span>
+                                <span class="check-label">구글 뉴스</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-divider"></div>
+
+                <!-- 정확한 검색어 필터링 -->
+                <div class="setting-row">
+                    <div class="setting-left">
+                        <div class="setting-title">정확한 검색어 필터링</div>
+                        <div class="setting-description">검색어가 정확히 포함된 뉴스만 표시합니다</div>
+                    </div>
+                    <div class="setting-right">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="naverTitleFilter">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-divider"></div>
+
+                <!-- AI 모델 -->
+                <div class="setting-row">
+                    <div class="setting-left">
+                        <div class="setting-title">AI 모델</div>
+                        <div class="setting-description">뉴스 분석에 사용할 AI 모델을 선택하세요</div>
+                    </div>
+                    <div class="setting-right">
+                        <select id="aiModel" class="modern-select">
+                            <option value="gpt-4o-mini" selected>GPT-4o-mini (경제적)</option>
+                            <option value="gpt-4o">GPT-4o (고성능)</option>
+                        </select>
+                        <div class="price-info" id="priceValue">입력: $0.15, 출력: $0.60</div>
+                    </div>
+                </div>
+
+                <div class="setting-divider"></div>
+
+                <!-- Temperature -->
+                <div class="setting-row">
+                    <div class="setting-left">
+                        <div class="setting-title">Temperature</div>
+                        <div class="setting-description">AI 응답의 창의성을 조절합니다 (기본: 0.1)</div>
+                    </div>
+                    <div class="setting-right">
+                        <div class="slider-group">
+                            <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.1" class="modern-range">
+                            <div class="slider-labels">
+                                <span>일관성</span>
+                                <span class="current-value" id="temperatureValue">0.1</span>
+                                <span>창의성</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-divider"></div>
+
+                <!-- 중복도율 -->
+                <div class="setting-row">
+                    <div class="setting-left">
+                        <div class="setting-title">중복도율</div>
+                        <div class="setting-description">중복 뉴스 제거 기준을 설정합니다 (기본: 50%)</div>
+                    </div>
+                    <div class="setting-right">
+                        <div class="slider-group">
+                            <input type="range" id="duplicateThreshold" min="0" max="100" value="50" step="5" class="modern-range">
+                            <div class="slider-labels">
+                                <span>0% (제거 안함)</span>
+                                <span class="current-value" id="thresholdValue">50%</span>
+                                <span>100% (완전 동일)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 기업 관리 -->
+                <div class="setting-row">
+                    <div class="setting-left">
+                        <div class="setting-title">기업 관리</div>
+                        <div class="setting-description">연도별 기업 목록을 관리합니다</div>
+                    </div>
+                    <div class="setting-right">
+                        <button id="openCompanyManagementBtn" class="btn-primary" style="padding: 8px 16px;">
+                            <i class="fas fa-building"></i> 기업 관리
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-footer">
+                <button id="cancelSettingsBtn" class="btn-cancel">취소</button>
+                <button id="saveSettingsBtn" class="btn-save">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 분석결과 자료실 모달 -->
+    <div id="archiveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-robot"></i> AI 분석결과 자료실</h2>
+                <span class="close" id="archiveClose">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="archive-container">
+                    <div class="archive-list" id="archiveList">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>파일 목록을 불러오는 중...</span>
+                        </div>
+                    </div>
+                    <div class="archive-pagination" id="archivePagination">
+                        <!-- 페이지네이션이 여기에 로드됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 뉴스 분석 모달 -->
+    <div class="modal" id="analyzeModal">
+        <div class="modal-content analyze-modal">
+            <div class="modal-header">
+                <h3>뉴스 분석</h3>
+                <button class="close-btn" id="closeAnalyzeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="analyze-results" id="analyzeResults" style="display: none;">
+                    <div class="analyze-content" id="analyzeContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 뉴스 검색 결과 모달 -->
+    <div class="modal" id="newsResultsModal">
+        <div class="modal-content news-results-modal">
+            <div class="modal-header">
+                <h3>뉴스 검색 결과</h3>
+                <button class="close-btn" id="closeNewsResultsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="news-summary" id="newsSummary">
+                    <div class="total-news-count">
+                        <i class="fas fa-newspaper"></i>
+                        <span><strong id="searchCompanyName">기업</strong>에 대한 뉴스를 총 <strong id="totalNewsCount">0</strong>개 찾았습니다</span>
+                    </div>
+                    <div class="duplicate-removal-info">
+                        <i class="fas fa-filter"></i>
+                        <span>필터링 제거: <strong id="duplicatesRemoved">0</strong>개 제거</span>
+                    </div>
+                    <div class="unique-news-count">
+                        <i class="fas fa-check-circle"></i>
+                        <span>최종 결과: <strong id="uniqueNewsCount">0</strong>개의 고유 뉴스</span>
+                    </div>
+                    <div class="source-breakdown">
+                        <div class="source-item">
+                            <i class="fas fa-search"></i>
+                            <span>네이버 뉴스: <strong id="naverNewsCount">0</strong>개</span>
+                        </div>
+                        <div class="source-item">
+                            <i class="fab fa-google"></i>
+                            <span>구글 뉴스: <strong id="googleNewsCount">0</strong>개</span>
+                        </div>
+
+                    </div>
+                </div>
+                
+                <div class="news-selection-controls">
+                    <label class="select-all-checkbox">
+                        <input type="checkbox" id="selectAllNews" checked>
+                        <span>전체 선택</span>
+                    </label>
+                    <span class="selected-count">선택: <strong id="selectedNewsCount">0</strong>개</span>
+                </div>
+                
+                <div class="news-list" id="newsList">
+                    <!-- 뉴스 목록이 여기에 표시됩니다 -->
+                </div>
+                
+                <div class="modal-actions">
+                    <button id="excelDownloadBtn" class="btn btn-success">
+                        <i class="fas fa-file-excel"></i>
+                        엑셀 다운로드
+                    </button>
+                    <button id="startAnalysisBtn" class="btn btn-primary">
+                        <i class="fas fa-chart-bar"></i>
+                        AI 분석 시작
+                    </button>
+                    <button id="closeNewsResultsBtn" class="btn btn-secondary">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 검색 결과 없음 모달 -->
+    <div class="modal" id="noResultsModal">
+        <div class="modal-content no-results-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-circle"></i> 검색 결과</h3>
+                <button class="close-btn" id="closeNoResultsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="no-results-content">
+                    <div class="no-results-icon">
+                        <i class="fas fa-search-minus"></i>
+                    </div>
+                    <h4>뉴스 검색 결과가 없습니다</h4>
+                    <p class="no-results-message">
+                        "<span id="noResultsQuery"></span>"에 대한 뉴스를 찾을 수 없습니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 검색 진행 정보 모달 -->
+    <div class="modal" id="searchProgressModal">
+        <div class="modal-content search-progress-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-search"></i> 뉴스 검색 진행상황</h3>
+            </div>
+            <div class="modal-body">
+                <div class="search-progress-info">
+                    <div class="search-progress-message" id="searchProgressMessage">
+                        검색을 시작합니다...
+                    </div>
+                    <div class="search-progress-details">
+                        <div class="search-step" id="searchStep">
+                            <div class="search-step-icon">
+                                <i class="fas fa-search" id="searchStepIcon"></i>
+                            </div>
+                            <div class="search-step-text" id="searchStepText">
+                                준비 중...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="search-progress-bar-container">
+                        <div class="search-progress-bar" id="searchProgressBar" style="width: 0%"></div>
+                    </div>
+                    <div class="search-progress-stats" id="searchProgressStats">
+                        <div class="stat-item">
+                            <span class="stat-label">검색어:</span>
+                            <span class="stat-value" id="searchQuery">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">찾은 뉴스:</span>
+                            <span class="stat-value" id="foundNewsCount">0개</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">필터링 제거:</span>
+                            <span class="stat-value" id="duplicatesRemoved">0개</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">최종 결과:</span>
+                            <span class="stat-value" id="finalNewsCount">0개</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 분석 진행 정보 모달 -->
+    <div class="modal" id="progressModal">
+        <div class="modal-content search-progress-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-robot"></i> AI 분석 진행</h3>
+            </div>
+            <div class="modal-body">
+                <div class="search-progress-info">
+                    <div class="search-progress-message" id="progressMessage">
+                        <span class="message-text">분석을 시작합니다...</span>
+                        <i class="fas fa-spinner fa-spin message-spinner"></i>
+                    </div>
+                    <div class="search-progress-details">
+                        <div class="search-step" id="progressStep">
+                            <div class="search-step-icon">
+                                <i class="fas fa-cog fa-spin" id="progressStepIcon"></i>
+                            </div>
+                            <div class="search-step-text" id="progressStepText">
+                                준비 중...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="search-progress-bar-container">
+                        <div class="search-progress-bar" id="progressBar" style="width: 0%"></div>
+                    </div>
+                    <div class="search-progress-stats" id="progressStats">
+                        <div class="stat-item">
+                            <span class="stat-label">회사명:</span>
+                            <span class="stat-value" id="progressCompany">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">총 뉴스 수:</span>
+                            <span class="stat-value" id="progressTotalNews">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">분석 진행:</span>
+                            <span class="stat-value" id="progressCurrentNews">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">분석 단계:</span>
+                            <span class="stat-value" id="progressStepName">-</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 엑셀 저장 메시지 -->
+                    <div class="excel-save-message" id="excelSaveMessage" style="display: none; margin-top: 15px; padding: 10px; border-radius: 5px;">
+                        <i class="fas fa-spinner fa-spin" id="excelSaveIcon"></i>
+                        <span id="excelSaveText">분석결과를 엑셀로 저장하고 있습니다.</span>
+                    </div>
+                    
+                    <!-- 강제 종료 버튼 -->
+                    <div class="force-stop-container" style="margin-top: 20px; text-align: center;">
+                        <button id="forceStopBtn" class="btn btn-danger" style="display: none;">
+                            <i class="fas fa-stop"></i>
+                            분석 강제 종료
+                        </button>
+                        <div class="analysis-info" style="margin-top: 10px; font-size: 12px; color: #666;">
+                            <i class="fas fa-info-circle"></i>
+                            긴 분석 작업의 경우 시간이 오래 걸릴 수 있습니다. 필요시 위 버튼으로 중단할 수 있습니다.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 분석 완료 모달 -->
+    <div class="modal" id="completionModal">
+        <div class="modal-content completion-modal">
+            <div class="completion-header">
+                <div class="completion-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <div class="completion-body">
+                <h2>AI 분석 완료!</h2>
+                <p class="completion-message">분석 결과가 성공적으로 저장되었습니다.</p>
+                <div class="completion-info">
+                    <div class="info-item">
+                        <i class="fas fa-building"></i>
+                        <span id="completionCompanyName">-</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-newspaper"></i>
+                        <span id="completionNewsCount">-</span>개 뉴스 분석 완료
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-file-excel"></i>
+                        <span>AI 분석결과 자료실에 저장됨</span>
+                    </div>
+                </div>
+            </div>
+            <div class="completion-footer">
+                <button class="btn-completion-archive" id="btnGoToArchive">
+                    <i class="fas fa-folder-open"></i> 자료실 열기
+                </button>
+                <button class="btn-completion-close" id="btnCloseCompletion">
+                    <i class="fas fa-times"></i> 닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 다수 기업 검색 모달 -->
+    <div class="modal" id="multiCompanyModal">
+        <div class="modal-content multi-company-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-building"></i> 다수 기업 일괄 검색</h3>
+                <button class="close-btn" id="closeMultiCompanyModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- 기간 설정 -->
+                <div class="multi-period-section">
+                    <h4><i class="fas fa-calendar-alt"></i> 검색 기간 설정</h4>
+                    <div class="period-inputs">
+                        <div class="period-input-group">
+                            <label for="multiStartDate">시작일:</label>
+                            <input type="date" id="multiStartDate" value="2024-01-01">
+                        </div>
+                        <div class="period-input-group">
+                            <label for="multiEndDate">종료일:</label>
+                            <input type="date" id="multiEndDate">
+                        </div>
+                    </div>
+                    <div class="period-presets">
+                        <button class="period-preset-btn" data-multi-days="7">최근 7일</button>
+                        <button class="period-preset-btn" data-multi-days="30">최근 30일</button>
+                        <button class="period-preset-btn" data-multi-days="90">최근 3개월</button>
+                        <button class="period-preset-btn" data-multi-days="365">최근 1년</button>
+                        <button class="period-preset-btn" data-multi-preset="all">기본설정기간</button>
+                    </div>
+                </div>
+
+                <!-- 기업 선택 -->
+                <div class="multi-company-section">
+                    <div class="multi-company-header">
+                        <h4><i class="fas fa-list-check"></i> 검색할 기업 선택</h4>
+                        <label class="select-all-companies">
+                            <input type="checkbox" id="selectAllCompanies" checked>
+                            <span>전체 선택</span>
+                        </label>
+                    </div>
+                    <div class="company-list" id="companyListForMulti">
+                        <!-- 기업 목록이 여기에 동적으로 생성됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 진행 상태 -->
+                <div class="multi-progress-section" id="multiProgressSection" style="display: none;">
+                    <h4><i class="fas fa-spinner fa-spin"></i> 검색 진행 중...</h4>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="multiProgressBar"></div>
+                    </div>
+                    <div class="progress-text" id="multiProgressText">0 / 0 기업 완료</div>
+                    <div class="progress-details" id="multiProgressDetails"></div>
+                </div>
+
+                <!-- 버튼 -->
+                <div class="modal-actions">
+                    <button id="startMultiSearchBtn" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                        기사 조회 시작
+                    </button>
+                    <button id="closeMultiSearchBtn" class="btn btn-secondary">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 기업 관리 모달 -->
+    <div id="companyManagementModal" class="modal">
+        <div class="modal-content" style="max-width: 1200px; width: 90%; max-height: 90vh;">
+            <div class="modal-header">
+                <h2><i class="fas fa-building"></i> 기업 관리</h2>
+                <button class="close-btn" id="closeCompanyManagementModal">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 20px; overflow-y: auto;">
+                <!-- 연도 탭 -->
+                <div class="year-tabs" id="yearTabs" style="display: flex; gap: 10px; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">
+                    <!-- 연도 탭이 동적으로 생성됩니다 -->
+                </div>
+                
+                <!-- 기업 추가 섹션 -->
+                <div class="company-add-section" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">
+                        <i class="fas fa-plus-circle"></i> 기업 추가
+                    </h3>
+                    <div style="display: flex; gap: 10px; align-items: flex-end;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500;">기업명</label>
+                            <input type="text" id="newCompanyName" placeholder="기업명을 입력하세요" 
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        </div>
+                        <div style="width: 150px;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500;">연도</label>
+                            <input type="number" id="newCompanyYear" placeholder="2024" min="2020" max="2100"
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        </div>
+                        <button id="addCompanyBtn" class="btn-primary" style="padding: 10px 20px; white-space: nowrap;">
+                            <i class="fas fa-plus"></i> 추가
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 기업 목록 -->
+                <div class="company-list-section">
+                    <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">
+                        <i class="fas fa-list"></i> 기업 목록 <span id="companyCountBadge" style="background: #4285f4; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px;">0</span>
+                    </h3>
+                    <div id="companyListManagement" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+                        <!-- 기업 목록이 동적으로 생성됩니다 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions" style="padding: 16px 24px; border-top: 1px solid #e9ecef; display: flex; justify-content: flex-end;">
+                <button id="closeCompanyManagementBtn" class="btn-cancel">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        // 로그인 상태 확인 및 사용자 정보 표시
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch('/auth/profile');
+                if (response.ok) {
+                    const data = await response.json();
+                    const userInfo = document.getElementById('userInfo');
+                    const userEmail = document.getElementById('userEmail');
+                    
+                    userEmail.textContent = data.user.email;
+                    userInfo.style.display = 'flex';
+                    
+                    // sessionStorage에 사용자 정보 저장
+                    sessionStorage.setItem('user_email', data.user.email);
+                    sessionStorage.setItem('user_id', data.user.id);
+                    console.log('[DEBUG] HTML - sessionStorage에 사용자 정보 저장:', data.user.email, data.user.id);
+                } else {
+                    // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+                    window.location.href = '/auth/login';
+                }
+            } catch (error) {
+                console.error('로그인 상태 확인 오류:', error);
+                window.location.href = '/auth/login';
+            }
+        }
+
+        // 로그아웃 기능
+        async function logout() {
+            try {
+                const response = await fetch('/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/auth/login';
+                } else {
+                    alert('로그아웃 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('로그아웃 오류:', error);
+                alert('로그아웃 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 페이지 로드 시 로그인 상태 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLoginStatus();
+            
+            // 사용자 드롭다운 토글
+            const userEmailBtn = document.getElementById('userEmailBtn');
+            const userDropdown = document.querySelector('.user-dropdown');
+            
+            if (userEmailBtn) {
+                userEmailBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('active');
+                });
+            }
+            
+            // 드롭다운 외부 클릭 시 닫기
+            document.addEventListener('click', function(e) {
+                if (!userDropdown.contains(e.target)) {
+                    userDropdown.classList.remove('active');
+                }
+            });
+            
+            // 로그아웃 버튼 이벤트 리스너
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            
+            // AI 분석결과 자료실 버튼 이벤트 리스너
+            document.getElementById('archiveBtn').addEventListener('click', openArchiveModal);
+            
+            // AI 분석결과 자료실 모달 닫기
+            document.getElementById('archiveClose').addEventListener('click', closeArchiveModal);
+            
+            // 모달 외부 클릭 시 닫기
+            window.addEventListener('click', function(e) {
+                const archiveModal = document.getElementById('archiveModal');
+                if (e.target === archiveModal) {
+                    closeArchiveModal();
+                }
+            });
+        });
+        
+        // AI 분석결과 자료실 모달 열기
+        async function openArchiveModal() {
+            const modal = document.getElementById('archiveModal');
+            modal.classList.add('show');
+            await loadArchiveList();
+        }
+        
+        // AI 분석결과 자료실 모달 닫기
+        function closeArchiveModal() {
+            const modal = document.getElementById('archiveModal');
+            modal.classList.remove('show');
+        }
+        
+        // AI 분석결과 자료실 목록 로드 (게시판 형태)
+        async function loadArchiveList(page = 1) {
+            const archiveList = document.getElementById('archiveList');
+            const archivePagination = document.getElementById('archivePagination');
+            
+            try {
+                const response = await fetch(`/api/archive?page=${page}`);
+                if (!response.ok) {
+                    throw new Error('파일 목록을 불러올 수 없습니다.');
+                }
+                
+                const data = await response.json();
+                const archives = data.archives || [];
+                const pagination = data.pagination || {};
+                
+                if (archives.length === 0) {
+                    archiveList.innerHTML = `
+                        <div class="archive-empty">
+                            <i class="fas fa-archive"></i>
+                            <p>저장된 파일이 없습니다.</p>
+                            <p>AI 분석을 실행하면 자동으로 저장됩니다.</p>
+                        </div>
+                    `;
+                    archivePagination.innerHTML = '';
+                    return;
+                }
+                
+                // 게시판 형태로 표시
+                archiveList.innerHTML = `
+                    <table class="archive-table">
+                        <thead>
+                            <tr>
+                                <th>번호</th>
+                                <th>분석자</th>
+                                <th>분석기업</th>
+                                <th>분석기간</th>
+                                <th>분석파일</th>
+                                <th>작성일</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${archives.map((archive, index) => {
+                                const date = new Date(archive.created_at);
+                                const formattedDate = date.toLocaleString('ko-KR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit'
+                                });
+                                
+                                // 현재 로그인한 사용자 ID 가져오기 (API 응답에서)
+                                const currentUserId = data.current_user_id;
+                                // 삭제 가능 여부 확인 (API에서 can_delete 플래그 사용)
+                                const canDelete = archive.can_delete || false;
+                                
+                                // 디버깅 로그
+                                console.log('[DEBUG] AI 분석결과 자료실 - currentUserId:', currentUserId);
+                                console.log('[DEBUG] AI 분석결과 자료실 - archive.user_id:', archive.user_id);
+                                console.log('[DEBUG] AI 분석결과 자료실 - canDelete:', canDelete);
+                                console.log('[DEBUG] AI 분석결과 자료실 - archive:', archive);
+                                
+                                return `
+                                    <tr>
+                                        <td>${(pagination.current_page - 1) * pagination.per_page + index + 1}</td>
+                                        <td>${archive.analyzer_name || 'unknown'}</td>
+                                        <td>${archive.company_name}</td>
+                                        <td>${archive.analysis_period || formattedDate}</td>
+                                        <td>${archive.original_filename}</td>
+                                        <td>${formattedDate}</td>
+                                        <td>
+                                            <div class="archive-actions">
+                                                <button class="archive-email-btn" onclick="sendEmailArchive(${archive.id})" title="이메일로 받기">
+                                                    <i class="fas fa-envelope"></i>
+                                                </button>
+                                                <button class="archive-download-btn" onclick="downloadArchive(${archive.id})" title="엑셀파일 다운로드">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                                ${canDelete ? `
+                                                    <button class="archive-delete-btn" onclick="deleteArchive(${archive.id})" title="삭제">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                // 페이지네이션 생성
+                if (pagination.total_pages > 1) {
+                    archivePagination.innerHTML = generatePagination(pagination);
+                } else {
+                    archivePagination.innerHTML = '';
+                }
+                
+            } catch (error) {
+                console.error('아카이브 목록 로드 오류:', error);
+                archiveList.innerHTML = `
+                    <div class="archive-empty">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>파일 목록을 불러올 수 없습니다.</p>
+                    </div>
+                `;
+                archivePagination.innerHTML = '';
+            }
+        }
+        
+        // 페이지네이션 생성 함수
+        function generatePagination(pagination) {
+            const { current_page, total_pages } = pagination;
+            let paginationHTML = '<div class="pagination">';
+            
+            // 이전 페이지
+            if (current_page > 1) {
+                paginationHTML += `<button onclick="loadArchiveList(${current_page - 1})" class="page-btn">&laquo; 이전</button>`;
+            }
+            
+            // 페이지 번호들
+            const startPage = Math.max(1, current_page - 2);
+            const endPage = Math.min(total_pages, current_page + 2);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === current_page) {
+                    paginationHTML += `<button class="page-btn active">${i}</button>`;
+                } else {
+                    paginationHTML += `<button onclick="loadArchiveList(${i})" class="page-btn">${i}</button>`;
+                }
+            }
+            
+            // 다음 페이지
+            if (current_page < total_pages) {
+                paginationHTML += `<button onclick="loadArchiveList(${current_page + 1})" class="page-btn">다음 &raquo;</button>`;
+            }
+            
+            paginationHTML += '</div>';
+            return paginationHTML;
+        }
+        
+        // 아카이브 파일 다운로드
+        async function downloadArchive(archiveId) {
+            try {
+                window.open(`/api/archive/${archiveId}/download`, '_blank');
+            } catch (error) {
+                console.error('다운로드 오류:', error);
+                alert('파일 다운로드 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 아카이브 파일 삭제
+        async function deleteArchive(archiveId) {
+            if (!confirm('정말로 이 파일을 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/archive/${archiveId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('파일이 성공적으로 삭제되었습니다.');
+                    // AI 분석결과 자료실 목록 새로고침
+                    loadArchiveList();
+                } else {
+                    const errorData = await response.json();
+                    alert(`삭제 실패: ${errorData.error || '알 수 없는 오류'}`);
+                }
+            } catch (error) {
+                console.error('삭제 오류:', error);
+                alert('파일 삭제 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 아카이브 파일 이메일 발송
+        async function sendEmailArchive(archiveId) {
+            // 해당 버튼 찾기
+            const emailBtn = event.target.closest('.archive-email-btn');
+            if (!emailBtn) return;
+            
+            const originalHTML = emailBtn.innerHTML;
+            
+            try {
+                // 버튼 로딩 상태 설정
+                emailBtn.classList.add('loading');
+                emailBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                emailBtn.disabled = true;
+                emailBtn.title = '이메일 발송 중...';
+                
+                const response = await fetch(`/api/archive/${archiveId}/email`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('이메일이 발송되었습니다.');
+                } else {
+                    const errorData = await response.json();
+                    alert('이메일 발송 실패: ' + (errorData.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('이메일 발송 오류:', error);
+                alert('이메일 발송 중 오류가 발생했습니다.');
+            } finally {
+                // 버튼 상태 복원
+                emailBtn.classList.remove('loading');
+                emailBtn.innerHTML = originalHTML;
+                emailBtn.disabled = false;
+                emailBtn.title = '이메일로 받기';
+            }
+        }
+        
+        // 아카이브 파일 삭제
+        async function deleteArchive(archiveId) {
+            if (!confirm('정말로 이 파일을 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/archive/${archiveId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    await loadArchiveList(); // 목록 새로고침
+                    alert('파일이 삭제되었습니다.');
+                } else {
+                    const data = await response.json();
+                    alert(data.error || '파일 삭제 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('삭제 오류:', error);
+                alert('파일 삭제 중 오류가 발생했습니다.');
+            }
+        }
+    </script>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>© 2025 초격차 스타트업 성과돋보기</p>
+        </div>
+    </footer>
+</body>
+</html> 

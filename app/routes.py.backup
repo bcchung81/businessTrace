@@ -1,0 +1,837 @@
+from flask import Blueprint, render_template, request, jsonify, Response
+from .news_service import NewsService
+from .news_analyzer import NewsAnalyzer
+import json
+import os
+from datetime import datetime
+import pytz
+
+main = Blueprint('main', __name__)
+
+# 뉴스 서비스 인스턴스 생성
+news_service = NewsService()
+news_analyzer = NewsAnalyzer()
+
+@main.route("/")
+def index():
+    """메인 페이지"""
+    # 페이지 접속 시간을 세션에 저장 (알람 기준점으로 사용)
+    # 브라우저에서 페이지를 호출할 때마다 시간 업데이트
+    session['page_visit_time'] = datetime.now(pytz.UTC).isoformat()
+    
+    return render_template("index.html")
+
+@main.route("/api/settings", methods=["GET"])
+def api_get_settings():
+    """브라우저 기반 설정 API - 기본값만 반환"""
+    default_settings = {
+        "auto_refresh_interval": 300,  # 5분 (초 단위)
+        "items_per_page": 15,
+        "search_results_limit": 100,
+        "google_news_enabled": True,
+        "naver_news_enabled": True,
+        "rss_sources_enabled": True
+    }
+    return jsonify(default_settings)
+
+@main.route('/api/news')
+def api_news():
+    """최신 뉴스 조회"""
+    try:
+        news_items = news_service.get_latest_news()
+        return jsonify(news_items)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@main.route('/api/news/all')
+def api_all_news():
+    """모든 뉴스를 가져오는 API"""
+    news = news_service.get_latest_news(limit=50)
+    return jsonify(news)
+
+@main.route('/api/news/period')
+def api_news_period():
+    """기간별 뉴스 조회"""
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        limit = int(request.args.get('limit', 50))
+        
+        results = news_service.get_news_by_period(start_date, end_date, limit)
+        
+        return jsonify({
+            "results": results,
+            "count": len(results),
+            "start_date": start_date,
+            "end_date": end_date
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@main.route('/api/search')
+def api_search():
+    """뉴스 검색"""
+    try:
+        query = request.args.get('q', '')
+        condition = request.args.get('condition', 'exact')
+        
+        # RSS 소스 설정
+        etnews_enabled = request.args.get('etnews', 'true').lower() == 'true'
+        mk_enabled = request.args.get('mk', 'true').lower() == 'true'
+        boan_enabled = request.args.get('boan', 'true').lower() == 'true'
+        yonhap_enabled = request.args.get('yonhap', 'true').lower() == 'true'
+        chosun_enabled = request.args.get('chosun', 'true').lower() == 'true'
+        joongang_enabled = request.args.get('joongang', 'true').lower() == 'true'
+        donga_enabled = request.args.get('donga', 'true').lower() == 'true'
+        hankyoreh_enabled = request.args.get('hankyoreh', 'true').lower() == 'true'
+        koreaherald_enabled = request.args.get('koreaherald', 'true').lower() == 'true'
+        koreatimes_enabled = request.args.get('koreatimes', 'true').lower() == 'true'
+        
+        # 검색 소스 설정
+        naver_enabled = request.args.get('naver', 'true').lower() == 'true'
+        google_enabled = request.args.get('google', 'true').lower() == 'true'
+        
+        results = news_service.search_news(
+            query=query,
+            condition=condition,
+            etnews_enabled=etnews_enabled,
+            mk_enabled=mk_enabled,
+            boan_enabled=boan_enabled,
+            yonhap_enabled=yonhap_enabled,
+            chosun_enabled=chosun_enabled,
+            joongang_enabled=joongang_enabled,
+            donga_enabled=donga_enabled,
+            hankyoreh_enabled=hankyoreh_enabled,
+            koreaherald_enabled=koreaherald_enabled,
+            koreatimes_enabled=koreatimes_enabled,
+            naver_enabled=naver_enabled,
+            google_enabled=google_enabled
+        )
+        
+        return jsonify({
+            "results": results,
+            "count": len(results),
+            "query": query
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@main.route('/api/search/period')
+def api_search_period():
+    """기간별 뉴스 검색"""
+    try:
+        query = request.args.get('q', '')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        condition = request.args.get('condition', 'exact')
+        limit = int(request.args.get('limit', 50))
+        
+        # RSS 소스 설정
+        etnews_enabled = request.args.get('etnews', 'true').lower() == 'true'
+        mk_enabled = request.args.get('mk', 'true').lower() == 'true'
+        boan_enabled = request.args.get('boan', 'true').lower() == 'true'
+        yonhap_enabled = request.args.get('yonhap', 'true').lower() == 'true'
+        chosun_enabled = request.args.get('chosun', 'true').lower() == 'true'
+        joongang_enabled = request.args.get('joongang', 'true').lower() == 'true'
+        donga_enabled = request.args.get('donga', 'true').lower() == 'true'
+        hankyoreh_enabled = request.args.get('hankyoreh', 'true').lower() == 'true'
+        koreaherald_enabled = request.args.get('koreaherald', 'true').lower() == 'true'
+        koreatimes_enabled = request.args.get('koreatimes', 'true').lower() == 'true'
+        
+        # 검색 소스 설정
+        naver_enabled = request.args.get('naver', 'true').lower() == 'true'
+        google_enabled = request.args.get('google', 'true').lower() == 'true'
+        
+        results = news_service.search_news_by_period(
+            query=query,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+            condition=condition,
+            etnews_enabled=etnews_enabled,
+            mk_enabled=mk_enabled,
+            boan_enabled=boan_enabled,
+            yonhap_enabled=yonhap_enabled,
+            chosun_enabled=chosun_enabled,
+            joongang_enabled=joongang_enabled,
+            donga_enabled=donga_enabled,
+            hankyoreh_enabled=hankyoreh_enabled,
+            koreaherald_enabled=koreaherald_enabled,
+            koreatimes_enabled=koreatimes_enabled,
+            naver_enabled=naver_enabled,
+            google_enabled=google_enabled
+        )
+        
+        return jsonify({
+            "results": results,
+            "count": len(results),
+            "query": query,
+            "start_date": start_date,
+            "end_date": end_date
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@main.route('/api/analyze/all')
+def api_analyze_all():
+    """통합 분석 API - 동향분석, 수상실적, 투자실적을 모두 수행"""
+    company_name = request.args.get("company", "")
+    query = request.args.get("query", company_name)
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    if not company_name:
+        return jsonify({"error": "회사명을 입력해주세요"}), 400
+    
+    try:
+        # 기간 설정이 있으면 기간별 검색, 없으면 일반 검색
+        if start_date and end_date:
+            news_items = news_service.search_news_by_period(
+                query=query,
+                start_date=start_date,
+                end_date=end_date
+            )
+        else:
+            news_items = news_service.search_news(query)
+        
+        # 3가지 분석 모두 수행
+        trends_result = news_analyzer.analyze_trends(company_name, news_items)
+        awards_result = news_analyzer.analyze_awards(company_name, news_items)
+        investment_result = news_analyzer.analyze_investment(company_name, news_items)
+        
+        # 결과 통합
+        combined_result = {
+            "success": True,
+            "company_name": company_name,
+            "analysis_type": "comprehensive",
+            "analysis_date": datetime.now().isoformat(),
+            "trends_analysis": trends_result if trends_result.get("success") else None,
+            "awards_analysis": awards_result if awards_result.get("success") else None,
+            "investment_analysis": investment_result if investment_result.get("success") else None
+        }
+        
+        # 종합 요약 생성
+        summary_parts = []
+        if trends_result.get("success") and trends_result.get("analysis_summary"):
+            summary_parts.append(f"동향분석: {trends_result['analysis_summary']}")
+        if awards_result.get("success") and awards_result.get("analysis_summary"):
+            summary_parts.append(f"수상실적: {awards_result['analysis_summary']}")
+        if investment_result.get("success") and investment_result.get("analysis_summary"):
+            summary_parts.append(f"투자실적: {investment_result['analysis_summary']}")
+        
+        if summary_parts:
+            combined_result["overall_summary"] = " ".join(summary_parts)
+        else:
+            combined_result["overall_summary"] = "분석할 수 있는 뉴스가 충분하지 않습니다."
+        
+        return jsonify(combined_result)
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"분석 중 오류가 발생했습니다: {str(e)}",
+            "analysis_type": "comprehensive"
+        }), 500
+
+@main.route('/api/analyze/trends')
+def api_analyze_trends():
+    """동향분석 API"""
+    company_name = request.args.get("company", "")
+    query = request.args.get("query", company_name)
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    if not company_name:
+        return jsonify({"error": "회사명을 입력해주세요"}), 400
+    
+    try:
+        # 기간 설정이 있으면 기간별 검색, 없으면 일반 검색
+        if start_date and end_date:
+            news_items = news_service.search_news_by_period(
+                query=query,
+                start_date=start_date,
+                end_date=end_date
+            )
+        else:
+            news_items = news_service.search_news(query)
+        
+        # 동향분석
+        analysis_result = news_analyzer.analyze_trends(company_name, news_items)
+        
+        return jsonify(analysis_result)
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"분석 중 오류가 발생했습니다: {str(e)}",
+            "analysis_type": "trends"
+        }), 500
+
+@main.route('/api/analyze/awards')
+def api_analyze_awards():
+    """수상실적 분석 API"""
+    company_name = request.args.get("company", "")
+    query = request.args.get("query", company_name)
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    if not company_name:
+        return jsonify({"error": "회사명을 입력해주세요"}), 400
+    
+    try:
+        # 기간 설정이 있으면 기간별 검색, 없으면 일반 검색
+        if start_date and end_date:
+            news_items = news_service.search_news_by_period(
+                query=query,
+                start_date=start_date,
+                end_date=end_date
+            )
+        else:
+            news_items = news_service.search_news(query)
+        
+        # 수상실적 분석
+        analysis_result = news_analyzer.analyze_awards(company_name, news_items)
+        
+        return jsonify(analysis_result)
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"분석 중 오류가 발생했습니다: {str(e)}",
+            "analysis_type": "awards"
+        }), 500
+
+@main.route('/api/analyze/investment')
+def api_analyze_investment():
+    """투자실적 분석 API"""
+    company_name = request.args.get("company", "")
+    query = request.args.get("query", company_name)
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    if not company_name:
+        return jsonify({"error": "회사명을 입력해주세요"}), 400
+    
+    try:
+        # 기간 설정이 있으면 기간별 검색, 없으면 일반 검색
+        if start_date and end_date:
+            news_items = news_service.search_news_by_period(
+                query=query,
+                start_date=start_date,
+                end_date=end_date
+            )
+        else:
+            news_items = news_service.search_news(query)
+        
+        # 투자실적 분석
+        analysis_result = news_analyzer.analyze_investment(company_name, news_items)
+        
+        return jsonify(analysis_result)
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"분석 중 오류가 발생했습니다: {str(e)}",
+            "analysis_type": "investment"
+        }), 500
+
+@main.route('/api/analyze/streaming')
+def api_analyze_streaming():
+    """실시간 분석 스트리밍"""
+    def generate():
+        try:
+            company_name = request.args.get("company", "")
+            query = request.args.get("query", company_name)
+            start_date = request.args.get("start_date")
+            end_date = request.args.get("end_date")
+            
+            if not company_name:
+                yield f"data: {json.dumps({'error': '회사명을 입력해주세요'})}\n\n"
+                return
+            
+            # 뉴스 수집
+            yield f"data: {json.dumps({'type': 'progress', 'message': '뉴스를 수집하고 있습니다...', 'progress': 10})}\n\n"
+            
+            if start_date and end_date:
+                news_items = news_service.search_news_by_period(
+                    query=query,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+            else:
+                news_items = news_service.search_news(query)
+            
+            yield f"data: {json.dumps({'type': 'progress', 'message': f'{len(news_items)}개의 뉴스를 수집했습니다.', 'progress': 20})}\n\n"
+            
+            # 수상실적 분석 시작
+            yield f"data: {json.dumps({'type': 'progress', 'message': '수상실적 분석을 시작합니다...', 'progress': 30})}\n\n"
+            
+            awards = []
+            for i, news in enumerate(news_items[:20]):
+                title = news.get('title', '')
+                description = news.get('description', '')
+                source = news.get('source', '')
+                published = news.get('published', '')
+                link = news.get('link', '')
+                
+                yield f"data: {json.dumps({'type': 'progress', 'message': f'뉴스 {i+1} 분석 중: {title[:30]}...', 'progress': 30 + (i * 2)})}\n\n"
+                
+                # ChatGPT 스트리밍 응답
+                news_text = f"""
+뉴스 제목: {title}
+뉴스 내용: {description}
+출처: {source}
+날짜: {published}
+"""
+                
+                prompt = f"""
+다음은 '{company_name}' 회사에 대한 뉴스입니다. 이 뉴스에서 수상 관련 정보를 찾아주세요.
+
+분석 요구사항:
+1. 수상 관련 뉴스인지 판단 (상, 시상, 수상, 어워드, award, prize 등)
+2. 수상 관련이면 다음 정보 추출:
+   - 수상 연도
+   - 수상명
+   - 수상 기관/대회명
+   - 수상 이유나 성과
+
+뉴스 내용:
+{news_text}
+
+다음 JSON 형식으로 응답해주세요:
+{{
+    "is_award_related": true/false,
+    "award_info": {{
+        "year": "2023",
+        "award_name": "수상명",
+        "organization": "수상기관/대회명",
+        "reason": "수상 이유"
+    }}
+}}
+
+수상 관련이 아니면 "is_award_related": false로 응답해주세요.
+"""
+                
+                try:
+                    response = news_analyzer.client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[
+                            {"role": "system", "content": "당신은 뉴스 분석 전문가입니다. 정확하고 객관적으로 뉴스를 분석해주세요."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=1000,
+                        temperature=0.3,
+                        stream=True
+                    )
+                    
+                    full_response = ""
+                    for chunk in response:
+                        if chunk.choices[0].delta.content:
+                            content = chunk.choices[0].delta.content
+                            full_response += content
+                            # 실시간으로 ChatGPT 응답 전송
+                            yield f"data: {json.dumps({'type': 'stream', 'content': content, 'news_index': i+1})}\n\n"
+                    
+                    # 분석 결과 처리
+                    result = json.loads(full_response)
+                    if result.get("is_award_related", False) and result.get("award_info"):
+                        award_info = result["award_info"]
+                        awards.append({
+                            "year": award_info.get("year", ""),
+                            "award_name": award_info.get("award_name", ""),
+                            "organization": award_info.get("organization", ""),
+                            "reason": award_info.get("reason", ""),
+                            "news_title": title,
+                            "news_link": link,
+                            "news_source": source,
+                            "news_date": published
+                        })
+                        yield f"data: {json.dumps({'type': 'result', 'message': f'수상실적 발견: {award_info.get(\"award_name\", \"\")}', 'news_index': i+1})}\n\n"
+                    
+                except Exception as e:
+                    yield f"data: {json.dumps({'type': 'error', 'message': f'뉴스 {i+1} 분석 중 오류: {str(e)}'})}\n\n"
+                    continue
+            
+            # 최종 결과
+            yield f"data: {json.dumps({'type': 'complete', 'awards': awards, 'total_awards': len(awards)})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': f'분석 중 오류가 발생했습니다: {str(e)}'})}\n\n"
+    
+    return Response(generate(), mimetype='text/event-stream')
+
+@main.route('/api/search')
+def api_search_news():
+    """뉴스 검색 API"""
+    query = request.args.get("q", "")
+    condition = request.args.get("condition", "exact")  # 검색 조건 추가
+    if not query:
+        return jsonify({"error": "검색어를 입력해주세요"}), 400
+    
+    # 개별 RSS 소스 설정 받기
+    etnews_enabled = request.args.get("etnews", "true").lower() == "true"
+    mk_enabled = request.args.get("mk", "true").lower() == "true"
+    boan_enabled = request.args.get("boan", "true").lower() == "true"
+    yonhap_enabled = request.args.get("yonhap", "true").lower() == "true"
+    chosun_enabled = request.args.get("chosun", "true").lower() == "true"
+    joongang_enabled = request.args.get("joongang", "true").lower() == "true"
+    donga_enabled = request.args.get("donga", "true").lower() == "true"
+    hankyoreh_enabled = request.args.get("hankyoreh", "true").lower() == "true"
+    koreaherald_enabled = request.args.get("koreaherald", "true").lower() == "true"
+    koreatimes_enabled = request.args.get("koreatimes", "true").lower() == "true"
+    naver_enabled = request.args.get("naver", "true").lower() == "true"
+    google_enabled = request.args.get("google", "true").lower() == "true"
+    
+    # 한글 검색어 처리
+    original_query = query
+    print(f"Original query received: '{original_query}' (type: {type(original_query)})")
+    
+    # URL 디코딩 처리
+    try:
+        from urllib.parse import unquote
+        decoded_query = unquote(query)
+        print(f"URL decoded query: '{decoded_query}'")
+        query = decoded_query
+    except Exception as e:
+        print(f"URL decoding error: {e}")
+    
+    # 공백 제거 및 정규화
+    query = query.strip()
+    
+    # 한글 인코딩 문제 해결 - 직접 처리
+    try:
+        # Latin-1로 인코딩된 한글을 UTF-8로 변환
+        if query.startswith('ì¤') or query.startswith('í'):
+            # Latin-1 인코딩된 한글을 UTF-8로 변환
+            query_bytes = query.encode('latin-1')
+            query = query_bytes.decode('utf-8')
+            print(f"Fixed encoding: '{query}'")
+    except Exception as e:
+        print(f"Encoding fix error: {e}")
+    
+    print(f"Final search query: '{query}' (condition: {condition}, RSS: etnews={etnews_enabled}, mk={mk_enabled}, boan={boan_enabled}, yonhap={yonhap_enabled})")
+    
+    if not query:
+        return jsonify({"error": "유효한 검색어를 입력해주세요"}), 400
+    
+    # 검색 조건에 따라 다른 메서드 호출
+    if condition == "exact":
+        # 전체일치 검색 (기존 방식)
+        news = news_service.search_news(query, etnews_enabled=etnews_enabled, mk_enabled=mk_enabled, 
+                                       boan_enabled=boan_enabled, yonhap_enabled=yonhap_enabled,
+                                       chosun_enabled=chosun_enabled, joongang_enabled=joongang_enabled,
+                                       donga_enabled=donga_enabled, hankyoreh_enabled=hankyoreh_enabled,
+                                       koreaherald_enabled=koreaherald_enabled, koreatimes_enabled=koreatimes_enabled,
+                                       naver_enabled=naver_enabled, google_enabled=google_enabled)
+    elif condition == "and":
+        # AND 검색 - 모든 키워드가 포함된 뉴스
+        keywords = [kw.strip() for kw in query.split() if kw.strip()]
+        news = news_service.search_news_and(keywords, etnews_enabled=etnews_enabled, mk_enabled=mk_enabled, 
+                                           boan_enabled=boan_enabled, yonhap_enabled=yonhap_enabled,
+                                           chosun_enabled=chosun_enabled, joongang_enabled=joongang_enabled,
+                                           donga_enabled=donga_enabled, hankyoreh_enabled=hankyoreh_enabled,
+                                           koreaherald_enabled=koreaherald_enabled, koreatimes_enabled=koreatimes_enabled,
+                                           naver_enabled=naver_enabled, google_enabled=google_enabled)
+    elif condition == "or":
+        # OR 검색 - 키워드 중 하나라도 포함된 뉴스
+        keywords = [kw.strip() for kw in query.split() if kw.strip()]
+        news = news_service.search_news_or(keywords, etnews_enabled=etnews_enabled, mk_enabled=mk_enabled, 
+                                          boan_enabled=boan_enabled, yonhap_enabled=yonhap_enabled,
+                                          chosun_enabled=chosun_enabled, joongang_enabled=joongang_enabled,
+                                          donga_enabled=donga_enabled, hankyoreh_enabled=hankyoreh_enabled,
+                                          koreaherald_enabled=koreaherald_enabled, koreatimes_enabled=koreatimes_enabled,
+                                          naver_enabled=naver_enabled, google_enabled=google_enabled)
+    else:
+        # 기본값으로 전체일치 검색
+        news = news_service.search_news(query, etnews_enabled=etnews_enabled, mk_enabled=mk_enabled, 
+                                       boan_enabled=boan_enabled, yonhap_enabled=yonhap_enabled,
+                                       chosun_enabled=chosun_enabled, joongang_enabled=joongang_enabled,
+                                       donga_enabled=donga_enabled, hankyoreh_enabled=hankyoreh_enabled,
+                                       koreaherald_enabled=koreaherald_enabled, koreatimes_enabled=koreatimes_enabled,
+                                       naver_enabled=naver_enabled, google_enabled=google_enabled)
+    
+    return jsonify({
+        "query": query,
+        "condition": condition,
+        "results": news,
+        "count": len(news)
+    })
+
+@main.route("/api/search/progress")
+def api_search_progress():
+    """검색 진행 상황 API"""
+    return jsonify({
+        "current_source": getattr(news_service, 'current_source', ''),
+        "total_sources": getattr(news_service, 'total_sources', 0),
+        "completed_sources": getattr(news_service, 'completed_sources', 0),
+        "status": getattr(news_service, 'status', 'idle')
+    })
+
+# 알람 관련 API 엔드포인트들 제거
+# @main.route("/api/alert/status", methods=["GET"])
+# def api_alert_status():
+#     """뉴스 알람 전체 상태 조회 API"""
+#     status = session.get('news_alert_enabled', False)
+#     # 페이지 접속 시간을 알람 시작 시간으로 사용
+#     start_time = session.get('page_visit_time')
+#     return jsonify({
+#         "enabled": status,
+#         "start_time": start_time
+#     })
+
+# @main.route("/api/alert/toggle", methods=["POST"])
+# def api_alert_toggle():
+#     """뉴스 알람 전체 동작 토글 API"""
+#     current_status = session.get('news_alert_enabled', False)
+#     new_status = not current_status
+#     session['news_alert_enabled'] = new_status
+    
+#     # 알람을 켤 때 페이지 접속 시간을 시작 시간으로 설정
+#     if new_status:
+#         page_visit_time = session.get('page_visit_time')
+#         if page_visit_time:
+#             session['news_alert_start_time'] = page_visit_time
+#         else:
+#             # 페이지 접속 시간이 없으면 현재 시간을 사용 (fallback)
+#             session['news_alert_start_time'] = datetime.now(pytz.UTC).isoformat()
+    
+#     return jsonify({"enabled": new_status})
+
+# @main.route("/api/alert/keywords", methods=["GET"])
+# def api_alert_keywords():
+#     """알람 키워드 목록 조회 API"""
+#     keywords = session.get('alert_keywords', [])
+#     return jsonify(keywords)
+
+# @main.route("/api/alert/keywords", methods=["POST"])
+# def api_alert_keywords_save():
+#     """알람 키워드 목록 저장 API"""
+#     data = request.get_json()
+#     keywords = data.get('keywords', [])
+#     session['alert_keywords'] = keywords
+#     return jsonify({"success": True, "keywords": keywords})
+
+# @main.route("/api/alert/check/<keyword>")
+# def api_alert_check_keyword(keyword):
+#     """특정 키워드의 새로운 뉴스 확인 API"""
+#     if not session.get('news_alert_enabled', False):
+#         return jsonify({"new_news": [], "count": 0})
+    
+#     start_time = session.get('news_alert_start_time')
+#     if not start_time:
+#         return jsonify({"new_news": [], "count": 0})
+    
+#     # 개별 RSS 소스 설정 받기 (기본값은 모두 활성화)
+#     etnews_enabled = request.args.get("etnews", "true").lower() == "true"
+#     mk_enabled = request.args.get("mk", "true").lower() == "true"
+#     boan_enabled = request.args.get("boan", "true").lower() == "true"
+#     yonhap_enabled = request.args.get("yonhap", "true").lower() == "true"
+    
+#     try:
+#         # UTC 시간으로 파싱 (timezone aware)
+#         start_datetime = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+#         if start_datetime.tzinfo is None:
+#             start_datetime = pytz.UTC.localize(start_datetime)
+        
+#         print(f"Alert check for '{keyword}': start_time = {start_datetime} (RSS: etnews={etnews_enabled}, mk={mk_enabled}, boan={boan_enabled}, yonhap={yonhap_enabled})")
+        
+#         news_items = news_service.search_news(keyword, etnews_enabled=etnews_enabled, mk_enabled=mk_enabled, boan_enabled=boan_enabled, yonhap_enabled=yonhap_enabled)
+        
+#         # 시작 시간 이후의 뉴스만 필터링
+#         new_news = []
+#         total_with_date = 0
+#         for news in news_items:
+#             try:
+#                 # 뉴스 발행일을 파싱하여 비교
+#                 if news.get('published'):
+#                     news_date = news_service.parse_date(news['published'])
+#                     if news_date is not None:  # 날짜 파싱이 성공한 경우만
+#                         total_with_date += 1
+#                         # 둘 다 timezone-aware 상태에서 비교
+#                         if news_date > start_datetime:
+#                             new_news.append(news)
+#                             print(f"NEW NEWS FOUND: {news.get('title', '')[:50]}... (published: {news_date}, start: {start_datetime})")
+#             except Exception as e:
+#                 print(f"Error parsing news date: {e}")
+#                 continue
+        
+#         print(f"Alert check for '{keyword}': Found {len(new_news)} new items out of {len(news_items)} total items ({total_with_date} with valid dates)")
+        
+#         return jsonify({
+#             "new_news": new_news[:100],  # 최대 100개로 변경
+#             "count": len(new_news)
+#         })
+        
+#     except Exception as e:
+#         print(f"Error checking alerts for keyword '{keyword}': {e}")
+#         return jsonify({"new_news": [], "count": 0})
+
+# @main.route("/api/alert/check-all")
+# def api_alert_check_all_keywords():
+#     """모든 알람 키워드의 새로운 뉴스를 한번에 확인하는 API (통합 결과 반환)"""
+#     if not session.get('news_alert_enabled', False):
+#         return jsonify({
+#             "enabled": False, 
+#             "total_new_count": 0,
+#             "total_old_count": 0,
+#             "keywords_count": 0,
+#             "combined_results": []
+#         })
+    
+#     start_time = session.get('news_alert_start_time')
+#     if not start_time:
+#         return jsonify({
+#             "enabled": True, 
+#             "total_new_count": 0,
+#             "total_old_count": 0,
+#             "keywords_count": 0,
+#             "combined_results": []
+#         })
+    
+#     # 개별 RSS 소스 설정 받기 (기본값은 모두 활성화)
+#     etnews_enabled = request.args.get("etnews", "true").lower() == "true"
+#     mk_enabled = request.args.get("mk", "true").lower() == "true"
+#     boan_enabled = request.args.get("boan", "true").lower() == "true"
+#     yonhap_enabled = request.args.get("yonhap", "true").lower() == "true"
+    
+#     keywords = session.get('alert_keywords', [])
+#     # enabled 속성 확인 제거 - 모든 키워드를 활성화된 것으로 처리
+#     enabled_keywords = keywords
+    
+#     if not enabled_keywords:
+#         return jsonify({
+#             "enabled": True, 
+#             "total_new_count": 0,
+#             "total_old_count": 0,
+#             "keywords_count": 0,
+#             "combined_results": []
+#         })
+    
+#     try:
+#         # UTC 시간으로 파싱 (timezone aware)
+#         start_datetime = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+#         if start_datetime.tzinfo is None:
+#             start_datetime = pytz.UTC.localize(start_datetime)
+        
+#         # 모든 뉴스를 저장할 리스트
+#         all_combined_news = []
+#         processed_keywords = 0
+        
+#         # 각 키워드별로 순차적으로 검색하고 결과를 누적
+#         for keyword_info in enabled_keywords:
+#             keyword = keyword_info.get('keyword', '')
+#             if not keyword:
+#                 continue
+                
+#             print(f"Processing keyword ({processed_keywords + 1}/{len(enabled_keywords)}): {keyword}")
+            
+#             # UTC 시간으로 파싱된 start_datetime 로그 출력 (한 번만)
+#             if processed_keywords == 0:
+#                 print(f"Alert check-all: start_time = {start_datetime} (RSS: etnews={etnews_enabled}, mk={mk_enabled}, boan={boan_enabled}, yonhap={yonhap_enabled})")
+            
+#             try:
+#                 print(f"Processing keyword ({processed_keywords + 1}/{len(enabled_keywords)}): {keyword}")
+#                 news_items = news_service.search_news(keyword, etnews_enabled=etnews_enabled, mk_enabled=mk_enabled, boan_enabled=boan_enabled, yonhap_enabled=yonhap_enabled)
+                
+#                 # 시작 시간 이후의 뉴스만 필터링
+#                 keyword_new_count = 0
+#                 keyword_old_count = 0  # 추가: 기존 뉴스 카운트
+#                 for news in news_items:
+#                     try:
+#                         if news.get('published'):
+#                             news_date = news_service.parse_date(news['published'])
+#                             if news_date is not None:
+#                                 if news_date > start_datetime:
+#                                     # 키워드 정보를 뉴스에 추가
+#                                     news_with_keyword = news.copy()
+#                                     news_with_keyword['alert_keyword'] = keyword
+#                                     all_combined_news.append(news_with_keyword)
+#                                     keyword_new_count += 1
+#                                     print(f"NEW NEWS FOUND for '{keyword}': {news.get('title', '')[:50]}...")
+#                                 else:
+#                                     keyword_old_count += 1
+#                     except Exception as e:
+#                         print(f"Error parsing news date for {keyword}: {e}")
+#                         continue
+#                 processed_keywords += 1
+#                 print(f"Keyword '{keyword}' processed: {keyword_new_count} new items, {keyword_old_count} old items. Total accumulated: {len(all_combined_news)}")
+#                 # 누적 old count 저장
+#                 if 'total_old_count' not in locals():
+#                     total_old_count = 0
+#                 total_old_count += keyword_old_count
+#             except Exception as e:
+#                 print(f"Error checking keyword '{keyword}': {e}")
+#                 continue
+        
+#         # 발행 시간 기준으로 최신순 정렬
+#         all_combined_news.sort(key=lambda x: news_service.parse_date(x.get('published', '')) or datetime.min.replace(tzinfo=pytz.UTC), reverse=True)
+        
+#         # 중복 제거 (같은 URL의 뉴스가 여러 키워드에서 검색될 수 있음)
+#         seen_urls = set()
+#         unique_news = []
+#         for news in all_combined_news:
+#             url = news.get('link', '')
+#             if url and url not in seen_urls:
+#                 seen_urls.add(url)
+#                 unique_news.append(news)
+        
+#         print(f"Alert check completed: {processed_keywords} keywords processed, {len(unique_news)} unique new items found (removed {len(all_combined_news) - len(unique_news)} duplicates)")
+#         if 'total_old_count' not in locals():
+#             total_old_count = 0
+#         return jsonify({
+#             "enabled": True,
+#             "total_new_count": len(unique_news),
+#             "total_old_count": total_old_count,
+#             "keywords_count": processed_keywords,
+#             "combined_results": unique_news[:200]  # 최대 200개 반환
+#         })
+        
+#     except Exception as e:
+#         print(f"Error in check-all alerts: {e}")
+#         return jsonify({
+#             "enabled": True, 
+#             "total_new_count": 0,
+#             "total_old_count": 0,
+#             "keywords_count": 0,
+#             "combined_results": [], 
+#             "error": str(e)
+#         })
+
+@main.route("/api/test/set-visit-time", methods=["POST"])
+def api_test_set_visit_time():
+    """테스트용: 페이지 접속 시간 수동 설정 API"""
+    data = request.get_json()
+    visit_time = data.get('visit_time')
+    
+    if visit_time:
+        session['page_visit_time'] = visit_time
+        return jsonify({"success": True, "visit_time": visit_time})
+    else:
+        return jsonify({"error": "visit_time이 필요합니다"}), 400
+
+@main.route("/api/debug/session", methods=["GET"])
+def api_debug_session():
+    """디버깅용: 세션 변수 확인 API"""
+    return jsonify({
+        # "news_alert_enabled": session.get('news_alert_enabled', False), // 알람 기능 제거
+        # "news_alert_start_time": session.get('news_alert_start_time'), // 알람 기능 제거
+        "page_visit_time": session.get('page_visit_time'),
+        # "alert_keywords": session.get('alert_keywords', []) // 알람 기능 제거
+    })
+
+# @main.route("/api/debug/set-alert-state", methods=["POST"]) // 알람 기능 제거
+# def api_debug_set_alert_state(): // 알람 기능 제거
+#     """디버깅용: 알람 상태 수동 설정 API""" // 알람 기능 제거
+#     data = request.get_json() // 알람 기능 제거
+#     enabled = data.get('enabled', False) // 알람 기능 제거
+#     start_time = data.get('start_time') // 알람 기능 제거
+    
+#     session['news_alert_enabled'] = enabled // 알람 기능 제거
+#     if start_time: // 알람 기능 제거
+#         session['news_alert_start_time'] = start_time // 알람 기능 제거
+    
+#     return jsonify({ // 알람 기능 제거
+#         "success": True, // 알람 기능 제거
+#         "enabled": enabled, // 알람 기능 제거
+#         "start_time": start_time // 알람 기능 제거
+#     }) // 알람 기능 제거 
