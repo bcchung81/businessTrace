@@ -1,0 +1,1191 @@
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 5
+[DEBUG] 아카이브 다운로드 요청: ID 5
+[DEBUG] 아카이브 정보: redscv_기원테크_AI분석결과_20250930_0958.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/archives/redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=1, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=6, user_id=1, 회사=이랑텍
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=1, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=6, user_id=1, 회사=이랑텍
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=1, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=6, user_id=1, 회사=이랑텍
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=2, 회사=테스트회사
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=1, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=6, user_id=1, 회사=이랑텍
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=2, 회사=테스트회사
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=1, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=6, user_id=1, 회사=이랑텍
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=2, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=2, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=1, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=6, user_id=1, 회사=이랑텍
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=2, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=2, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=1, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=6, user_id=1, 회사=이랑텍
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=2, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=2, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=2, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=2, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=2, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=6, user_id=2, 회사=이랑텍
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 6
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 3: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 6: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv95@naver.com', 'user_id': 1}
+[ARCHIVE_LIST] current_user_id: 1
+[ARCHIVE_LIST] 아카이브 수: 6
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 3: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 6: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'yhpark@kca.kr', 'user_id': 4}
+[ARCHIVE_LIST] current_user_id: 4
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 8
+[DEBUG] 아카이브 다운로드 요청: ID 8
+[DEBUG] 아카이브 정보: yhpark_논스랩_AI분석결과_20250930_1450.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/yhpark_논스랩_AI분석결과_20250930_1450.xlsx
+[DEBUG] 파일 다운로드 시작: yhpark_논스랩_AI분석결과_20250930_1450.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv95@naver.com', 'user_id': 1}
+[ARCHIVE_LIST] current_user_id: 1
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv95@naver.com', 'user_id': 1}
+[ARCHIVE_LIST] current_user_id: 1
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 8
+[DEBUG] 아카이브 다운로드 요청: ID 8
+[DEBUG] 아카이브 정보: yhpark_논스랩_AI분석결과_20250930_1450.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/yhpark_논스랩_AI분석결과_20250930_1450.xlsx
+[DEBUG] 파일 다운로드 시작: yhpark_논스랩_AI분석결과_20250930_1450.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 5
+[DEBUG] 아카이브 다운로드 요청: ID 5
+[DEBUG] 아카이브 정보: redscv_기원테크_AI분석결과_20250930_0958.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/archives/redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'thankyou@kca.kr', 'user_id': 3}
+[ARCHIVE_LIST] current_user_id: 3
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 5
+[DEBUG] 아카이브 다운로드 요청: ID 5
+[DEBUG] 아카이브 정보: redscv_기원테크_AI분석결과_20250930_0958.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/archives/redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 5
+[DEBUG] 아카이브 다운로드 요청: ID 5
+[DEBUG] 아카이브 정보: redscv_기원테크_AI분석결과_20250930_0958.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/archives/redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 9
+[DEBUG] 아카이브 다운로드 요청: ID 9
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0520.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0520.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0520.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 10
+[DEBUG] 아카이브 다운로드 요청: ID 10
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0530.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0530.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0530.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 10
+[DEBUG] 아카이브 다운로드 요청: ID 10
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0530.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0530.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0530.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=11, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 11
+[DEBUG] 아카이브 다운로드 요청: ID 11
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0538.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0538.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0538.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=11, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 6: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 7: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 12
+[DEBUG] 아카이브 다운로드 요청: ID 12
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0544.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0544.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0544.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=11, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 6: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 7: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 5
+[DEBUG] 아카이브 다운로드 요청: ID 5
+[DEBUG] 아카이브 정보: redscv_기원테크_AI분석결과_20250930_0958.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/archives/redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=11, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 7: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 13
+[DEBUG] 아카이브 다운로드 요청: ID 13
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0557.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0557.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0557.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=11, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 7: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=11, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 6: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 7: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=11, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=10, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 5
+[DEBUG] 아카이브 다운로드 요청: ID 5
+[DEBUG] 아카이브 정보: redscv_기원테크_AI분석결과_20250930_0958.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/archives/redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=10, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 10
+[DEBUG] 아카이브 다운로드 요청: ID 10
+[DEBUG] 아카이브 정보: redscv_기원테크_AI분석결과_20251007_0612.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_기원테크_AI분석결과_20251007_0612.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_기원테크_AI분석결과_20251007_0612.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=11, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=10, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 11
+[DEBUG] 아카이브 다운로드 요청: ID 11
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0619.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0619.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0619.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=10, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 5
+[DEBUG] 아카이브 다운로드 요청: ID 5
+[DEBUG] 아카이브 정보: redscv_기원테크_AI분석결과_20250930_0958.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/archives/redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 5
+[DEBUG] 아카이브 다운로드 요청: ID 5
+[DEBUG] 아카이브 정보: redscv_기원테크_AI분석결과_20250930_0958.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/archives/redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_기원테크_AI분석결과_20250930_0958.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 2: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 10
+[DEBUG] 아카이브 다운로드 요청: ID 10
+[DEBUG] 아카이브 정보: redscv_올림플래닛_AI분석결과_20251007_0626.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_올림플래닛_AI분석결과_20251007_0626.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_올림플래닛_AI분석결과_20251007_0626.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 2: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 3: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 11
+[DEBUG] 아카이브 다운로드 요청: ID 11
+[DEBUG] 아카이브 정보: redscv_올림플래닛_AI분석결과_20251007_0633.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_올림플래닛_AI분석결과_20251007_0633.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_올림플래닛_AI분석결과_20251007_0633.xlsx
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 11
+[DEBUG] 아카이브 다운로드 요청: ID 11
+[DEBUG] 아카이브 정보: redscv_올림플래닛_AI분석결과_20251007_0633.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_올림플래닛_AI분석결과_20251007_0633.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_올림플래닛_AI분석결과_20251007_0633.xlsx
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 11
+[DEBUG] 아카이브 다운로드 요청: ID 11
+[DEBUG] 아카이브 정보: redscv_올림플래닛_AI분석결과_20251007_0633.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_올림플래닛_AI분석결과_20251007_0633.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_올림플래닛_AI분석결과_20251007_0633.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 2: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 3: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 11
+[DEBUG] 아카이브 다운로드 요청: ID 11
+[DEBUG] 아카이브 정보: redscv_올림플래닛_AI분석결과_20251007_0633.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_올림플래닛_AI분석결과_20251007_0633.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_올림플래닛_AI분석결과_20251007_0633.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 3: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 4: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 6: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 7: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 12
+[DEBUG] 아카이브 다운로드 요청: ID 12
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0644.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0644.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0644.xlsx
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 12
+[DEBUG] 아카이브 다운로드 요청: ID 12
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0644.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0644.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0644.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 4: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 5: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 7: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 13
+[DEBUG] 아카이브 다운로드 요청: ID 13
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0650.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0650.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0650.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=14, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 5: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 6: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 7: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 14
+[DEBUG] 아카이브 다운로드 요청: ID 14
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0707.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0707.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0707.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=15, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=14, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 6: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 7: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 15
+[DEBUG] 아카이브 다운로드 요청: ID 15
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0719.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0719.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0719.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=16, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=15, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=14, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 7: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 16
+[DEBUG] 아카이브 다운로드 요청: ID 16
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0726.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0726.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0726.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=16, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=15, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=14, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 7: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 1
+[ARCHIVE_LIST] 아카이브 1: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 4
+[DEBUG] 아카이브 다운로드 요청: ID 4
+[DEBUG] 아카이브 정보: redscv95_고스트패스_AI분석결과_20250818_0443.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/archives/redscv95_고스트패스_AI분석결과_20250818_0443.xlsx
+[DEBUG] 파일 다운로드 시작: redscv95_고스트패스_AI분석결과_20250818_0443.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=16, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=15, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=14, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 7: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 17
+[DEBUG] 아카이브 다운로드 요청: ID 17
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0843.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0843.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0843.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=15, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=14, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 7: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=14, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 6: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 7: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=13, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 5: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 6: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 7: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=12, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 4: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 5: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 7: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=11, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 3: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 4: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 6: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 7: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=10, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 3: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=9, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=18, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 2: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 18
+[DEBUG] 아카이브 다운로드 요청: ID 18
+[DEBUG] 아카이브 정보: redscv_올림플래닛_AI분석결과_20251007_0848.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_올림플래닛_AI분석결과_20251007_0848.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_올림플래닛_AI분석결과_20251007_0848.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=19, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=18, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 3: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 19
+[DEBUG] 아카이브 다운로드 요청: ID 19
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251007_0855.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251007_0855.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251007_0855.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=19, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=18, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 3: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=18, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 2: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=21, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=20, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=19, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=18, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 5: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 7: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=21, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=20, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=19, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=18, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 6: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 7: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=20, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=19, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=18, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 5: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 6: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 7: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=19, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=18, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 4: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 6: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 7: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=18, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 3: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=17, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=23, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=25, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=24, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=23, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 6: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 7: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=25, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=24, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=23, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 5: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 6: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 7: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=24, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=23, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=23, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=23, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=24, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=23, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=24, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=23, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 4: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 5: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 6: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=23, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 3: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 4: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 5: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=22, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] 아카이브 2: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 3: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 4: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 7: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 7
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] 아카이브 7: ID=4, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 6
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'yhpark@kca.kr', 'user_id': 4}
+[ARCHIVE_LIST] current_user_id: 4
+[ARCHIVE_LIST] is_admin: False
+[ARCHIVE_LIST] 아카이브 수: 6
+[ARCHIVE_LIST] 아카이브 1: ID=8, user_id=4, 회사=논스랩
+[ARCHIVE_LIST] 아카이브 2: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 3: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 6: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'yhpark@kca.kr', 'user_id': 4}
+[ARCHIVE_LIST] current_user_id: 4
+[ARCHIVE_LIST] is_admin: False
+[ARCHIVE_LIST] 아카이브 수: 5
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 3: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 5
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 3: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 5: ID=7, user_id=1, 회사=에스프레스토
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 4
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 3: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 4: ID=1, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 3
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] 아카이브 3: ID=2, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 2
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] 아카이브 2: ID=3, user_id=1, 회사=고스트패스
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 1
+[ARCHIVE_LIST] 아카이브 1: ID=5, user_id=2, 회사=기원테크
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 0
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 0
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 0
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 1
+[ARCHIVE_LIST] 아카이브 1: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 1
+[ARCHIVE_LIST] 아카이브 1: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 1
+[DEBUG] 아카이브 다운로드 요청: ID 1
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251008_0833.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251008_0833.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251008_0833.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'thankyou@kca.kr', 'user_id': 3}
+[ARCHIVE_LIST] current_user_id: 3
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 1
+[ARCHIVE_LIST] 아카이브 1: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 1
+[ARCHIVE_LIST] 아카이브 1: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] session 내용: {'user_email': 'media@kca.kr', 'user_id': 6}
+[ARCHIVE_LIST] current_user_id: 6
+[ARCHIVE_LIST] is_admin: False
+[ARCHIVE_LIST] 아카이브 수: 2
+[ARCHIVE_LIST] 아카이브 1: ID=2, user_id=6, 회사=옥타코
+[ARCHIVE_LIST] 아카이브 2: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] session 내용: {'user_email': 'media@kca.kr', 'user_id': 6}
+[ARCHIVE_LIST] current_user_id: 6
+[ARCHIVE_LIST] is_admin: False
+[ARCHIVE_LIST] 아카이브 수: 2
+[ARCHIVE_LIST] 아카이브 1: ID=2, user_id=6, 회사=옥타코
+[ARCHIVE_LIST] 아카이브 2: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 2
+[DEBUG] 아카이브 다운로드 요청: ID 2
+[DEBUG] 아카이브 정보: media_옥타코_AI분석결과_20251112_0611.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/media_옥타코_AI분석결과_20251112_0611.xlsx
+[DEBUG] 파일 다운로드 시작: media_옥타코_AI분석결과_20251112_0611.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'soul3879@naver.com', 'user_id': 8}
+[ARCHIVE_LIST] current_user_id: 8
+[ARCHIVE_LIST] is_admin: False
+[ARCHIVE_LIST] 아카이브 수: 2
+[ARCHIVE_LIST] 아카이브 1: ID=2, user_id=6, 회사=옥타코
+[ARCHIVE_LIST] 아카이브 2: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 2
+[DEBUG] 아카이브 다운로드 요청: ID 2
+[DEBUG] 아카이브 정보: media_옥타코_AI분석결과_20251112_0611.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/media_옥타코_AI분석결과_20251112_0611.xlsx
+[DEBUG] 파일 다운로드 시작: media_옥타코_AI분석결과_20251112_0611.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 3
+[ARCHIVE_LIST] 아카이브 1: ID=3, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 2: ID=2, user_id=6, 회사=옥타코
+[ARCHIVE_LIST] 아카이브 3: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 3
+[ARCHIVE_LIST] 아카이브 1: ID=3, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 2: ID=2, user_id=6, 회사=옥타코
+[ARCHIVE_LIST] 아카이브 3: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 3
+[DEBUG] 아카이브 다운로드 요청: ID 3
+[DEBUG] 아카이브 정보: redscv_올림플래닛_AI분석결과_20251119_0102.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_올림플래닛_AI분석결과_20251119_0102.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_올림플래닛_AI분석결과_20251119_0102.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'redscv@gmail.com', 'user_id': 2}
+[ARCHIVE_LIST] current_user_id: 2
+[ARCHIVE_LIST] is_admin: True
+[ARCHIVE_LIST] 아카이브 수: 3
+[ARCHIVE_LIST] 아카이브 1: ID=3, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 2: ID=2, user_id=6, 회사=옥타코
+[ARCHIVE_LIST] 아카이브 3: ID=1, user_id=2, 회사=크립토랩
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 1
+[DEBUG] 아카이브 다운로드 요청: ID 1
+[DEBUG] 아카이브 정보: redscv_크립토랩_AI분석결과_20251008_0833.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/redscv_크립토랩_AI분석결과_20251008_0833.xlsx
+[DEBUG] 파일 다운로드 시작: redscv_크립토랩_AI분석결과_20251008_0833.xlsx
+[ARCHIVE_DOWNLOAD] 함수 호출됨! ID: 2
+[DEBUG] 아카이브 다운로드 요청: ID 2
+[DEBUG] 아카이브 정보: media_옥타코_AI분석결과_20251112_0611.xlsx, 경로: /home/kca1000plus/bangsong/news-homepage/app/../archives/media_옥타코_AI분석결과_20251112_0611.xlsx
+[DEBUG] 파일 다운로드 시작: media_옥타코_AI분석결과_20251112_0611.xlsx
+[ARCHIVE_LIST] session 내용: {'user_email': 'yeojh1548@naver.com', 'user_id': 9}
+[ARCHIVE_LIST] current_user_id: 9
+[ARCHIVE_LIST] is_admin: False
+[ARCHIVE_LIST] 아카이브 수: 3
+[ARCHIVE_LIST] 아카이브 1: ID=3, user_id=2, 회사=올림플래닛
+[ARCHIVE_LIST] 아카이브 2: ID=2, user_id=6, 회사=옥타코
+[ARCHIVE_LIST] 아카이브 3: ID=1, user_id=2, 회사=크립토랩
