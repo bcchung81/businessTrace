@@ -133,11 +133,11 @@ def test_dart_finstate(corp_name):
 def test_dart_business_no(corp_name):
     key = os.environ.get("DART_API_KEY", "")
     if not key:
-        return
+        return None
     code = corp_codes(key).get(corp_name)
     if not code:
         record("DART사업자번호", corp_name, None, "고유번호 미발견 (정상 폴백 케이스)")
-        return
+        return None
     try:
         body = requests.get(
             "https://opendart.fss.or.kr/api/company.json",
@@ -146,24 +146,25 @@ def test_dart_business_no(corp_name):
         ).json()
         if body.get("status") == "000" and body.get("bizr_no"):
             record("DART사업자번호", corp_name, True, f"사업자번호 {body['bizr_no']}, 대표 {body.get('ceo_nm')}")
-        else:
-            record("DART사업자번호", corp_name, None, f"미제공 status={body.get('status')}")
+            return body["bizr_no"]
+        record("DART사업자번호", corp_name, None, f"미제공 status={body.get('status')}")
     except Exception as e:
         record("DART사업자번호", corp_name, False, f"호출 실패: {e}")
+    return None
 
 
-def test_narajangteo():
+def test_narajangteo(target, bizno):
     key = os.environ.get("G2B_SERVICE_KEY") or os.environ.get("NTS_SERVICE_KEY", "")
     if not key:
-        record("나라장터", "-", None, "G2B_SERVICE_KEY 없음")
+        record("나라장터", target, None, "G2B_SERVICE_KEY / NTS_SERVICE_KEY 없음")
         return
     try:
         r = requests.get(
-            "https://apis.data.go.kr/1230000/ao/PubPrcrmntCorpService/getPrcrmntCorpBasicInfo02",
+            "https://apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02",
             params={
                 "serviceKey": key,
                 "inqryDiv": "3",
-                "bizno": REF_B_NO,
+                "bizno": bizno,
                 "type": "json",
                 "numOfRows": "5",
                 "pageNo": "1",
@@ -171,17 +172,22 @@ def test_narajangteo():
             timeout=15,
         )
         if "NO_OPENAPI_SERVICE_ERROR" in r.text:
-            record("나라장터", REF_B_NO, False, "해당 서비스 미구독 — 공공데이터포털에서 활용신청 후 G2B_SERVICE_KEY 설정 필요")
+            record("나라장터", target, False, "엔드포인트 불일치 — ao/UsrInfoService02 확인 필요")
             return
-        body = r.json()
-        items = body.get("response", {}).get("body", {}).get("items", [])
+        body = r.json().get("response", {}).get("body", {})
+        items = body.get("items") or []
         if items:
             first = items[0] if isinstance(items, list) else items
-            record("나라장터", REF_B_NO, True, f"업체 {first.get('corpNm', '?')}, 대표 {first.get('ceoNm', '?')}")
+            record(
+                "나라장터",
+                target,
+                True,
+                f"{first.get('corpNm')}, 대표 {first.get('ceoNm')}, 종업원 {first.get('emplyeNum')}명, 조달구분 {first.get('corpBsnsDivNm')}",
+            )
         else:
-            record("나라장터", REF_B_NO, None, f"조회 결과 없음: {r.text[:80]}")
+            record("나라장터", target, None, f"조달업체 미등록 (totalCount={body.get('totalCount')})")
     except Exception as e:
-        record("나라장터", "-", False, f"호출 실패: {e}")
+        record("나라장터", target, False, f"호출 실패: {e}")
 
 
 def test_naver_news():
@@ -258,7 +264,7 @@ if __name__ == "__main__":
     print("기준 기업 (상장·공시 이력 있음)")
     print("-" * 70)
     test_nts()
-    test_narajangteo()
+    test_narajangteo(REF_LISTED, REF_B_NO)
     test_naver_news()
     test_tavily()
     test_anthropic()
@@ -271,7 +277,9 @@ if __name__ == "__main__":
     for company in COMPANIES:
         test_dart_disclosure(company)
         test_dart_finstate(company)
-        test_dart_business_no(company)
+        bizno = test_dart_business_no(company)
+        if bizno:
+            test_narajangteo(company, bizno)
     print("=" * 70)
     passed = sum(1 for _, _, ok, _ in results if ok is True)
     warned = sum(1 for _, _, ok, _ in results if ok is None)

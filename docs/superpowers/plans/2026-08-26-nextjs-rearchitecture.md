@@ -143,15 +143,22 @@ macOS arm64 에서 후보 버전별로 의존성 해결 + venv 설치 + import �
 | Tavily | **PASS** | 검색결과 정상 |
 | Anthropic | **PASS** | claude-sonnet-4-5 응답 정상 |
 | 네이버 뉴스 | **FAIL** | `Scopes are Empty` 401 — Task 7 블로커 |
-| 나라장터 | **FAIL** | `NO_OPENAPI_SERVICE_ERROR` — Task 5b 블로커 |
+| 나라장터 | **PASS** | 삼성전자·올림플래닛 조회 성공. 엔드포인트 정정 후 해결 |
 
 **해결된 버그:** 국세청 호출이 401 이었던 원인은 data.go.kr **Decoding 키를 URL 에 인코딩 없이 문자열로 삽입**해 `+` 가 공백으로 해석된 것이다. 쿼리 파라미터로 넘겨 인코딩하면 200 이다. TypeScript 구현 시 `URL.searchParams.set()` 을 쓰면 자동 처리된다 — 절대 템플릿 문자열로 키를 URL 에 넣지 말 것.
 
 **대상 기업 재무 결측이 기본값이다.** 검증 대상 5개사 중 4개사(크립토랩·넷록스·페어리·논스랩)는 DART 고유번호조차 없고, 올림플래닛은 공시는 있으나 `fnlttSinglAcnt`(상장사 대상)로는 재무제표가 나오지 않는다. 벤치마킹의 "결측 지표 제외 정규화"는 예외 처리가 아니라 **주 경로**다.
 
-**미해결 블로커 2건 (사용자 조치 필요):**
-1. **네이버 뉴스 API** — 애플리케이션에 검색 API 사용 신청이 되어 있지 않다. 신청 후 `NAVER_CLIENT_ID/SECRET` 갱신. Task 7 착수 전 필수
-2. **나라장터** — 현재 `NTS_SERVICE_KEY` 로는 미구독이다. 공공데이터포털에서 "조달청_나라장터 사용자정보 서비스" 활용신청 후 **별도 키를 `G2B_SERVICE_KEY` 로 분리** 설정. Task 5b 착수 전 필수
+**나라장터 엔드포인트 정정 (중요):** 초안의 `ao/PubPrcrmntCorpService` 는 존재하지 않는 경로였고, 활용신청은 정상이었다. 올바른 URL 은 아래와 같으며 **서비스명에도 `02` 가 붙는다.**
+
+```
+https://apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02
+```
+
+`NO_OPENAPI_SERVICE_ERROR`(reasonCode 12) 는 미구독이 아니라 **경로 불일치**에서도 발생한다. 미구독이면 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR` 가 온다 — 두 에러를 구분할 것. 인증키는 `NTS_SERVICE_KEY` 를 그대로 쓸 수 있어 별도 키 분리는 불필요하다.
+
+**미해결 블로커 1건 (사용자 조치 필요):**
+- **네이버 뉴스 API** — `Scopes are Empty` 401. 뉴스·블로그·백과사전·데이터랩 전 엔드포인트가 동일하게 실패하므로 개별 API 문제가 아니라 **애플리케이션에 사용 API 가 하나도 등록되지 않은 상태**다. developers.naver.com 에서 해당 애플리케이션에 "검색" API 를 추가해야 한다. Task 7 착수 전 필수
 
 ## OSS 채택 검증 결과 (GitHub API 기준, 2026-08-26 확인)
 
@@ -230,7 +237,8 @@ macOS arm64 에서 후보 버전별로 의존성 해결 + venv 설치 + import �
 - **파일**: `src/lib/services/narajangteo.ts`, `src/app/api/company/procurement/route.ts`, 테스트
 - **내용**:
   - 공공데이터포털 [조달청_나라장터 사용자정보 서비스](https://www.data.go.kr/data/15129466/openapi.do) 연동 (무료, 개발계정 10,000/일)
-  - **실측 확정 스펙 (2026-08-26 smoke 테스트)**: `getPrcrmntCorpBasicInfo02` + `inqryDiv=3` + `bizno` — **사업자번호 기준 조회만 지원, 업체명 역검색 없음**(inqryDiv 2·4 실측 에러 확인). Decoding 키 필수(Encoding 키는 코드 30 오류)
+  - **실측 확정 스펙 (2026-08-26 재검증)**: `https://apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02` + `inqryDiv=3` + `bizno` — **사업자번호 기준 조회만 지원, 업체명 역검색 없음**. 서비스명의 `02` 누락 시 `NO_OPENAPI_SERVICE_ERROR`
+  - **응답 필드 실측**: `corpNm`·`ceoNm`·`adrs`·`telNo`·`hmpgAdrs`·`opbizDt`(개업일)·`emplyeNum`(종업원수)·`corpBsnsDivNm`(조달업무구분)·`mnfctDivNm`(제조구분). 올림플래닛 종업원 75명·물품/일반용역/용역 확인 — `emplyeNum` 은 Task 12 벤치마킹 지표 후보
   - **역할**: 독립 조회 수단이 아니라 **OpenDART(사업자번호 확보)의 후속 단계** — 번호가 있을 때 조달 프로파일(업체명·대표자·주소·종업원수·조달업무구분) 보강
   - 실증 결과: 삼성전자·올림플래닛 조회 성공. DART 미등록 + 번호 미보유 기업은 이 단계도 불가 → "미확인" 유지
   - 부가 가치: 조달 실적·업종·종업원수를 Task 12 벤치마킹 지표 후보로 확장 가능 (지표화는 후속)
@@ -367,8 +375,7 @@ Task 15 (딥리서치 — Task 3·9 완료 후) → Task 16 (배포)
 | gpt-researcher 0.16.0 이 3.12/3.13 에서 import 불가 (업스트림 버그) | 0.15.1 핀 + `scripts/sidecar_env_check.py` 로 회귀 검증. 업스트림 수정 시 핀 해제 |
 | 사이드카 venv 가 1.1GB — 이미지 비대 | 멀티스테이지 빌드, 런타임 스테이지에 venv 만 복사 |
 | 리눅스 휠 가용성 미검증 (실측은 macOS arm64) | Task 3 에서 컨테이너 내 재검증, 실패 시 파이썬 버전 재선택 |
-| 네이버 뉴스 API 인증 실패 (검색 API 미신청) | Task 7 착수 전 사용 신청·키 갱신. 미해결 시 구글 뉴스 RSS 단독 수집으로 축소 운영 |
-| 나라장터 API 미구독 | Task 5b 착수 전 활용신청 + `G2B_SERVICE_KEY` 분리. 미해결 시 Task 5b 를 보류하고 DART 사업자번호만 사용 |
+| 네이버 뉴스 API 인증 실패 (애플리케이션에 사용 API 미등록) | Task 7 착수 전 developers.naver.com 에서 검색 API 추가. 미해결 시 구글 뉴스 RSS 단독 수집으로 축소 운영 |
 | data.go.kr Decoding 키를 URL 에 직접 삽입하면 `+` 가 공백으로 깨짐 | 쿼리 파라미터로 전달해 인코딩 (`URL.searchParams.set`), 템플릿 문자열 금지 |
 
 ## 완료 정의 (Definition of Done)

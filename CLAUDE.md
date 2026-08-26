@@ -109,18 +109,33 @@ python3 scripts/sidecar_env_check.py --install 3.12  # 실제 설치·import 검
 uv run --python 3.12 --with requests --with python-dotenv scripts/api_smoke_test.py
 ```
 
-- **data.go.kr 키(국세청·나라장터)는 반드시 쿼리 파라미터로 넘긴다.** Decoding 키를 URL에 문자열로 박으면 `+`가 공백으로 해석돼 401이 난다. TS에서는 `URL.searchParams.set()`을 쓰고 템플릿 문자열은 금지
+- **data.go.kr 키(국세청·나라장터)는 `.env`에 Decoding 키를 넣고 항상 쿼리 파라미터로 전달한다.** 키 종류와 전달 방식은 짝이 맞아야 하며, 실측 결과는 다음과 같다.
+
+  | 키 | 전달 방식 | 결과 |
+  |---|---|---|
+  | **Decoding** | **params / `searchParams.set()`** | **200** ← 이 조합을 쓴다 |
+  | Decoding | URL 문자열 직접 삽입 | 401 (`+`가 공백으로 해석) |
+  | Encoding | params | 401 (`%`가 이중 인코딩) |
+  | Encoding | URL 문자열 직접 삽입 | 200 (동작하지만 채택하지 않음) |
+
+  Decoding 키를 택하는 이유는 fetch·axios·requests가 파라미터를 자동 인코딩하는 기본 동작과 짝이 맞기 때문이다. Encoding 키를 저장하면 "인코딩하지 말 것"이라는 암묵적 규칙이 생겨 깨지기 쉽다
 - **국세청**: `api.odcloud.kr/api/nts-businessman/v1/status`에 POST, `b_stt_cd == "01"`이 계속사업자
 - **OpenDART**: 기업개황 `company.json`의 `bizr_no`로 사업자번호를 얻는다(삼성전자 1248100998, 올림플래닛 1208824298 확인). 재무는 `fnlttSinglAcnt` + `reprt_code=11011`(사업보고서)
 - **재무 결측이 주 경로다.** 검증 대상 5개사 중 4개사는 DART 고유번호조차 없고, 올림플래닛은 공시는 있으나 `fnlttSinglAcnt`로는 재무제표가 안 나온다(비상장). 벤치마킹의 결측 지표 제외 정규화는 예외가 아니라 기본 동작
-- **나라장터**: `getPrcrmntCorpBasicInfo02` + `inqryDiv=3` + `bizno`로 **사업자번호 조회만** 가능하고 업체명 역검색은 없다
+- **나라장터**: 엔드포인트는 아래가 정답이다. **서비스명에도 `02`가 붙는다** — 빠뜨리면 `NO_OPENAPI_SERVICE_ERROR`가 난다. `inqryDiv=3` + `bizno`로 **사업자번호 조회만** 가능하고 업체명 역검색은 없다. 인증키는 `NTS_SERVICE_KEY`를 공용으로 쓴다
 
-**현재 막혀 있는 것 2건** — 착수 전 사용자 조치가 필요하다.
+  ```
+  https://apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02
+  ```
+
+  응답에 `emplyeNum`(종업원수), `corpBsnsDivNm`(조달업무구분), `opbizDt`(개업일), `mnfctDivNm`(제조구분)이 온다. DART에 재무가 없는 비상장 기업도 여기선 잡히므로 Task 12 지표 보강에 쓸 수 있다
+- **data.go.kr 에러 코드 구분**: `NO_OPENAPI_SERVICE_ERROR`는 **경로 불일치**, `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`가 미구독이다. 전자를 구독 문제로 오진하지 말 것
+
+**현재 막혀 있는 것 1건** — 착수 전 사용자 조치가 필요하다.
 
 | API | 증상 | 필요 조치 | 블로킹 |
 |---|---|---|---|
-| 네이버 뉴스 | 401 `Scopes are Empty` | 애플리케이션에 검색 API 사용 신청 후 키 갱신 | Task 7 |
-| 나라장터 | `NO_OPENAPI_SERVICE_ERROR` | 활용신청 후 `G2B_SERVICE_KEY`로 분리 설정 | Task 5b |
+| 네이버 뉴스 | 401 `Scopes are Empty` (뉴스·블로그·백과사전·데이터랩 전부 동일) | developers.naver.com에서 해당 애플리케이션에 "검색" API 추가 | Task 7 |
 
 키는 전부 `.env`(gitignore됨): `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`, `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `TAVILY_API_KEY`, `GMAIL_*`, `SMTP_*`.
 
