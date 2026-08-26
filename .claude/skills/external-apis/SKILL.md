@@ -73,4 +73,4 @@ developers.naver.com 애플리케이션 등록 화면의 "사용 API" 목록에 
 
 ## 환경변수
 
-전부 `.env`(gitignore 됨): `OPENAI_API_KEY`·`ANTHROPIC_API_KEY`, `NCP_APIGW_API_KEY_ID`·`NCP_APIGW_API_KEY`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `TAVILY_API_KEY`, `GMAIL_*`, `SMTP_*`.
+전부 `.env`(gitignore 됨): `ANTHROPIC_API_KEY`(LLM 은 Anthropic 단일, 기본 모델 `claude-sonnet-5`), `NCP_APIGW_API_KEY_ID`·`NCP_APIGW_API_KEY`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `TAVILY_API_KEY`, `GMAIL_*`, `SMTP_*`.

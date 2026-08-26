@@ -1,0 +1,1501 @@
+# Phase 0 잔여 + 핵심 루프 실행 플랜 (Task 2a·2b·2c·7·8·9)
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 사이드카·외부 재무 API 없이 "뉴스 수집 → Anthropic 분석 → 4층 환각 검증" 루프를 인증된 사용자가 끝까지 돌릴 수 있게 한다.
+
+**Architecture:** Next.js 16 App Router 단일 스택. 로직은 `src/lib/services/*`, DB 접근은 `src/lib/repositories/*`, Route Handler 는 얇게. LLM 은 `@anthropic-ai/sdk` 단일, 모델 ID 는 `ANTHROPIC_MODEL` 한 곳. 모든 외부 호출(네이버·구글 RSS·Anthropic)은 주입 가능한 `fetch`/`client` 로 받아 테스트에서 mock 한다.
+
+**Tech Stack:** Next.js 16.3.3 · Prisma 7.10 + `@prisma/adapter-better-sqlite3` · next-auth 5.0.0-beta.32 · `@anthropic-ai/sdk` 0.120 · zod 4 · rss-parser 3.13 · Vitest 4
+
+**Spec:** `docs/superpowers/plans/2026-08-26-nextjs-rearchitecture.md` (마스터 로드맵, 2026-08-26 갱신 2). 이 문서는 그 중 Task 2·7·8·9 를 실행 단위로 푼 것이다.
+
+## Global Constraints
+
+- Next.js **16.3.3** — `cookies()`·`headers()`·`params` 는 Promise. 미들웨어는 `src/proxy.ts` + `export function proxy`. 예제 복사 전 `node_modules/next/dist/docs/` 확인
+- **신규 코드 주석 금지** — `src/**/*.ts(x)` 에 `//` 또는 `/*` 가 있으면 훅이 경고한다
+- **루트에 Python 파일 금지** — 훅이 차단한다
+- 외부 API·LLM 테스트 **전부 mock**. 네트워크 의존 테스트 금지
+- 테스트는 `src/**/*.test.{ts,tsx}` 만 수집된다 (`vitest.config.mts`). `scripts/` 의 테스트는 `src/` 에 둔다
+- 커밋은 태스크 단위, 메시지는 각 태스크에 명시. 커밋 훅이 `npm test` + `npm run lint` 를 강제한다
+- LLM: 모델 문자열은 `process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5"` **한 곳**(`src/lib/services/llm.ts`)에만 둔다. `temperature`/`top_p` 는 보내지 않는다(Sonnet 5 에서 400). 사고는 `thinking: {type: "adaptive"}`, 결정성은 `output_config.effort`
+- 레거시 프롬프트 문구는 `backup/app/news_analyzer.py` 에서 **그대로** 옮긴다. 문구를 고치지 않는다
+- 환경변수 이름: `DATABASE_URL`, `AUTH_SECRET`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `NCP_APIGW_API_KEY_ID`, `NCP_APIGW_API_KEY`
+
+---
+
+## 파일 구조
+
+```
+prisma/schema.prisma                         2a
+prisma.config.ts                             2a
+src/lib/db.ts                                2a  Prisma 클라이언트 싱글턴
+.env.example                                 2a
+src/lib/services/password.ts                 2b  werkzeug scrypt 호환
+src/auth.ts                                  2b  NextAuth 설정
+src/app/api/auth/[...nextauth]/route.ts      2b
+src/proxy.ts                                 2b  라우트 보호
+src/app/login/page.tsx                       2b
+scripts/migrate-legacy.ts                    2c  1회 이관 (tsx 로 실행)
+src/lib/services/legacyMigration.ts          2c  이관 로직 (테스트 가능)
+src/lib/services/newsCollector.ts            7   네이버 HUB + 구글 RSS + 중복제거
+src/lib/services/pressMapping.json           7   backup 에서 복사
+src/lib/services/articleBody.ts              7   기사 본문 크롤링 + 구글 RSS 링크 복원
+src/app/api/news/route.ts                    7
+src/lib/services/llm.ts                      8   Anthropic 클라이언트·모델 단일 출처
+src/lib/services/analyzer.ts                 8   뉴스별 3분석 + 종합의견
+src/lib/services/prompts/legacy.ts           8   레거시 프롬프트 문자열 (복사)
+src/lib/repositories/analysisRun.ts          8
+src/app/api/analyze/route.ts                 8   SSE
+src/lib/services/verification.ts             9   4층 검증
+src/lib/repositories/verificationResult.ts   9
+src/app/api/verification/route.ts            9
+```
+
+---
+
+### Task 2a: Prisma 스키마와 DB 클라이언트
+
+**Files:**
+- Create: `prisma/schema.prisma`, `prisma.config.ts`, `src/lib/db.ts`, `.env.example`
+- Modify: `package.json` (scripts `db:migrate`, `db:generate`), `.gitignore` (`prisma/*.db`, `prisma/*.db-journal`)
+- Test: `src/lib/db.test.ts`
+
+**Interfaces:**
+- Produces: `prisma` (PrismaClient 싱글턴) from `src/lib/db.ts`; 모델 `User`, `Company`, `Archive`, `AnalysisRun`, `VerificationResult`, `RiskAlert`, `SelectionRecord`, `FinancialSnapshot`, `DartCorpCode`, `ResearchJob`
+
+- [ ] **Step 1: 의존성 설치**
+
+```bash
+npm i @prisma/client@7.10.0 @prisma/adapter-better-sqlite3@7.10.0 better-sqlite3
+npm i -D prisma@7.10.0 @types/better-sqlite3 tsx
+```
+
+Prisma 7 은 드라이버 어댑터가 필수다. 설치 후 `node_modules/prisma/README.md` 와 `node_modules/@prisma/adapter-better-sqlite3/README.md` 를 읽고 `prisma.config.ts` 형식을 확인한 뒤 Step 3 을 작성한다.
+
+- [ ] **Step 2: 실패 테스트**
+
+`src/lib/db.test.ts`:
+```ts
+import { describe, it, expect } from "vitest";
+import { prisma } from "@/lib/db";
+
+describe("prisma client", () => {
+  it("connects and lists users table", async () => {
+    const count = await prisma.user.count();
+    expect(count).toBeGreaterThanOrEqual(0);
+  });
+});
+```
+
+Run: `npx vitest run src/lib/db.test.ts` → FAIL (`Cannot find module '@/lib/db'`)
+
+- [ ] **Step 3: 스키마·설정·클라이언트**
+
+`prisma/schema.prisma`:
+```prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  archives     Archive[]
+  analysisRuns AnalysisRun[]
+}
+
+model Company {
+  id            Int      @id @default(autoincrement())
+  name          String
+  year          Int
+  displayOrder  Int      @default(0)
+  isActive      Boolean  @default(true)
+  businessNo    String?
+  industry      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  analysisRuns  AnalysisRun[]
+  riskAlerts    RiskAlert[]
+  selections    SelectionRecord[]
+  financials    FinancialSnapshot[]
+  researchJobs  ResearchJob[]
+
+  @@unique([name, year])
+  @@index([year])
+}
+
+model Archive {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalFilename String
+  storedFilename   String
+  filePath         String
+  fileSize         Int
+  companyName      String
+  analyzerName     String
+  analysisPeriod   String?
+  createdAt        DateTime @default(now())
+}
+
+model AnalysisRun {
+  id             Int       @id @default(autoincrement())
+  companyId      Int
+  company        Company   @relation(fields: [companyId], references: [id])
+  userId         Int
+  user           User      @relation(fields: [userId], references: [id])
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  formulaVersion String    @default("v2-anthropic")
+  model          String
+  status         String    @default("running")
+  newsJson       String
+  resultJson     String?
+  usageJson      String?
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
+  verification   VerificationResult?
+
+  @@index([companyId, createdAt])
+}
+
+model VerificationResult {
+  id                  Int         @id @default(autoincrement())
+  analysisRunId       Int         @unique
+  analysisRun         AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  status              String
+  faithfulness        Float?
+  sourceCoverage      Float?
+  evidenceMatch       Float?
+  unsupportedClaims   String
+  counterEvidence     String
+  detailJson          String
+  createdAt           DateTime    @default(now())
+}
+
+model RiskAlert {
+  id          Int      @id @default(autoincrement())
+  companyId   Int
+  company     Company  @relation(fields: [companyId], references: [id])
+  category    String
+  severity    Int
+  score       Float
+  newsLink    String
+  headline    String
+  confirmed   Boolean  @default(false)
+  confirmedBy String?
+  createdAt   DateTime @default(now())
+}
+
+model SelectionRecord {
+  id             Int      @id @default(autoincrement())
+  companyId      Int
+  company        Company  @relation(fields: [companyId], references: [id])
+  year           Int
+  grade          String
+  totalScore     Float
+  scoresJson     String
+  formulaVersion String
+  createdAt      DateTime @default(now())
+
+  @@unique([companyId, year])
+}
+
+model FinancialSnapshot {
+  id         Int      @id @default(autoincrement())
+  companyId  Int
+  company    Company  @relation(fields: [companyId], references: [id])
+  fiscalYear Int
+  source     String
+  dataJson   String
+  fetchedAt  DateTime @default(now())
+
+  @@unique([companyId, fiscalYear, source])
+}
+
+model DartCorpCode {
+  corpCode  String   @id
+  corpName  String
+  stockCode String?
+  modifyDate String
+  fetchedAt DateTime @default(now())
+
+  @@index([corpName])
+}
+
+model ResearchJob {
+  id          String    @id @default(cuid())
+  companyId   Int
+  company     Company   @relation(fields: [companyId], references: [id])
+  mode        String
+  status      String    @default("queued")
+  progress    Int       @default(0)
+  reportJson  String?
+  error       String?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+}
+```
+
+`prisma.config.ts` (형식은 Step 1 에서 읽은 README 기준으로 맞춘다):
+```ts
+import "dotenv/config";
+import { defineConfig } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: { path: "prisma/migrations" },
+  datasource: { url: process.env.DATABASE_URL ?? "file:./prisma/dev.db" },
+});
+```
+
+`src/lib/db.ts`:
+```ts
+import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+
+const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
+
+function createClient() {
+  const adapter = new PrismaBetterSqlite3({ url });
+  return new PrismaClient({ adapter });
+}
+
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+
+export const prisma = globalForPrisma.prisma ?? createClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
+```
+
+`.env.example`:
+```
+DATABASE_URL=file:./prisma/dev.db
+AUTH_SECRET=
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-5
+NCP_APIGW_API_KEY_ID=
+NCP_APIGW_API_KEY=
+DART_API_KEY=
+NTS_SERVICE_KEY=
+TAVILY_API_KEY=
+GMAIL_ADDRESS=
+GMAIL_APP_PASSWORD=
+SMTP_HOST=
+SMTP_PORT=
+```
+
+`package.json` scripts 추가:
+```json
+"db:generate": "prisma generate",
+"db:migrate": "prisma migrate dev"
+```
+
+`.gitignore` 추가: `prisma/*.db`, `prisma/*.db-journal`, `src/generated/`
+
+`vitest.setup.ts` 상단에 테스트 DB 분리:
+```ts
+process.env.DATABASE_URL = "file:./prisma/test.db";
+```
+
+- [ ] **Step 4: 마이그레이션 실행 후 테스트 통과**
+
+```bash
+npx prisma migrate dev --name init
+DATABASE_URL=file:./prisma/test.db npx prisma migrate deploy
+npx vitest run src/lib/db.test.ts
+```
+Expected: PASS. `npm run build` 도 통과해야 한다 (generated 경로 tsconfig 인식 확인).
+
+- [ ] **Step 5: 커밋**
+
+```bash
+git add prisma prisma.config.ts src/lib/db.ts src/lib/db.test.ts .env.example package.json package-lock.json .gitignore vitest.setup.ts
+git commit -m "feat: prisma schema and database client"
+```
+
+---
+
+### Task 2b: Credentials 인증 + 레거시 scrypt 호환
+
+**Files:**
+- Create: `src/lib/services/password.ts`, `src/auth.ts`, `src/app/api/auth/[...nextauth]/route.ts`, `src/proxy.ts`, `src/app/login/page.tsx`, `src/components/layout/login-form.tsx`
+- Test: `src/lib/services/password.test.ts`, `src/proxy.test.ts`
+
+**Interfaces:**
+- Consumes: `prisma` (2a)
+- Produces: `verifyPassword(password: string, stored: string): Promise<boolean>`, `hashPassword(password: string): Promise<string>` (werkzeug 형식 `scrypt:32768:8:1$<salt>$<hex>`), `auth()` (세션 조회), `signIn`/`signOut`
+
+- [ ] **Step 1: 의존성**
+
+```bash
+npm i next-auth@5.0.0-beta.32
+```
+설치 후 `node_modules/next-auth/README.md` 와 `node_modules/next/dist/docs/` 의 proxy 문서를 읽는다. Auth.js 문서의 `middleware.ts` 예제는 그대로 쓰지 않는다.
+
+- [ ] **Step 2: 실패 테스트 — 비밀번호**
+
+`src/lib/services/password.test.ts`:
+```ts
+import { describe, it, expect } from "vitest";
+import { hashPassword, verifyPassword } from "@/lib/services/password";
+
+describe("werkzeug scrypt compatibility", () => {
+  it("verifies a hash produced by werkzeug generate_password_hash", async () => {
+    const stored =
+      "scrypt:32768:8:1$abcdefghijklmnop$" +
+      "REPLACE_WITH_HEX_FROM_STEP_3";
+    expect(await verifyPassword("Passw0rd!", stored)).toBe(true);
+    expect(await verifyPassword("wrong", stored)).toBe(false);
+  });
+
+  it("round-trips a freshly hashed password in the same format", async () => {
+    const stored = await hashPassword("Secret123!");
+    expect(stored.startsWith("scrypt:32768:8:1$")).toBe(true);
+    expect(await verifyPassword("Secret123!", stored)).toBe(true);
+  });
+
+  it("rejects unknown formats", async () => {
+    expect(await verifyPassword("x", "pbkdf2:sha256$a$b")).toBe(false);
+  });
+});
+```
+
+- [ ] **Step 3: 실측 해시 확보**
+
+`backup/` 파이썬 환경에서 werkzeug 로 알려진 비밀번호의 해시를 하나 만든다 (루트에 `.py` 파일을 두지 말고 `-c` 로 실행):
+```bash
+cd backup && uv run --with werkzeug python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('Passw0rd!'))"
+```
+출력의 salt 와 hex 를 Step 2 테스트에 붙여넣는다. 이 값이 실제 호환성의 유일한 증거다.
+
+Run: `npx vitest run src/lib/services/password.test.ts` → FAIL (`Cannot find module`)
+
+- [ ] **Step 4: 구현**
+
+`src/lib/services/password.ts`:
+```ts
+import { randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
+
+const scrypt = promisify(scryptCb);
+const N = 32768;
+const R = 8;
+const P = 1;
+const KEYLEN = 64;
+const MAXMEM = 128 * N * R * 2;
+
+function saltString() {
+  const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  return Array.from(randomBytes(16), (b) => alphabet[b % alphabet.length]).join("");
+}
+
+async function derive(password: string, salt: string, n: number, r: number, p: number) {
+  const key = (await scrypt(password, salt, KEYLEN, { N: n, r, p, maxmem: MAXMEM })) as Buffer;
+  return key.toString("hex");
+}
+
+export async function hashPassword(password: string) {
+  const salt = saltString();
+  const hex = await derive(password, salt, N, R, P);
+  return `scrypt:${N}:${R}:${P}$${salt}$${hex}`;
+}
+
+export async function verifyPassword(password: string, stored: string) {
+  const [method, salt, hex] = stored.split("$");
+  if (!method || !salt || !hex) return false;
+  const [algo, n, r, p] = method.split(":");
+  if (algo !== "scrypt") return false;
+  const actual = await derive(password, salt, Number(n), Number(r), Number(p));
+  const a = Buffer.from(actual, "hex");
+  const b = Buffer.from(hex, "hex");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+```
+
+Run: `npx vitest run src/lib/services/password.test.ts` → PASS
+
+- [ ] **Step 5: NextAuth 설정**
+
+`src/auth.ts`:
+```ts
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { z } from "zod";
+import { prisma } from "@/lib/db";
+import { verifyPassword } from "@/lib/services/password";
+
+const credentialsSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8).max(128),
+});
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  session: { strategy: "jwt" },
+  pages: { signIn: "/login" },
+  providers: [
+    Credentials({
+      credentials: { email: {}, password: {} },
+      async authorize(raw) {
+        const parsed = credentialsSchema.safeParse(raw);
+        if (!parsed.success) return null;
+        const email = parsed.data.email.toLowerCase().trim();
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user || !user.isActive) return null;
+        const ok = await verifyPassword(parsed.data.password, user.passwordHash);
+        if (!ok) return null;
+        return { id: String(user.id), email: user.email };
+      },
+    }),
+  ],
+});
+```
+
+`src/app/api/auth/[...nextauth]/route.ts`:
+```ts
+import { handlers } from "@/auth";
+
+export const { GET, POST } = handlers;
+```
+
+`src/proxy.ts`:
+```ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { auth } from "@/auth";
+
+const PUBLIC_PATHS = ["/login", "/api/auth"];
+
+export function isPublicPath(pathname: string) {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  if (isPublicPath(pathname)) return NextResponse.next();
+  const session = await auth();
+  if (session?.user) return NextResponse.next();
+  const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set("callbackUrl", pathname);
+  return NextResponse.redirect(loginUrl);
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};
+```
+
+`auth()` 를 proxy 안에서 호출하는 방식이 설치본 next-auth 에서 동작하지 않으면 `next-auth/jwt` 의 `getToken({ req, secret })` 으로 대체한다. 어느 쪽이든 `export function proxy` 이름은 유지한다.
+
+`src/proxy.test.ts`:
+```ts
+import { describe, it, expect } from "vitest";
+import { isPublicPath } from "@/proxy";
+
+describe("isPublicPath", () => {
+  it("allows login and auth api", () => {
+    expect(isPublicPath("/login")).toBe(true);
+    expect(isPublicPath("/api/auth/callback/credentials")).toBe(true);
+  });
+  it("protects everything else", () => {
+    expect(isPublicPath("/")).toBe(false);
+    expect(isPublicPath("/api/analyze")).toBe(false);
+  });
+});
+```
+
+- [ ] **Step 6: 로그인 화면**
+
+`src/components/layout/login-form.tsx` — shadcn `Button` + 기본 `input`, 서버 액션으로 `signIn("credentials", { email, password, redirectTo })` 호출. `src/app/login/page.tsx` 는 `searchParams` 를 **await** 해서 `callbackUrl` 을 폼에 넘긴다:
+```tsx
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const { callbackUrl } = await searchParams;
+  return <LoginForm callbackUrl={typeof callbackUrl === "string" ? callbackUrl : "/"} />;
+}
+```
+`PageProps` 타입은 `npx next typegen` 으로 생성한다.
+
+- [ ] **Step 7: 검증**
+
+```bash
+npx next typegen && npm test && npm run lint && npm run build
+```
+수동: `npm run dev` → `/` 접근 시 `/login` 리다이렉트 → 2c 이관 후 실제 계정으로 로그인 성공 (2c 완료 후 재확인).
+
+- [ ] **Step 8: 커밋**
+
+```bash
+git add src/auth.ts src/proxy.ts src/proxy.test.ts src/lib/services/password.ts src/lib/services/password.test.ts src/app/api/auth src/app/login src/components/layout/login-form.tsx package.json package-lock.json
+git commit -m "feat: credentials auth with legacy scrypt compatibility"
+```
+
+---
+
+### Task 2c: 레거시 SQLite 이관 스크립트
+
+**Files:**
+- Create: `src/lib/services/legacyMigration.ts`, `scripts/migrate-legacy.ts`
+- Test: `src/lib/services/legacyMigration.test.ts`
+
+**Interfaces:**
+- Consumes: `prisma` (2a)
+- Produces: `migrateLegacy(sourcePath: string, db: PrismaClient): Promise<{ users: number; archives: number; companies: number }>`
+
+- [ ] **Step 1: 실패 테스트**
+
+테스트는 `better-sqlite3` 로 임시 레거시 DB 를 만들어 사용한다 (실 backup 파일에 의존하지 않는다).
+
+`src/lib/services/legacyMigration.test.ts`:
+```ts
+import { describe, it, expect, beforeEach } from "vitest";
+import Database from "better-sqlite3";
+import { mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { prisma } from "@/lib/db";
+import { migrateLegacy } from "@/lib/services/legacyMigration";
+
+function makeLegacyDb() {
+  const dir = mkdtempSync(join(tmpdir(), "legacy-"));
+  const path = join(dir, "news_homepage.db");
+  const db = new Database(path);
+  db.exec(`
+    CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT, created_at TEXT, updated_at TEXT, is_active INTEGER);
+    CREATE TABLE archives (id INTEGER PRIMARY KEY, user_id INTEGER, original_filename TEXT, stored_filename TEXT, file_path TEXT, file_size INTEGER, company_name TEXT, analyzer_name TEXT, analysis_period TEXT, created_at TEXT);
+    CREATE TABLE companies (id INTEGER PRIMARY KEY, name TEXT, year INTEGER, display_order INTEGER, is_active INTEGER, created_at TEXT, updated_at TEXT);
+    INSERT INTO users VALUES (1,'a@b.kr','scrypt:32768:8:1$s$h','2025-01-01 00:00:00','2025-01-01 00:00:00',1);
+    INSERT INTO archives VALUES (1,1,'r.xlsx','r.xlsx','/x/r.xlsx',10,'넷록스','a@b.kr','2024',
+      '2025-01-02 00:00:00');
+    INSERT INTO companies VALUES (1,'넷록스',2024,0,1,'2025-01-01 00:00:00','2025-01-01 00:00:00');
+  `);
+  db.close();
+  return path;
+}
+
+describe("migrateLegacy", () => {
+  beforeEach(async () => {
+    await prisma.archive.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.company.deleteMany();
+  });
+
+  it("copies users, archives, companies preserving ids", async () => {
+    const counts = await migrateLegacy(makeLegacyDb(), prisma);
+    expect(counts).toEqual({ users: 1, archives: 1, companies: 1 });
+    const user = await prisma.user.findUnique({ where: { id: 1 } });
+    expect(user?.passwordHash).toBe("scrypt:32768:8:1$s$h");
+  });
+
+  it("is idempotent", async () => {
+    const path = makeLegacyDb();
+    await migrateLegacy(path, prisma);
+    const counts = await migrateLegacy(path, prisma);
+    expect(counts.users).toBe(1);
+  });
+});
+```
+
+Run: `npx vitest run src/lib/services/legacyMigration.test.ts` → FAIL
+
+- [ ] **Step 2: 구현**
+
+`src/lib/services/legacyMigration.ts`:
+```ts
+import Database from "better-sqlite3";
+import type { PrismaClient } from "@/generated/prisma/client";
+
+type LegacyUser = { id: number; email: string; password_hash: string; created_at: string; updated_at: string; is_active: number };
+type LegacyArchive = { id: number; user_id: number; original_filename: string; stored_filename: string; file_path: string; file_size: number; company_name: string; analyzer_name: string; analysis_period: string | null; created_at: string };
+type LegacyCompany = { id: number; name: string; year: number; display_order: number; is_active: number; created_at: string; updated_at: string };
+
+function toDate(s: string | null) {
+  return s ? new Date(s.replace(" ", "T") + "Z") : new Date();
+}
+
+export async function migrateLegacy(sourcePath: string, db: PrismaClient) {
+  const legacy = new Database(sourcePath, { readonly: true });
+  const users = legacy.prepare("SELECT * FROM users").all() as LegacyUser[];
+  const archives = legacy.prepare("SELECT * FROM archives").all() as LegacyArchive[];
+  const companies = legacy.prepare("SELECT * FROM companies").all() as LegacyCompany[];
+  legacy.close();
+
+  for (const u of users) {
+    await db.user.upsert({
+      where: { id: u.id },
+      create: { id: u.id, email: u.email, passwordHash: u.password_hash, isActive: u.is_active === 1, createdAt: toDate(u.created_at), updatedAt: toDate(u.updated_at) },
+      update: { email: u.email, passwordHash: u.password_hash, isActive: u.is_active === 1 },
+    });
+  }
+  for (const c of companies) {
+    await db.company.upsert({
+      where: { id: c.id },
+      create: { id: c.id, name: c.name, year: c.year, displayOrder: c.display_order, isActive: c.is_active === 1, createdAt: toDate(c.created_at), updatedAt: toDate(c.updated_at) },
+      update: { name: c.name, year: c.year, displayOrder: c.display_order, isActive: c.is_active === 1 },
+    });
+  }
+  for (const a of archives) {
+    await db.archive.upsert({
+      where: { id: a.id },
+      create: { id: a.id, userId: a.user_id, originalFilename: a.original_filename, storedFilename: a.stored_filename, filePath: a.file_path, fileSize: a.file_size, companyName: a.company_name, analyzerName: a.analyzer_name, analysisPeriod: a.analysis_period, createdAt: toDate(a.created_at) },
+      update: {},
+    });
+  }
+  return { users: users.length, archives: archives.length, companies: companies.length };
+}
+```
+
+`scripts/migrate-legacy.ts`:
+```ts
+import { prisma } from "../src/lib/db";
+import { migrateLegacy } from "../src/lib/services/legacyMigration";
+
+const source = process.argv[2];
+if (!source) {
+  console.error("usage: npx tsx scripts/migrate-legacy.ts backup/instance/news_homepage.db");
+  process.exit(1);
+}
+
+const expected = { users: 10, archives: 3, companies: 42 };
+
+migrateLegacy(source, prisma).then((counts) => {
+  console.log(counts);
+  const mismatch = (Object.keys(expected) as (keyof typeof expected)[]).filter((k) => counts[k] !== expected[k]);
+  if (mismatch.length) {
+    console.error(`count mismatch: ${mismatch.join(", ")}`);
+    process.exit(2);
+  }
+});
+```
+
+`tsconfig.json` 의 `include` 에 `scripts/**/*.ts` 가 없다면 추가하지 **않는다** — 스크립트는 `tsx` 로 직접 실행하고 빌드에서 제외한다. `eslint.config.mjs` 는 `scripts/**` 를 lint 대상으로 둔다.
+
+Run: `npx vitest run src/lib/services/legacyMigration.test.ts` → PASS
+
+- [ ] **Step 3: 실 데이터 이관**
+
+```bash
+cp prisma/dev.db prisma/dev.db.bak-$(date +%Y%m%d)
+npx tsx scripts/migrate-legacy.ts backup/instance/news_homepage.db
+```
+Expected: `{ users: 10, archives: 3, companies: 42 }`, exit 0. 이어서 2b Step 7 의 수동 로그인을 실제 계정으로 확인한다.
+
+- [ ] **Step 4: 커밋**
+
+```bash
+git add src/lib/services/legacyMigration.ts src/lib/services/legacyMigration.test.ts scripts/migrate-legacy.ts
+git commit -m "feat: legacy sqlite migration script"
+```
+
+---
+
+### Task 7: 뉴스 수집 서비스 (네이버 API HUB + 구글 RSS)
+
+**Files:**
+- Create: `src/lib/services/newsCollector.ts`, `src/lib/services/articleBody.ts`, `src/lib/services/pressMapping.json` (`cp backup/domain_press_mapping.json`), `src/app/api/news/route.ts`
+- Test: `src/lib/services/newsCollector.test.ts`, `src/lib/services/articleBody.test.ts`, fixture `src/lib/services/__fixtures__/naver-news.json`, `src/lib/services/__fixtures__/google-news.rss`, `src/lib/services/__fixtures__/article-naver.html`
+
+**본문 보강 결정 (2026-08-27):** 레거시는 구글 RSS 항목에 본문이 없어 OpenAI `responses.create` + `web_search_preview` 로 LLM 이 원문을 읽게 했다 (`news_analyzer.py:2078·2241`). 신규는 **LLM 웹검색을 쓰지 않고 Task 7 에서 본문을 직접 크롤링**한다. 근거: (1) LLM 호출 비용·지연이 사라진다 (2) 검증 층③ evidence-match 가 원문을 얻는다 (3) 레거시도 네이버·구글 모두 `_fetch_article_content` 크롤링을 먼저 시도하고 실패 시에만 웹검색으로 갔다 (`news_analyzer.py:1600~1616`). 크롤링 실패 시 `content` 는 `description` 으로 폴백하고 LLM 에 그대로 넘긴다 — 웹검색 폴백은 두지 않는다.
+
+**Interfaces:**
+- Produces:
+```ts
+export type NewsItem = {
+  title: string;
+  link: string;
+  description: string;
+  content: string;
+  published: string;
+  source: string;
+  provider: "naver" | "google";
+  titleMatch: boolean;
+};
+export function resolveGoogleNewsUrl(link: string, deps?: { fetch?: typeof fetch }): Promise<string>;
+export function fetchArticleBody(url: string, deps?: { fetch?: typeof fetch }): Promise<string>;
+export function enrichWithBodies(items: NewsItem[], deps?: { fetch?: typeof fetch; concurrency?: number }): Promise<NewsItem[]>;
+export type CollectOptions = {
+  query: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  naver?: boolean;
+  google?: boolean;
+  duplicateThreshold?: number;
+};
+export type CollectResult = {
+  items: NewsItem[];
+  duplicatesRemoved: number;
+  titleMatchCount: number;
+  noNews: boolean;
+};
+export function collectNews(opts: CollectOptions, deps?: { fetch?: typeof fetch }): Promise<CollectResult>;
+export function removeDuplicates(items: NewsItem[], threshold: number): { items: NewsItem[]; removed: number };
+export function pressNameFromUrl(url: string): string;
+```
+
+- [ ] **Step 1: 실패 테스트**
+
+`src/lib/services/newsCollector.test.ts`:
+```ts
+import { describe, it, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { collectNews, removeDuplicates, pressNameFromUrl } from "@/lib/services/newsCollector";
+import type { NewsItem } from "@/lib/services/newsCollector";
+
+const naverFixture = readFileSync(new URL("./__fixtures__/naver-news.json", import.meta.url), "utf8");
+const googleFixture = readFileSync(new URL("./__fixtures__/google-news.rss", import.meta.url), "utf8");
+
+function mockFetch() {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("naverapihub.apigw.ntruss.com")) return new Response(naverFixture, { status: 200 });
+    if (url.includes("news.google.com/rss")) return new Response(googleFixture, { status: 200 });
+    return new Response("not found", { status: 404 });
+  }) as unknown as typeof fetch;
+}
+
+describe("collectNews", () => {
+  it("uses API HUB endpoint and headers", async () => {
+    process.env.NCP_APIGW_API_KEY_ID = "id";
+    process.env.NCP_APIGW_API_KEY = "key";
+    const fetch = mockFetch();
+    await collectNews({ query: "넷록스", google: false }, { fetch });
+    const [url, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(String(url)).toContain("https://naverapihub.apigw.ntruss.com/search/v1/news");
+    expect((init as RequestInit).headers).toMatchObject({ "X-NCP-APIGW-API-KEY-ID": "id", "X-NCP-APIGW-API-KEY": "key" });
+  });
+
+  it("merges naver and google, maps press names, strips html", async () => {
+    const { items } = await collectNews({ query: "넷록스" }, { fetch: mockFetch() });
+    expect(items.some((i) => i.provider === "naver")).toBe(true);
+    expect(items.some((i) => i.provider === "google")).toBe(true);
+    expect(items.every((i) => !i.title.includes("<b>"))).toBe(true);
+  });
+
+  it("filters by period", async () => {
+    const { items } = await collectNews({ query: "넷록스", startDate: "2030-01-01" }, { fetch: mockFetch() });
+    expect(items).toHaveLength(0);
+  });
+
+  it("throws a typed error on 429", async () => {
+    const fetch = vi.fn(async () => new Response("", { status: 429 })) as unknown as typeof fetch;
+    await expect(collectNews({ query: "x", google: false }, { fetch })).rejects.toThrow(/rate limit/i);
+  });
+});
+
+describe("removeDuplicates", () => {
+  const base: NewsItem = { title: "", link: "", description: "", content: "", published: "2025-01-01", source: "", provider: "naver" };
+  it("drops near-identical titles above threshold", () => {
+    const { items, removed } = removeDuplicates(
+      [{ ...base, title: "넷록스, 시리즈A 투자 유치" }, { ...base, title: "넷록스 시리즈A 투자유치" }, { ...base, title: "전혀 다른 기사" }],
+      0.5,
+    );
+    expect(items).toHaveLength(2);
+    expect(removed).toBe(1);
+  });
+  it("threshold 0 disables dedupe", () => {
+    const { removed } = removeDuplicates([{ ...base, title: "a" }, { ...base, title: "a" }], 0);
+    expect(removed).toBe(0);
+  });
+});
+
+describe("pressNameFromUrl", () => {
+  it("maps known domain", () => {
+    expect(pressNameFromUrl("https://www.yna.co.kr/view/1")).toBe("연합뉴스");
+  });
+  it("falls back to hostname", () => {
+    expect(pressNameFromUrl("https://unknown.example.com/a")).toBe("unknown.example.com");
+  });
+});
+```
+
+`src/lib/services/articleBody.test.ts`:
+```ts
+import { describe, it, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolveGoogleNewsUrl, fetchArticleBody, enrichWithBodies } from "@/lib/services/articleBody";
+import type { NewsItem } from "@/lib/services/newsCollector";
+
+const naverHtml = readFileSync(new URL("./__fixtures__/article-naver.html", import.meta.url), "utf8");
+
+describe("resolveGoogleNewsUrl", () => {
+  const token = "REPLACE_WITH_REAL_TOKEN_FROM_backup/test_flask_import.py:27";
+  const link = `https://news.google.com/rss/articles/${token}?oc=5`;
+
+  it("resolves via batchexecute when google returns signature and url", async () => {
+    const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") return new Response(')]}\'\n[["wrb.fr","Fbv4je","[\\"garturlres\\",\\"https://www.yna.co.kr/view/1\\",1]"]]', { status: 200 });
+      return new Response('<c-wiz data-p="%.@.[\\"garturlreq\\",[[\\"X\\"]],\\"sig123\\",\\"1700000000\\"]"></c-wiz>', { status: 200 });
+    }) as unknown as typeof fetch;
+    expect(await resolveGoogleNewsUrl(link, { fetch })).toBe("https://www.yna.co.kr/view/1");
+  });
+
+  it("falls back to base64 for legacy tokens", async () => {
+    const legacy = "https://news.google.com/rss/articles/" + Buffer.from("\x08\x13\"\x1chttps://www.yna.co.kr/view/2\xd2\x01\x00", "binary").toString("base64url") + "?oc=5";
+    const fetch = vi.fn(async () => new Response("", { status: 500 })) as unknown as typeof fetch;
+    expect(await resolveGoogleNewsUrl(legacy, { fetch })).toBe("https://www.yna.co.kr/view/2");
+  });
+
+  it("returns non-google links unchanged without fetching", async () => {
+    const fetch = vi.fn() as unknown as typeof fetch;
+    expect(await resolveGoogleNewsUrl("https://www.yna.co.kr/view/1", { fetch })).toBe("https://www.yna.co.kr/view/1");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("returns the input when both strategies fail", async () => {
+    const bad = "https://news.google.com/rss/articles/not-base64?oc=5";
+    const fetch = vi.fn(async () => new Response("", { status: 500 })) as unknown as typeof fetch;
+    expect(await resolveGoogleNewsUrl(bad, { fetch })).toBe(bad);
+  });
+});
+
+describe("fetchArticleBody", () => {
+  it("extracts body text using article selectors", async () => {
+    const fetch = vi.fn(async () => new Response(naverHtml, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } })) as unknown as typeof fetch;
+    const body = await fetchArticleBody("https://n.news.naver.com/article/1/2", { fetch });
+    expect(body.length).toBeGreaterThan(100);
+    expect(body).not.toMatch(/<script|<style/);
+  });
+  it("returns empty string on non-200 or timeout", async () => {
+    const fetch = vi.fn(async () => new Response("", { status: 403 })) as unknown as typeof fetch;
+    expect(await fetchArticleBody("https://x.kr/a", { fetch })).toBe("");
+  });
+  it("decodes euc-kr pages", async () => {
+    const bytes = new TextEncoder().encode("<html><body><div id='articleBody'>본문</div></body></html>");
+    const fetch = vi.fn(async () => new Response(bytes, { status: 200, headers: { "content-type": "text/html; charset=euc-kr" } })) as unknown as typeof fetch;
+    const body = await fetchArticleBody("https://x.kr/a", { fetch });
+    expect(typeof body).toBe("string");
+  });
+});
+
+describe("enrichWithBodies", () => {
+  const item: NewsItem = { title: "t", link: "https://x.kr/a", description: "desc", content: "", published: "2025-01-01", source: "s", provider: "naver" };
+  it("fills content and falls back to description when fetch fails", async () => {
+    const fetch = vi.fn(async (u: RequestInfo | URL) => (String(u).endsWith("/ok") ? new Response("<div id='articleBody'>긴 본문 ".repeat(30) + "</div>", { status: 200 }) : new Response("", { status: 500 }))) as unknown as typeof fetch;
+    const out = await enrichWithBodies([{ ...item, link: "https://x.kr/ok" }, item], { fetch, concurrency: 2 });
+    expect(out[0].content.length).toBeGreaterThan(50);
+    expect(out[1].content).toBe("desc");
+  });
+});
+```
+
+`REPLACE_WITH_REAL_ENCODED_LINK…` 는 `backup/test_flask_import.py:27` 의 실제 인코딩 링크를 붙여넣는다 — 디코딩 규칙의 유일한 실측 증거다.
+
+Fixture 는 실제 응답 형태로 만든다 — 네이버는 `{ total, start, display, items: [{ title, originallink, link, description, pubDate }] }`, 구글은 `<rss><channel><item><title>제목 - 언론사</title><link/><pubDate/><source url="...">언론사</source></item>`. `yna.co.kr → 연합뉴스` 매핑이 `pressMapping.json` 에 있는지 먼저 `grep` 으로 확인하고 없으면 있는 도메인으로 테스트를 바꾼다.
+
+Run: `npx vitest run src/lib/services/newsCollector.test.ts` → FAIL
+
+- [ ] **Step 2: 구현**
+
+```bash
+npm i rss-parser
+```
+
+`pressMapping.json` 은 단순 복사가 아니라 **두 벌을 병합**해 만든다 — `backup/domain_press_mapping.json`(181건, 미사용 사본)과 `backup/app/news_service.py:25~199` 의 하드코딩 `domain_to_press`(실제 동작본). 충돌 시 하드코딩 쪽 값을 쓴다. 병합은 1회성이므로 스크립트를 남기지 않고 결과 JSON 만 커밋하되, 건수(≥181)를 완료 노트에 적는다.
+
+`fetchNaver` 규약 (2026-08-27 실측 5개사 검증 반영):
+- **정확검색**: `query` 를 `"기업명"` 처럼 큰따옴표로 감싼다 (`news_service.py:464~`)
+- **`sort=sim` 을 기본으로 한다 — `sort=date` 가 아니다.** 네이버 뉴스 검색은 **본문까지 매칭**하므로 회사명이 스쳐 지나간 무관한 기사가 대량으로 섞인다. 실측(상위 30건 중 제목에 회사명이 포함된 비율):
+
+  | 기업 | `sort=date` | `sort=sim` |
+  |---|---|---|
+  | 크립토랩 | 17/30 | **25/30** |
+  | 올림플래닛 | 14/30 | **29/30** |
+  | 페어리 | **1/30** | 15/30 |
+  | 넷록스 | 4/26 | 4/26 |
+  | 논스랩 | 0/30 | 0/30 |
+
+  "페어리" 처럼 일반명사와 겹치는 상호는 `date` 정렬에서 게임·애니 기사로 뒤덮인다(30건 중 29건이 무관). 분석 대상을 상위 N건으로 자르는 구조에서는 정렬 기준이 곧 분석 품질이다.
+
+  **레거시는 이 문제를 그대로 안고 운영됐다**: 옥타코 리포트 143건 중 제목매치 13건(9%), 타사 악재가 섞여 감성 평균이 7.31 → 5.78 로 깎였다. [`docs/incidents.md` 2026-08-27 항목](../../incidents.md) 참조. 레거시의 `title_match or content_match` 필터는 네이버 `description` 이 매칭 문맥이라 사실상 무력했다 — **같은 필터를 이관하면 같은 결과가 나온다**
+- **제목 매칭을 관련도 신호로 기록한다**: `titleMatch = title.includes(회사명)`. 하드 필터로 버리지 않는다 — 넷록스처럼 회사명이 본문에만 있는 정상 기사가 있다. 대신 정렬 시 `titleMatch` 우선, 동률이면 최신순
+- **회사명이 제목에 하나도 없으면 "뉴스 없음" 으로 판정한다**: 논스랩은 100건 중 제목 매치 0건이었다. 이 경우 수집된 항목 전부가 노이즈이므로 분석에 넘기면 다른 회사 뉴스로 평가가 만들어진다. `AnalysisRun.status = "no_news"` 로 종료하고 리포트에 "분석 가능한 뉴스 없음" 을 명시한다 — **환각 방지의 첫 관문이다**
+- **페이징**: `display=100`, `start` 1·101·201…, `start <= 1000`(API 상한). `items` 가 비거나 `display` 미만이면 중단. `sort=sim` 에서는 기간 기반 조기 종료가 불가능하므로 기간 필터는 수집 후 적용한다
+- 실측 소요: 기업당 1.2~5.9초 (수집 + 본문 30건 크롤링 포함, 동시성 4)
+
+`src/lib/services/newsCollector.ts` 핵심:
+```ts
+import Parser from "rss-parser";
+import pressMapping from "./pressMapping.json";
+
+export class NewsRateLimitError extends Error {}
+
+const NAVER_HUB = "https://naverapihub.apigw.ntruss.com/search/v1/news";
+
+function stripHtml(s: string) {
+  return s.replace(/<[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+}
+
+export function pressNameFromUrl(url: string) {
+  const host = new URL(url).hostname.replace(/^www\./, "");
+  const table = pressMapping as Record<string, string>;
+  return table[host] ?? table[`www.${host}`] ?? host;
+}
+
+async function fetchNaver(query: string, display: number, fetchImpl: typeof fetch): Promise<NewsItem[]> {
+  const url = new URL(NAVER_HUB);
+  url.searchParams.set("query", query);
+  url.searchParams.set("display", String(display));
+  url.searchParams.set("sort", "date");
+  const res = await fetchImpl(url, {
+    headers: {
+      "X-NCP-APIGW-API-KEY-ID": process.env.NCP_APIGW_API_KEY_ID ?? "",
+      "X-NCP-APIGW-API-KEY": process.env.NCP_APIGW_API_KEY ?? "",
+    },
+  });
+  if (res.status === 429) throw new NewsRateLimitError("naver rate limit exceeded");
+  if (!res.ok) throw new Error(`naver ${res.status}`);
+  const body = (await res.json()) as { items: { title: string; originallink: string; link: string; description: string; pubDate: string }[] };
+  return body.items.map((it) => ({
+    title: stripHtml(it.title),
+    link: it.originallink || it.link,
+    description: stripHtml(it.description),
+    content: stripHtml(it.description),
+    published: new Date(it.pubDate).toISOString(),
+    source: pressNameFromUrl(it.originallink || it.link),
+    provider: "naver",
+  }));
+}
+
+async function fetchGoogle(query: string, fetchImpl: typeof fetch): Promise<NewsItem[]> {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
+  const res = await fetchImpl(url, { headers: { Accept: "application/rss+xml, application/xml" } });
+  if (!res.ok) throw new Error(`google ${res.status}`);
+  const feed = await new Parser().parseString(await res.text());
+  return feed.items.map((it) => ({
+    title: stripHtml(it.title ?? "").replace(/\s-\s[^-]+$/, ""),
+    link: it.link ?? "",
+    description: stripHtml(it.contentSnippet ?? it.content ?? ""),
+    content: stripHtml(it.contentSnippet ?? it.content ?? ""),
+    published: it.isoDate ?? new Date(it.pubDate ?? Date.now()).toISOString(),
+    source: (it as { source?: string }).source ?? "Google News",
+    provider: "google",
+  }));
+}
+
+function bigrams(s: string) {
+  const norm = s.replace(/[\s\p{P}]/gu, "").toLowerCase();
+  const set = new Set<string>();
+  for (let i = 0; i < norm.length - 1; i++) set.add(norm.slice(i, i + 2));
+  return set;
+}
+
+export function titleSimilarity(a: string, b: string) {
+  const x = bigrams(a);
+  const y = bigrams(b);
+  if (!x.size || !y.size) return 0;
+  let inter = 0;
+  for (const g of x) if (y.has(g)) inter++;
+  return (2 * inter) / (x.size + y.size);
+}
+
+export function removeDuplicates(items: NewsItem[], threshold: number) {
+  if (threshold <= 0) return { items, removed: 0 };
+  const kept: NewsItem[] = [];
+  let removed = 0;
+  for (const item of items) {
+    const dup = kept.some((k) => titleSimilarity(k.title, item.title) >= threshold);
+    if (dup) removed++;
+    else kept.push(item);
+  }
+  return { items: kept, removed };
+}
+```
+
+`collectNews` 는 옵션 기본값 `naver: true, google: true, duplicateThreshold: 0.5, limit: 100`, 두 소스를 `Promise.allSettled` 로 병렬 수집 → 한쪽 실패는 경고로 남기고 진행(단 `NewsRateLimitError` 는 그대로 던진다) → 기간 필터 → 중복 제거 → 최신순 정렬 → `limit` 절단 → **`enrichWithBodies` 로 본문 보강**. 뉴스 API HUB 는 키당 50 RPS 라 1회 수집에서 초과할 일은 없으므로 큐는 두지 않는다. 수집 단계의 `content` 초기값은 `description`.
+
+`src/lib/services/articleBody.ts` — 레거시 세 구현(`news_analyzer.py:1370 _fetch_article_content`, `routes.py:3791 _fetch_full_article_content`, `news_service.py:786`)을 참조해 **하나로** 재작성한다:
+
+```bash
+npm i @mozilla/readability jsdom iconv-lite cheerio
+```
+`jsdom` 은 이미 devDependency(vitest) 에 있으나 런타임에서 쓰므로 dependencies 로 올린다. 전부 Apache-2.0/MIT.
+
+- `resolveGoogleNewsUrl(link, {fetch})` — **비동기**. `news.google.com/rss/articles/<token>` 이 아니면 입력 그대로 반환. 2024년 이후 토큰은 base64 가 아니므로 2단계로 간다 (레거시는 `googlenewsdecoder` 패키지를 **런타임 pip install** 해서 썼다 — `news_analyzer.py:1162~1200`. 신규는 같은 프로토콜을 자체 구현하고 패키지는 쓰지 않는다):
+  1. **batchexecute 복원**: `GET https://news.google.com/rss/articles/<token>` HTML 에서 `c-wiz[data-p]` 의 `data-p` 값을 읽어 `signature`·`timestamp` 를 얻고, `POST https://news.google.com/_/DotsSplashUi/data/batchexecute` 에 `f.req=[[["Fbv4je","[\"garturlreq\",[[\"X\",\"X\",[\"ko\",\"KR\"],null,null,1,1,\"KR:ko\",null,180,null,null,null,null,null,0,null,null,[1765,1000]],\"ko\",\"KR\",1,[2,3,4,8],1,0,\"655000234\",0,0,null,0],\"<token>\",<timestamp>,\"<signature>\"]",null,"generic"]]]` 를 보내 응답 JSON 의 `garturlres` 뒤 URL 을 추출. 실패하면 2 로
+  2. **base64 폴백** (구형 토큰): 레거시 `_try_decode_methods`(`news_analyzer.py:1280~1340`) 순서 — 표준 base64 → urlsafe → 패딩 보정 — 로 디코드해 첫 `http` URL 추출
+  3. 둘 다 실패 → 입력 그대로 반환. `fetchArticleBody` 는 `news.google.com` 링크를 크롤링하지 않고 `""` 를 돌려준다 (구글 페이지는 JS 리다이렉트라 본문이 없다)
+  - **2026-08-27 실측 검증 완료: 7/7 복원 성공(100%)**, 전부 batchexecute 경로. base64 폴백은 한 번도 쓰이지 않았다(2024년 이후 토큰). 확인된 정확한 구현:
+    - 시그니처는 `$("[data-n-a-sg]").first()` 의 `data-n-a-sg`·`data-n-a-ts` 속성이다 (`c-wiz[data-p]` 파싱은 불필요)
+    - 응답은 `)]}'` 프리픽스 뒤 JSON. `outer.find(f => f[0]==="wrb.fr" && f[1]==="Fbv4je")` → `JSON.parse(frame[2])` → `[0]==="garturlres"` 이면 `[1]` 이 원문 URL
+    - **정규식으로 URL 을 긁지 말 것** — 응답이 `=` 로 이스케이프돼 있어 정규식 추출은 실패한다. 반드시 2단계 `JSON.parse` 를 쓴다
+  - 요청 페이로드 형식은 구글 비공식 엔드포인트라 바뀔 수 있다. 복원율이 50% 미만으로 떨어지면 구글 RSS 소스를 기본 off 로 돌린다 (네이버가 1,000건까지 커버하므로 손실은 작다 — 옥타코 리포트 90건 중 구글 6건)
+  - 레거시와 달리 `verify=False`(SSL 미검증)는 쓰지 않는다. 인증서 오류 사이트는 실패로 처리
+- `fetchArticleBody(url, {fetch})`: `resolveGoogleNewsUrl` → `AbortSignal.timeout(5000)` + 레거시 User-Agent 로 GET (SSL 검증 유지) → `arrayBuffer` 를 받아 charset 결정(`content-type` 헤더 → `<meta charset>` 순, `euc-kr`/`cp949`/`ks_c_5601` 이면 `iconv-lite` 로 디코드, 그 외 utf-8) → **`@mozilla/readability`** (`new Readability(new JSDOM(html, {url}).window.document).parse()?.textContent`) → 결과가 null 이거나 100자 미만이면 네이버 전용 안전망 `#dic_area` 텍스트(cheerio) 시도 → 그래도 없으면 `""` → 공백 정규화. 어떤 예외도 던지지 않고 `""` 반환
+  - **레거시 선택자 방식은 쓰지 않는다** (2026-08-27 실측): 옥타코 리포트 실제 URL 7건에서 레거시 `article`/`.content` 선택자는 Readability 대비 3~5배 긴 텍스트를 냈고, 초과분은 **같은 페이지의 다른 기사 목록·뉴스레터 폼**이었다(techm.kr 4,826자 중 본문 927자). 이 노이즈가 LLM 에 들어가면 다른 회사 뉴스로 판정이 오염되고 검증 층③ 도 무의미해진다. Readability 는 7건 전부 본문만 추출했다(네이버 544자 정확 일치). 벤치 스크립트는 세션 스크래치패드 `bench/bench.mjs` 에 있었다 — 재현하려면 같은 URL 로 다시 돌린다
+  - **2026-08-27 실측: 110건 중 107건 성공(97.3%)**, 전부 Readability 경로(`#dic_area` 안전망은 한 번도 쓰이지 않았으나 유지). 실패 3건은 `http-403` 1 · 본문 100자 미만 1 · 파싱 예외 1. charset 은 utf-8 107 / euc-kr 1 — `iconv-lite` 는 1%를 위해 필요하다. 평균 본문 1,300~3,100자
+  - 후보 비교(GitHub API 2026-08-27): `@mozilla/readability` 0.6.0 ★11.4K Apache-2.0 주간 330만 DL **채택** / `defuddle` 0.19 ★9.2K MIT 는 캡션·표를 5~40% 더 포함해 2순위 / `@extractus/article-extractor` 는 Readability 래퍼라 결과 동일 / `crawlee` 는 큐·브라우저 풀 프레임워크라 과함 / `trafilatura`(Python) 는 사이드카 의존이 생겨 제외
+- `enrichWithBodies(items, {fetch, concurrency = 4})`: 동시성 4 로 순회. `content = body.length > description.length ? body : description`. 본문 최대 4,000자 절단(LLM 입력 상한, 레거시 동일)
+
+`NewsItem.content` 는 Task 8 의 `newsText()` 가 "뉴스 내용" 에 넣는 값이다.
+
+`src/app/api/news/route.ts`: `GET ?query=&startDate=&endDate=&limit=` → zod 파싱 → `collectNews` → JSON. 레이트리밋은 429 로 그대로 전달.
+
+Run: `npx vitest run src/lib/services/newsCollector.test.ts` → PASS
+
+- [ ] **Step 3: 커밋**
+
+```bash
+git add src/lib/services/newsCollector.ts src/lib/services/newsCollector.test.ts src/lib/services/articleBody.ts src/lib/services/articleBody.test.ts src/lib/services/__fixtures__ src/lib/services/pressMapping.json src/app/api/news package.json package-lock.json
+git commit -m "feat: news collection service in typescript"
+```
+
+---
+
+### Task 8: Anthropic 분석 엔진 + SSE
+
+**Files:**
+- Create: `src/lib/services/llm.ts`, `src/lib/services/prompts/legacy.ts`, `src/lib/services/analyzer.ts`, `src/lib/repositories/analysisRun.ts`, `src/app/api/analyze/route.ts`
+- Test: `src/lib/services/analyzer.test.ts`, `src/lib/services/llm.test.ts`
+
+**Interfaces:**
+- Consumes: `NewsItem` (7), `prisma` (2a), `auth()` (2b)
+- Produces:
+```ts
+export type NewsAnalysis = {
+  news: NewsItem;
+  trend: { news_trend_summary: string; sentiment_score: number; sentiment_label: string };
+  award: { is_award_related: boolean; award_name: string; award_reason: string };
+  investment: { is_investment_related: boolean; investment_name: string; investment_reason: string };
+};
+export type AnalysisResult = {
+  companyName: string;
+  analyses: NewsAnalysis[];
+  comprehensiveOpinion: string;
+  usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number };
+};
+export type AnalyzeEvent =
+  | { type: "progress"; step: "trend" | "award" | "investment" | "opinion"; current: number; total: number }
+  | { type: "news_done"; index: number; analysis: NewsAnalysis }
+  | { type: "complete"; runId: number; result: AnalysisResult }
+  | { type: "error"; message: string };
+export function analyzeCompany(companyName: string, news: NewsItem[], deps: { llm: LlmClient }): AsyncGenerator<AnalyzeEvent>;
+export type LlmClient = { json<T>(args: { system: string; prompt: string; schema: z.ZodType<T> }): Promise<{ data: T; usage: Usage }> };
+```
+
+- [ ] **Step 1: 의존성과 SDK 문서 확인**
+
+```bash
+npm i @anthropic-ai/sdk zod
+```
+`node_modules/@anthropic-ai/sdk/README.md` 에서 `messages.stream`, `output_config.format`, `thinking: {type:"adaptive"}` 사용법을 확인한다. `temperature` 는 쓰지 않는다.
+
+- [ ] **Step 2: 실패 테스트 — LLM 래퍼**
+
+`src/lib/services/llm.test.ts`:
+```ts
+import { describe, it, expect, vi } from "vitest";
+import { z } from "zod";
+import { createLlmClient, MODEL } from "@/lib/services/llm";
+
+describe("llm client", () => {
+  it("defaults model to claude-sonnet-5", () => {
+    expect(MODEL).toBe(process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5");
+  });
+
+  it("parses structured json and reports usage", async () => {
+    const finalMessage = vi.fn(async () => ({
+      stop_reason: "end_turn",
+      content: [{ type: "text", text: JSON.stringify({ a: 1 }) }],
+      usage: { input_tokens: 10, output_tokens: 5, cache_read_input_tokens: 0 },
+    }));
+    const sdk = { messages: { stream: vi.fn(() => ({ finalMessage })) } };
+    const llm = createLlmClient(sdk as never);
+    const { data, usage } = await llm.json({ system: "s", prompt: "p", schema: z.object({ a: z.number() }) });
+    expect(data).toEqual({ a: 1 });
+    expect(usage.inputTokens).toBe(10);
+    const call = sdk.messages.stream.mock.calls[0][0] as Record<string, unknown>;
+    expect(call).not.toHaveProperty("temperature");
+    expect(call.thinking).toEqual({ type: "adaptive" });
+  });
+
+  it("throws LlmRefusalError on refusal stop reason", async () => {
+    const finalMessage = vi.fn(async () => ({ stop_reason: "refusal", content: [], usage: { input_tokens: 1, output_tokens: 0 } }));
+    const sdk = { messages: { stream: vi.fn(() => ({ finalMessage })) } };
+    const llm = createLlmClient(sdk as never);
+    await expect(llm.json({ system: "s", prompt: "p", schema: z.object({}) })).rejects.toThrow(/refus/i);
+  });
+});
+```
+
+- [ ] **Step 3: LLM 래퍼 구현**
+
+`src/lib/services/llm.ts`:
+```ts
+import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
+
+export const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
+
+export type Usage = { inputTokens: number; outputTokens: number; cacheReadTokens: number };
+export type LlmClient = {
+  json<T>(args: { system: string; prompt: string; schema: z.ZodType<T>; effort?: "low" | "medium" | "high" }): Promise<{ data: T; usage: Usage }>;
+};
+
+export class LlmRefusalError extends Error {}
+export class LlmParseError extends Error {}
+
+export function createLlmClient(sdk: Anthropic): LlmClient {
+  return {
+    async json({ system, prompt, schema, effort = "medium" }) {
+      const message = await sdk.messages
+        .stream({
+          model: MODEL,
+          max_tokens: 8000,
+          thinking: { type: "adaptive" },
+          output_config: { effort, format: { type: "json_schema", schema: z.toJSONSchema(schema) } },
+          system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+          messages: [{ role: "user", content: prompt }],
+        })
+        .finalMessage();
+      if (message.stop_reason === "refusal") throw new LlmRefusalError("model refused the request");
+      const text = message.content.filter((b) => b.type === "text").map((b) => b.text).join("");
+      const parsed = schema.safeParse(JSON.parse(text));
+      if (!parsed.success) throw new LlmParseError(parsed.error.message);
+      return {
+        data: parsed.data,
+        usage: {
+          inputTokens: message.usage.input_tokens,
+          outputTokens: message.usage.output_tokens,
+          cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,
+        },
+      };
+    },
+  };
+}
+
+export function defaultLlmClient() {
+  return createLlmClient(new Anthropic({ maxRetries: 3 }));
+}
+```
+
+`output_config.format` 의 정확한 키 이름은 설치된 SDK 타입(`node_modules/@anthropic-ai/sdk/resources/messages.d.ts`)에서 확인해 맞춘다. 타입 에러가 나면 SDK 가 정답이다.
+
+Run: `npx vitest run src/lib/services/llm.test.ts` → PASS
+
+- [ ] **Step 4: 레거시 프롬프트 복사**
+
+`src/lib/services/prompts/legacy.ts` — `backup/app/news_analyzer.py` 의 다음 문자열을 **문구 그대로** 템플릿 함수로 옮긴다:
+
+| 원본 위치 | 함수 |
+|---|---|
+| L1904 `trend_prompt` | `trendPrompt(companyName, newsText)` |
+| L1959 `award_prompt` | `awardPrompt(companyName, newsText)` |
+| L2006 `investment_prompt` | `investmentPrompt(companyName, newsText)` |
+| L2275 `_generate_comprehensive_opinion` 내부 프롬프트 | `opinionPrompt(companyName, stats, analyses)` |
+| L930 system | `SYSTEM_NEWS = "당신은 뉴스 분석 전문가입니다. 정확하고 객관적으로 뉴스를 분석해주세요."` |
+| L1896 `news_text` | `newsText(item)` — `뉴스 제목/내용/출처/날짜/링크` 5줄. "뉴스 내용" 에는 `item.content` (Task 7 본문 보강 결과) |
+
+**이관하지 않는 것:** `_analyze_google_news_with_web_search`(L2078)·`_call_chatgpt_with_web_search`(L2241)의 OpenAI `web_search_preview` 경로와 그 전용 프롬프트 3종(L2086·2131·2170). Task 7 이 본문을 크롤링하므로 구글 뉴스도 일반 경로(L1904·1959·2006 프롬프트)로 분석한다. `routes.py:1058` 의 인라인 수상 프롬프트는 프론트가 호출하지 않는 `/api/analyze/streaming` 소속 사장 코드 — 정본은 `news_analyzer.py` 다.
+
+프롬프트 끝의 "반드시!!! 다음 JSON 형식으로…" 문단은 **남겨둔다** — 구조화 출력이 형식을 강제하지만 문구를 바꾸면 결과가 달라질 수 있다. 원본과 1:1 diff 가 가능하도록 파이썬 f-string 의 `{{ }}` 만 `{ }` 로 바꾼다.
+
+- [ ] **Step 5: 실패 테스트 — 분석기**
+
+`src/lib/services/analyzer.test.ts`:
+```ts
+import { describe, it, expect, vi } from "vitest";
+import { analyzeCompany } from "@/lib/services/analyzer";
+import type { LlmClient } from "@/lib/services/llm";
+import type { NewsItem } from "@/lib/services/newsCollector";
+
+const news: NewsItem[] = [
+  { title: "넷록스 수상", link: "https://a.kr/1", description: "d", content: "d", published: "2025-01-01T00:00:00Z", source: "A", provider: "naver" },
+  { title: "넷록스 투자", link: "https://a.kr/2", description: "d", content: "d", published: "2025-01-02T00:00:00Z", source: "A", provider: "naver" },
+];
+
+function fakeLlm(): LlmClient {
+  return {
+    json: vi.fn(async ({ prompt }) => {
+      const usage = { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 };
+      if (prompt.includes("동향실적")) return { data: { trend_analysis: { news_trend_summary: "s", sentiment_score: 5, sentiment_label: "긍정적" } }, usage };
+      if (prompt.includes("수상")) return { data: { award_analysis: { is_award_related: true, award_name: "대상", award_reason: "r" } }, usage };
+      if (prompt.includes("투자")) return { data: { investment_analysis: { is_investment_related: false, investment_name: "", investment_reason: "" } }, usage };
+      return { data: { comprehensive_opinion: "종합" }, usage };
+    }),
+  };
+}
+
+async function collect(gen: AsyncGenerator<unknown>) {
+  const out: unknown[] = [];
+  for await (const e of gen) out.push(e);
+  return out as { type: string }[];
+}
+
+describe("analyzeCompany", () => {
+  it("emits progress per step, news_done per item, then complete", async () => {
+    const events = await collect(analyzeCompany("넷록스", news, { llm: fakeLlm() }));
+    const types = events.map((e) => e.type);
+    expect(types.filter((t) => t === "news_done")).toHaveLength(2);
+    expect(types.at(-1)).toBe("complete");
+    expect(types.indexOf("progress")).toBeLessThan(types.indexOf("news_done"));
+  });
+
+  it("falls back to neutral trend when a call fails, and still completes", async () => {
+    const llm = fakeLlm();
+    (llm.json as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("429"));
+    const events = await collect(analyzeCompany("넷록스", news, { llm }));
+    const done = events.find((e) => e.type === "news_done") as { analysis: { trend: { sentiment_score: number } } };
+    expect(done.analysis.trend.sentiment_score).toBe(0);
+    expect(events.at(-1)?.type).toBe("complete");
+  });
+
+  it("sums usage across calls", async () => {
+    const events = await collect(analyzeCompany("넷록스", news, { llm: fakeLlm() }));
+    const complete = events.at(-1) as { result: { usage: { inputTokens: number } } };
+    expect(complete.result.usage.inputTokens).toBe(7);
+  });
+
+  it("emits error when there is no news", async () => {
+    const events = await collect(analyzeCompany("넷록스", [], { llm: fakeLlm() }));
+    expect(events[0]).toMatchObject({ type: "error" });
+  });
+});
+```
+
+Run: `npx vitest run src/lib/services/analyzer.test.ts` → FAIL
+
+- [ ] **Step 6: 분석기 구현**
+
+`src/lib/services/analyzer.ts` 요지:
+- zod 스키마 3종 + 종합의견 스키마(`{ comprehensive_opinion: string }`)를 정의. 레거시 키 이름(`trend_analysis.sentiment_score` 등) 유지
+- 뉴스별로 trend → award → investment 순서로 `llm.json` 호출. 각 호출 실패 시 레거시 `_create_default_news_analysis` 와 같은 기본값(중립 0 / 비수상 / 비투자)으로 대체하고 `progress` 는 계속 낸다
+- 기업 단위 동시성은 이 태스크에선 순차(뉴스 1건씩). 50개사 일괄 동시성 상한은 마스터 플랜 리스크 항목대로 후속 태스크에서
+- 종합의견: 레거시 L2275~ 의 통계 계산(감성 평균·긍/부정 건수·수상·투자 건수)을 그대로 옮긴 뒤 `opinionPrompt` 호출
+- `usage` 누적, `complete` 이벤트에 `runId` 는 Route Handler 가 저장 후 채운다 (서비스는 `runId: 0` 으로 내고 핸들러가 교체)
+
+`src/lib/repositories/analysisRun.ts`: `createRun({companyId,userId,model,news})`, `completeRun(id, result, usage)`, `failRun(id, message)`.
+
+`src/app/api/analyze/route.ts`:
+```ts
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
+import { analyzeCompany } from "@/lib/services/analyzer";
+import { defaultLlmClient, MODEL } from "@/lib/services/llm";
+import { collectNews } from "@/lib/services/newsCollector";
+import { createRun, completeRun, failRun } from "@/lib/repositories/analysisRun";
+import { z } from "zod";
+
+const bodySchema = z.object({ companyId: z.number().int(), startDate: z.string().optional(), endDate: z.string().optional(), limit: z.number().int().max(100).default(30) });
+
+export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) return new Response("unauthorized", { status: 401 });
+  const body = bodySchema.parse(await request.json());
+  const company = await prisma.company.findUniqueOrThrow({ where: { id: body.companyId } });
+  const { items } = await collectNews({ query: company.name, startDate: body.startDate, endDate: body.endDate, limit: body.limit });
+  const run = await createRun({ companyId: company.id, userId: Number(session.user.id), model: MODEL, news: items });
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (e: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`));
+      try {
+        for await (const event of analyzeCompany(company.name, items, { llm: defaultLlmClient() })) {
+          if (event.type === "complete") {
+            await completeRun(run.id, event.result, event.result.usage);
+            send({ ...event, runId: run.id });
+          } else send(event);
+        }
+      } catch (err) {
+        await failRun(run.id, err instanceof Error ? err.message : "unknown");
+        send({ type: "error", message: "분석 중 오류가 발생했습니다." });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" } });
+}
+```
+
+Run: `npm test` → PASS, `npm run build` → PASS
+
+- [ ] **Step 7: 레거시 대조 기록**
+
+`ANTHROPIC_API_KEY` 가 있는 로컬에서 `npm run dev` 후 기업 1개(넷록스)로 분석 1회 실행. 레거시 `backup/archives/` 의 같은 기업 엑셀에서 뉴스 3건을 골라 감성 점수·수상/투자 판정을 비교해 이 파일 맨 아래 "완료 노트" 에 표로 남긴다. 편차가 있어도 프롬프트는 고치지 않는다 — 기록만 한다.
+
+- [ ] **Step 8: 커밋**
+
+```bash
+git add src/lib/services/llm.ts src/lib/services/llm.test.ts src/lib/services/prompts src/lib/services/analyzer.ts src/lib/services/analyzer.test.ts src/lib/repositories/analysisRun.ts src/app/api/analyze package.json package-lock.json docs/superpowers/plans/2026-08-26-phase0-core-loop.md
+git commit -m "feat: anthropic analysis engine with SSE streaming"
+```
+
+---
+
+### Task 9: 다층 환각 검증기
+
+스킬 `verification-pipeline` 을 먼저 읽는다. 임의 단순화 금지.
+
+**Files:**
+- Create: `src/lib/services/verification.ts`, `src/lib/repositories/verificationResult.ts`, `src/app/api/verification/route.ts`
+- Modify: `src/app/api/analyze/route.ts` (complete 후 검증을 비동기로 시작하고 `verification` 이벤트 전송)
+- Test: `src/lib/services/verification.test.ts`
+
+**Interfaces:**
+- Consumes: `AnalysisResult`, `NewsAnalysis` (8), `LlmClient` (8)
+- Produces:
+```ts
+export type VerificationStatus = "verified" | "needs_review";
+export type VerificationOutput = {
+  status: VerificationStatus;
+  faithfulness: number | null;
+  sourceCoverage: number;
+  evidenceMatch: number;
+  unsupportedClaims: string[];
+  counterEvidence: string[];
+  detail: { layer1: SourceCheck; layer2: JudgeResult | null; layer3: EvidenceMatch; error?: string };
+};
+export function checkSources(analyses: NewsAnalysis[]): SourceCheck;
+export function evidenceMatchScore(claim: string, sourceText: string): number;
+export function judgeFaithfulness(result: AnalysisResult, deps: { llm: LlmClient }): Promise<JudgeResult>;
+export function decide(scores: { faithfulness: number | null; sourceCoverage: number; evidenceMatch: number }): VerificationStatus;
+export function verifyAnalysis(result: AnalysisResult, deps: { llm: LlmClient }): Promise<VerificationOutput>;
+```
+
+- [ ] **Step 1: 실패 테스트**
+
+`src/lib/services/verification.test.ts` (판정 경계 7케이스 이상):
+```ts
+import { describe, it, expect, vi } from "vitest";
+import { checkSources, evidenceMatchScore, decide, verifyAnalysis } from "@/lib/services/verification";
+import type { AnalysisResult, NewsAnalysis } from "@/lib/services/analyzer";
+import type { LlmClient } from "@/lib/services/llm";
+
+function analysis(link: string, summary = "넷록스가 시리즈A 투자를 유치했다"): NewsAnalysis {
+  return {
+    news: { title: "넷록스 시리즈A 투자 유치", link, description: "넷록스가 시리즈A 투자를 유치했다고 밝혔다", content: "넷록스가 시리즈A 투자를 유치했다고 밝혔다", published: "2025-01-01T00:00:00Z", source: "A", provider: "naver" },
+    trend: { news_trend_summary: summary, sentiment_score: 5, sentiment_label: "긍정적" },
+    award: { is_award_related: false, award_name: "", award_reason: "" },
+    investment: { is_investment_related: true, investment_name: "시리즈A", investment_reason: "r" },
+  };
+}
+
+function result(analyses: NewsAnalysis[]): AnalysisResult {
+  return { companyName: "넷록스", analyses, comprehensiveOpinion: "종합", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 } };
+}
+
+describe("layer1 checkSources", () => {
+  it("coverage counts valid http links only", () => {
+    const r = checkSources([analysis("https://a.kr/1"), analysis("not-a-url"), analysis("")]);
+    expect(r.coverage).toBeCloseTo(1 / 3);
+    expect(r.invalid).toHaveLength(2);
+  });
+});
+
+describe("layer3 evidenceMatchScore", () => {
+  it("is high when claim words appear in source", () => {
+    expect(evidenceMatchScore("넷록스가 시리즈A 투자를 유치했다", "넷록스가 시리즈A 투자를 유치했다고 밝혔다")).toBeGreaterThan(0.6);
+  });
+  it("is low for unrelated text", () => {
+    expect(evidenceMatchScore("삼성전자 반도체 실적 급증", "넷록스가 시리즈A 투자를 유치했다")).toBeLessThan(0.2);
+  });
+  it("is 0 for empty claim", () => {
+    expect(evidenceMatchScore("", "x")).toBe(0);
+  });
+});
+
+describe("decide", () => {
+  const cases: [number | null, number, number, string][] = [
+    [0.85, 0.5, 0.4, "verified"],
+    [0.849, 0.5, 0.4, "needs_review"],
+    [0.85, 0.49, 0.4, "needs_review"],
+    [0.85, 0.5, 0.39, "needs_review"],
+    [1, 1, 1, "verified"],
+    [null, 1, 1, "needs_review"],
+    [0, 0, 0, "needs_review"],
+  ];
+  it.each(cases)("f=%s c=%s e=%s → %s", (f, c, e, expected) => {
+    expect(decide({ faithfulness: f, sourceCoverage: c, evidenceMatch: e })).toBe(expected);
+  });
+});
+
+describe("verifyAnalysis", () => {
+  const goodJudge: LlmClient = {
+    json: vi.fn(async () => ({
+      data: { claims: [{ claim: "넷록스가 시리즈A 투자를 유치했다", supported: true, evidence: "…" }], counter_evidence: ["단일 출처에 의존"] },
+      usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 },
+    })),
+  };
+
+  it("verifies when all layers pass", async () => {
+    const out = await verifyAnalysis(result([analysis("https://a.kr/1")]), { llm: goodJudge });
+    expect(out.status).toBe("verified");
+    expect(out.counterEvidence).toEqual(["단일 출처에 의존"]);
+  });
+
+  it("is needs_review when the judge throws", async () => {
+    const llm: LlmClient = { json: vi.fn(async () => { throw new Error("timeout"); }) };
+    const out = await verifyAnalysis(result([analysis("https://a.kr/1")]), { llm });
+    expect(out.status).toBe("needs_review");
+    expect(out.faithfulness).toBeNull();
+    expect(out.detail.error).toMatch(/timeout/);
+  });
+
+  it("is needs_review when sources are missing even if judge passes", async () => {
+    const out = await verifyAnalysis(result([analysis("https://a.kr/1"), analysis(""), analysis("")]), { llm: goodJudge });
+    expect(out.status).toBe("needs_review");
+  });
+});
+```
+
+Run: `npx vitest run src/lib/services/verification.test.ts` → FAIL
+
+- [ ] **Step 2: 구현**
+
+`src/lib/services/verification.ts` 요지:
+- **층1** `checkSources`: `new URL(link)` 성공 + `http(s):` 프로토콜인 항목 비율 = `coverage`. 실패 목록 `invalid`
+- **층3** `evidenceMatchScore`: 공백·구두점 제거 후 문자 bigram Dice 계수(Task 7 `titleSimilarity` 와 동일 공식 — 재사용하려면 `src/lib/services/textSimilarity.ts` 로 빼서 둘 다 import). 뉴스별로 `trend.news_trend_summary` vs `news.title + news.content` 를 계산해 평균 (본문이 있어야 의미 있는 신호다 — Task 7 의 크롤링이 층③의 전제)
+- **층2+4** `judgeFaithfulness`: 시스템 프롬프트 "당신은 사실 검증 심사관입니다…", 사용자 프롬프트에 뉴스 원문(제목·설명·출처·링크)과 분석 결과(요약·감성·수상·투자)를 나열하고, 구조화 출력 스키마
+  ```ts
+  z.object({
+    claims: z.array(z.object({ claim: z.string(), supported: z.boolean(), evidence: z.string() })),
+    counter_evidence: z.array(z.string()).describe("이 평가가 틀릴 수 있는 이유"),
+  })
+  ```
+  `faithfulness = supported 수 / claims 수` (claims 가 0 이면 0). `effort: "low"`. 반증 문장은 그대로 `counterEvidence`
+- `decide`: `faithfulness !== null && faithfulness >= 0.85 && coverage >= 0.5 && evidenceMatch >= 0.4 ? "verified" : "needs_review"`
+- `verifyAnalysis`: 층1·3 은 항상 계산. 층2 는 `try/catch` — 실패 시 `faithfulness: null`, `detail.error` 기록, 그리고 **어떤 경우에도 기본값은 `needs_review`**. `catch` 에서 `verified` 를 만들 수 있는 경로가 없어야 한다
+
+`src/lib/repositories/verificationResult.ts`: `saveVerification(runId, output)` — `unsupportedClaims`·`counterEvidence`·`detail` 은 JSON 문자열로.
+
+`src/app/api/analyze/route.ts` 수정: `complete` 전송 후 `verifyAnalysis` 를 실행해 `{ type: "verification", status, scores }` 이벤트를 추가로 보내고 저장한다. 검증이 던져도 `complete` 는 이미 나갔으므로 리포트 흐름은 깨지지 않는다 — 스킬의 "비동기 지점" 규칙.
+
+`src/app/api/verification/route.ts`: `GET ?runId=` → 저장된 결과 반환, `POST {runId}` → 재검증.
+
+Run: `npm test` → PASS, `npm run build` → PASS
+
+- [ ] **Step 3: 임계값 기록**
+
+로컬에서 Task 8 Step 7 의 실행 결과 1건을 재검증해 `faithfulness / coverage / evidenceMatch` 값과 판정을 완료 노트에 기록한다. 임계값(0.85/0.5/0.4)은 이 태스크에서 바꾸지 않는다.
+
+- [ ] **Step 4: 커밋**
+
+```bash
+git add src/lib/services/verification.ts src/lib/services/verification.test.ts src/lib/services/textSimilarity.ts src/lib/services/newsCollector.ts src/lib/repositories/verificationResult.ts src/app/api/verification src/app/api/analyze/route.ts docs/superpowers/plans/2026-08-26-phase0-core-loop.md
+git commit -m "feat: multi-layer hallucination verification"
+```
+
+---
+
+## Self-Review 결과 (작성 시점)
+
+- **스펙 커버리지**: 마스터 플랜 Task 2(3분할)·7·8·9 전부 대응. Task 10(엑셀)은 다음 실행 플랜
+- **Placeholder**: 2b Step 2 의 `REPLACE_WITH_HEX_FROM_STEP_3` 는 실측값을 넣으라는 의도된 자리다 — Step 3 에서 반드시 채운다. 그 외 TBD 없음
+- **타입 일관성**: `NewsItem`(7) → `NewsAnalysis.news`(8) → `checkSources`(9); `LlmClient.json`(8) 을 8·9 가 동일 시그니처로 사용; `AnalysisRun.formulaVersion` 기본 `v2-anthropic`(2a) 과 마스터 플랜 일치
+- **미확정 API 표면**: `output_config.format` 키 형식, next-auth v5 의 proxy 내 `auth()` 호출, Prisma 7 `prisma.config.ts` — 세 곳 모두 "설치본 문서를 읽고 맞춘다" 단계를 두었다. 추측으로 쓰지 않는다
+
+## 완료 노트
+
+(Task 8 Step 7, Task 9 Step 3 에서 채운다)

@@ -2,6 +2,8 @@
 
 **작성일:** 2026-08-26
 **갱신:** 2026-08-26 — 설치본 기준 Next.js 16.3.3으로 현행화 (v15 표기 정정, v16 breaking change 반영)
+**갱신 2:** 2026-08-26 — LLM 공급자 Anthropic 확정, 실행 순서를 핵심 루프 우선으로 재배치, 경로·환경변수 불일치 정정. 실행 단위 플랜은 `2026-08-26-phase0-core-loop.md` 로 분리
+**역할:** 이 문서는 **마스터 로드맵**이다 — 결정·순서·리스크를 담는다. 태스크별 파일·인터페이스·테스트 코드는 페이즈별 실행 플랜에 둔다. 외부 API 스펙의 단일 출처는 `.claude/skills/external-apis/SKILL.md` 다
 **이전 플랜(`2026-08-26-p0-trust-verification.md`, Flask 기반)을 대체 — 스택 전환 및 차용 요소 반영**
 
 **목표:** 뉴스+AI 기반 기업 분석 프로덕션을 Next.js 풀스택으로 재구축하고, Python 사이드카를 통해 딥리서치(gpt-researcher)·재무 정규화(dartlab) 기능을 차용한다. 환각 검증·DART/국세청 연동·리스크 모니터링·벤치마킹·XAI·연도별 이력 트래킹을 포함해 우수기업 선정의 신뢰성·객관성을 강화한다.
@@ -54,9 +56,12 @@ project1000/
 │   ├── setup.sh  dev.sh                     실행환경 구축·동시 기동
 │   ├── api_smoke_test.py                    외부 API 실증
 │   └── sidecar_env_check.py                 파이썬 런타임 호환성 검증
-├── deploy/  docker-compose.yml  Dockerfile.web
+├── deploy/
+│   ├── docker-compose.yml  docker-compose.prod.yml
+│   └── Dockerfile.web                       Next.js standalone 멀티스테이지
 ├── docs/  backup/
-└── .dockerignore
+├── .dockerignore
+└── .env.example                             필요한 키 이름 전부 (값 없음)
 ```
 
 **루트 유지 근거:**
@@ -82,7 +87,8 @@ project1000/
 | 프레임워크 | Next.js 16.3.3 (App Router, TypeScript, Turbopack 기본, React 19.2) |
 | UI | Tailwind CSS + shadcn/ui + Recharts(차트) + TanStack Table(랭킹) |
 | DB/ORM | Prisma + SQLite (개발) → PostgreSQL (운영 전환 가능) |
-| 인증 | Auth.js (세션 기반, 기존 회원 스키마 이관) — 라우트 보호는 `proxy.ts`(구 middleware) |
+| 인증 | Auth.js `next-auth@5.0.0-beta.32` (peer `next ^16.0.0` 확인, 2026-08-26) — Credentials + JWT 세션, 라우트 보호는 `proxy.ts`(구 middleware). 레거시 비밀번호는 werkzeug `scrypt:32768:8:1$` 형식 — Node `crypto.scrypt` 로 검증 |
+| LLM | **Anthropic** `@anthropic-ai/sdk` — 모델 ID 는 `ANTHROPIC_MODEL` 환경변수 1곳에서 관리, 기본 **`claude-sonnet-5`** (2026-08-26 결정, $2/$10 per MTok). 분석·judge 는 `thinking: {type:"adaptive"}` + `output_config.format` 구조화 출력. 50개사 일괄은 Message Batches API(50% 단가) 검토 |
 | 검증 | Vitest + Testing Library + jsdom (`@vitejs/plugin-react`, `vite-tsconfig-paths`) |
 | 엑셀 | exceljs |
 | 사이드카 | FastAPI + uvicorn, **Python 3.12 핀**, `gpt-researcher==0.15.1` 핀, dartlab (uv 관리) |
@@ -98,16 +104,17 @@ project1000/
 | **`middleware.ts` → `proxy.ts`** — 파일·named export 모두 개명, 런타임은 `nodejs` 고정(edge 미지원), `skipMiddlewareUrlNormalize` → `skipProxyUrlNormalize` | Task 2(Auth.js 라우트 보호) | `src/proxy.ts`에 `export function proxy(request)` 로 작성. Auth.js 문서의 middleware 예제를 그대로 복사하지 말 것 |
 | **Turbopack 기본** — dev·build 모두 Turbopack, 설정 위치가 `next.config.ts`의 `turbopack` 키로 이동 | Task 1, 16(빌드) | webpack 커스텀 설정 도입 금지. 필요 시 `turbopack` 키 사용 |
 | **ESLint Flat Config 기본, `next lint` 제거** | Task 1 | `eslint.config.mjs` 유지, `npm run lint`는 `eslint` 직접 실행 |
-| **캐싱 API 개편** — `revalidateTag`/`updateTag`/`refresh`, `cacheLife`/`cacheTag`, PPR | Task 5(corp code 24h 캐시) | 파일 캐시 대신 `use cache` + `cacheLife` 우선 검토, 사이드카 결과는 태그 무효화 사용 |
+| **캐싱 API 개편** — `revalidateTag`/`updateTag`/`refresh`, `cacheLife`/`cacheTag`, PPR | Task 5(corp code 24h 캐시) | corp code 는 수 MB zip 이므로 렌더 캐시가 아니라 **Prisma 테이블(`DartCorpCode`, fetchedAt)** 에 저장하고 24h TTL 을 서비스 코드에서 판정한다. `use cache` 는 화면 렌더 캐시에만 쓴다 |
 | **React 19.2 + React Compiler 지원** | Task 1, 전 UI 태스크 | 수동 `useMemo`/`useCallback` 최소화. Compiler 활성화는 Task 1에서 판단 |
 | **`next/image` 기본값 변경** (`minimumCacheTTL`·`imageSizes`·`qualities`, 로컬 IP 제한, `images.domains` deprecated) | Task 1·13 UI | 외부 이미지 사용 시 `images.remotePatterns`만 사용 |
 
 ## 전제 조건 및 제약
 
-- 모든 외부 키는 환경변수만 사용: `OPENAI_API_KEY`, `NAVER_CLIENT_ID/SECRET`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `TAVILY_API_KEY`, `GMAIL_*, SMTP_*`. 평문 금지
-- 외부 API 테스트 전부 mock (네트워크 의존 금지)
-- 사이드카는 상태 비저장(stateless) API로 유지 — 딥리서치 진행상태만 Redis 대신 파일 기반 잡 저장소로 관리 (초기 단순화)
-- 기존 DB(users, archives, companies) 데이터는 Prisma 스키마로 이관하는 1회 마이그레이션 스크립트 제공
+- 모든 외부 키는 환경변수만 사용 (`.env` 실태 기준, 2026-08-26): `ANTHROPIC_API_KEY`, `NCP_APIGW_API_KEY_ID`/`NCP_APIGW_API_KEY`(네이버 API HUB), `DART_API_KEY`, `NTS_SERVICE_KEY`(나라장터 공용), `TAVILY_API_KEY`, `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD`, `SMTP_HOST`/`SMTP_PORT`, `AUTH_SECRET`, `DATABASE_URL`. `.env.example` 에 키 이름을 유지하고 평문 값은 금지. **OpenAI 키는 쓰지 않는다** — 사이드카 gpt-researcher 도 Anthropic 을 LLM 으로 설정한다 (`FAST_LLM`/`SMART_LLM=anthropic:...`, 임베딩은 OpenAI 의존이므로 Task 15 에서 대안 확정)
+- **LLM 공급자는 Anthropic 단일**이다. 레거시 프롬프트는 gpt-4o-mini 기준으로 튜닝됐으므로 "문구 임의 개선 금지" 원칙은 유지하되, 모델 전환 자체가 결과를 바꾼다 — Task 8 에서 레거시 결과 샘플 3건과 대조해 편차를 기록하고, 산식 버전을 `v2-anthropic` 으로 시작한다
+- 외부 API 테스트 전부 mock (네트워크 의존 금지). LLM 호출도 mock — 429·타임아웃·`stop_reason: "refusal"` 케이스 포함
+- 사이드카는 **상태 비저장**이다. 딥리서치 잡 상태는 Next.js 쪽 Prisma(`ResearchJob`)에 두고, 사이드카는 잡 ID 를 받아 실행·콜백만 한다 — 컨테이너 볼륨 없이 재시작 가능
+- 기존 DB 데이터는 **`backup/instance/news_homepage.db`** (users 10 / archives 3 / companies 42) 가 원본이다. `backup/news_homepage.db` 는 빈 파일 — 이관 스크립트가 원본 경로를 인자로 받고 건수를 단정한다
 - 기존 Flask 코드(`backup/`)는 **통째로 재사용하지 않는다**. 필요하면 참조해 신규 작성하거나, 자산 성격의 것은 복사해서 쓴다
   - **복사**: `domain_press_mapping.json`(도메인→언론사 181건), `news_analyzer.py` 의 GPT 프롬프트 문자열, `routes.py:1520~2065` 의 엑셀 시트 구성·스타일, `email_service.py` 의 발송 템플릿
   - **참조 후 재작성**: `routes.py`(4,642줄), `news_service.py` 의 수집·중복제거 휴리스틱, `app.js`·`style.css`·HTML 템플릿
@@ -218,18 +225,14 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 - **검증**: `npm test` 통과(Button 렌더·레이아웃 렌더), `npm run build` 성공, `npm run lint` 통과
 - **커밋**: `chore: scaffold next.js app with tailwind and shadcn/ui`
 
-#### Task 2: DB 스키마 및 인증
-- **파일**: `prisma/schema.prisma`, `src/lib/auth.ts`, 마이그레이션 스크립트
-- **내용**:
-  - Prisma 모델: User(기존 users 이관), Company(+businessNo, industry 필드 신설), Archive, VerificationResult, RiskAlert, SelectionRecord, FinancialSnapshot
-  - Auth.js 세션 인증 (기존 이메일/비밀번호 방식 유지, bcrypt 해시 호환 확인). 라우트 보호는 `src/proxy.ts`의 `proxy()` 함수로 구현 (Next 16에서 middleware 개명, nodejs 런타임 고정)
-  - Auth.js의 Next 16 호환성을 Task 2 착수 시 최우선 확인 — 비호환 시 세션 쿠키 직접 구현으로 폴백
-  - 기존 SQLite 데이터 이관 스크립트 (1회 실행)
-- **검증**: 스키마 마이그레이션 성공, 로그인/로그아웃 통합 테스트, 기존 데이터 이관 검증(건수 일치)
-- **커밋**: `feat: prisma schema with auth and data migration`
+#### Task 2: DB 스키마 및 인증 — 3개로 분할 (실행 플랜 `phase0-core-loop.md`)
+- **2a 스키마**: `prisma/schema.prisma` — User, Company(+businessNo, industry), Archive, AnalysisRun, VerificationResult, RiskAlert, SelectionRecord, FinancialSnapshot, DartCorpCode, ResearchJob. `.env.example` 추가. 커밋 `feat: prisma schema and database client`
+- **2b 인증**: `next-auth@5.0.0-beta.32` Credentials + JWT 세션. 레거시 해시(`scrypt:32768:8:1$salt$hex`, werkzeug)를 `crypto.scrypt` 로 검증하는 `verifyLegacyPassword`, 신규 가입은 동일 형식으로 저장해 이관 전후 동작 일치. `src/proxy.ts` 라우트 보호. 커밋 `feat: credentials auth with legacy scrypt compatibility`
+- **2c 이관**: `scripts/migrate-legacy.ts` — `backup/instance/news_homepage.db` → Prisma, 건수(10/3/42) 단정. 커밋 `feat: legacy sqlite migration script`
+- 분할 근거: 리뷰어가 스키마는 승인하고 인증만 반려할 수 있다. Auth.js 호환 스파이크는 불필요해졌다 (peer `next ^16.0.0` 확인)
 
 #### Task 3: Python 사이드카 스캐폴딩
-- **파일**: `sidecar/pyproject.toml`, `sidecar/app/main.py`, `sidecar/app/routers/`, `sidecar/tests/`, `sidecar/Dockerfile`, `sidecar/.dockerignore`, `deploy/docker-compose.yml`, `scripts/setup.sh`, `scripts/dev.sh`, `.dockerignore`
+- **파일**: `sidecar/pyproject.toml`, `sidecar/app/main.py`, `sidecar/app/routers/{health,research,finance}.py`, `sidecar/tests/`, `sidecar/Dockerfile`, `sidecar/.dockerignore`, `deploy/docker-compose.yml`, `deploy/Dockerfile.web`, `scripts/setup.sh`, `scripts/dev.sh`, `.dockerignore` — 사이드카 라우터 경로는 전 태스크에서 `sidecar/app/routers/` 로 통일
 - **내용**:
   - `sidecar/pyproject.toml`: uv 관리, `requires-python = ">=3.12,<3.13"`, `gpt-researcher==0.15.1` 핀
   - FastAPI 앱: `/health`, `/research`(POST — 잡 생성, GET — 상태·결과 조회), `/finance/normalize`(POST — dartlab 정규화·비율)
@@ -275,10 +278,10 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 - **커밋**: `feat: narajangteo procurement profile lookup`
 
 #### Task 6: dartlab 재무 정규화·비율 (사이드카)
-- **파일**: `sidecar/routers/finance.py`, `src/lib/services/financeNormalized.ts`, 테스트
+- **파일**: `sidecar/app/routers/finance.py`, `src/lib/services/financeNormalized.ts`, 테스트
 - **내용**:
   - 사이드카 `/finance/normalize`: dartlab으로 계정과목 정규화 + ROE·부채비율·영업이익률 등 비율 사전계산 (dartlab 차용)
-  - Next.js는 결과를 FinancialSnapshot으로 저장 — Task 4의 라벨 별칭 수작업 매핑을 보완하는 2차 정규화 계층
+  - Next.js는 결과를 FinancialSnapshot으로 저장 — Task 5의 라벨 별칭 수작업 매핑을 보완하는 2차 정규화 계층
   - dartlab 미지원 기업(비상장 등) 시 Task 5의 1차 매핑 결과로 폴백
 - **검증**: 정규화 성공/폴백 동작/사이드카 다운 시 에러 처리 mock 테스트
 - **커밋**: `feat: dartlab financial normalization via sidecar`
@@ -286,6 +289,7 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 #### Task 7: 뉴스 수집 이관 (TS)
 - **파일**: `src/lib/services/newsCollector.ts`, `src/app/api/news/route.ts`, 테스트
 - **내용**: 네이버 뉴스 API + 구글 뉴스 RSS 수집을 TS로 재구현 (fetch + rss-parser), 중복 제거·언론사 매핑 유지, 기존 `domain_press_mapping.json` 복사 재사용. 기간 필터·건수 옵션 동일
+  - **기사 본문 크롤링을 수집 단계에 포함** (`articleBody.ts`, cheerio). 구글 RSS 링크는 base64 디코드로 원문 URL 복원. 레거시가 구글 뉴스에 쓰던 OpenAI `web_search_preview` 경로는 **이관하지 않는다** — 본문을 직접 확보하면 LLM 웹검색이 불필요하고 검증 층③ 이 원문을 얻는다 (2026-08-27 결정)
   - 네이버는 **API HUB 방식을 기본**으로 하고 레거시 개발자센터 방식을 환경변수로 분기 (응답 필드 동일하므로 파서 공용)
   - 50 RPS 제한·429 응답 처리, 월 775,000건 한도를 고려한 호출량 로깅
 - **검증**: 파싱/중복제거/필터 단위 테스트 (샘플 RSS·API 응답 fixture 사용)
@@ -293,15 +297,16 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 
 #### Task 8: GPT 분석 엔진 이관
 - **파일**: `src/lib/services/analyzer.ts`, `src/app/api/analyze/route.ts` (SSE), 테스트
-- **내용**: 동향·수상·투자·종합 분석을 openai npm으로 재구현. JSON 프롬프팅+재시도 유지, SSE 스트리밍 진행률 이벤트(단계별) 제공. 분석 결과는 Archive로 저장
-- **검증**: JSON 파싱/재시도/SSE 이벤트 순서 mock 테스트
+- **내용**: 동향·수상·투자·종합 분석을 `@anthropic-ai/sdk` 로 재구현. 레거시 프롬프트 문구는 그대로 옮기되 JSON 추출 휴리스틱(`_extract_and_parse_json`)은 `output_config.format` 구조화 출력 + zod 검증으로 대체. `thinking: {type:"adaptive"}`, 스트리밍 필수(`client.messages.stream`). SSE 진행률 이벤트(단계별) 제공. 분석 결과는 AnalysisRun 으로 저장, 산식 버전 `v2-anthropic`
+  - 레거시 gpt-4o-mini 결과 샘플 3건과 대조해 감성 라벨·수상/투자 판정 편차를 `docs/incidents.md` 가 아닌 실행 플랜 완료 노트에 기록
+- **검증**: 구조화 출력 파싱/429 재시도/`refusal` 처리/SSE 이벤트 순서 mock 테스트
 - **커밋**: `feat: GPT analysis engine with SSE streaming`
 
 #### Task 9: 다층 환각 검증기
 - **파일**: `src/lib/services/verification.ts`, `src/app/api/verification/route.ts`, 테스트
 - **내용**:
   - 1층: 출처 인용 검사 (링크 존재·URL 형식, 출처커버리지)
-  - 2층: LLM-as-judge 근거충실도 (temperature=0, gpt-4o-mini)
+  - 2층: LLM-as-judge 근거충실도 — Anthropic `ANTHROPIC_MODEL`, `output_config.effort: "low"` 로 결정성 확보 (Sonnet 5 는 `temperature` 파라미터를 거부하므로 쓰지 않는다), 구조화 출력으로 문장별 채점 JSON 강제
   - 3층: **evidence-match 점수** — 분석결과와 원문의 어휘적 겹침 측정 (LLM 호출 없이 계산 — Startup-Validator 차용)
   - 4층: **반증 분석** — "이 평가가 틀릴 수 있는 이유" 자동 생성 (judge 프롬프트에 포함, 평가위원회 자료의 유의사항으로 활용)
   - 판정: faithfulness ≥ 0.85 AND 출처커버리지 ≥ 0.5 AND evidence-match ≥ 0.4 → verified, 미달 시 needs_review
@@ -353,18 +358,18 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 ### Phase C: 딥리서치 연동
 
 #### Task 15: gpt-researcher 기업 심층조사
-- **파일**: `sidecar/routers/research.py`, `src/lib/services/deepResearch.ts`, `src/app/api/company/deep-research/route.ts`, UI 컴포넌트, 테스트
+- **파일**: `sidecar/app/routers/research.py`, `src/lib/services/deepResearch.ts`, `src/app/api/company/deep-research/route.ts`, UI 컴포넌트, 테스트
 - **내용**:
-  - 사이드카에 gpt-researcher 래핑: 기업명+조사범위 입력 → 잡 ID 반환 → 재귀 탐색(정책·시장·경쟁·해외동향) → 인용 포함 리포트 저장
-  - Next.js: 잡 생성/상태 폴링 API + SSE 진행률, 완료 시 리포트를 Archive 저장 + 엑셀 "심층조사" 시트 통합
+  - 사이드카에 gpt-researcher 래핑: Next.js 가 발급한 잡 ID + 기업명 + 조사범위 입력 → 재귀 탐색(정책·시장·경쟁·해외동향) → 완료 시 Next.js 콜백 엔드포인트로 리포트 POST (사이드카 무상태)
+  - Next.js: `ResearchJob` 생성/상태 조회 API + SSE 진행률, 완료 시 리포트를 Archive 저장 + 엑셀 "심층조사" 시트 통합
   - 비용 제어: 모드 선택(경량 report / 심층 deep), 50개사 일괄 시 경량 모드 기본
-  - 검색 백엔드 Tavily(무료 티어), LLM은 기존 OpenAI 키 재사용
+  - 검색 백엔드 Tavily(무료 티어), LLM 은 gpt-researcher 의 `SMART_LLM`/`FAST_LLM` 을 `anthropic:` 프로바이더로 설정. **임베딩은 gpt-researcher 가 OpenAI 기본**이므로 착수 시 로컬 임베딩(`EMBEDDING=huggingface:...`) 가용성을 먼저 확인하고, 불가하면 이 태스크 범위에서 임베딩 없는 report 모드만 지원
   - 리포트에 인용 URL이 포함되므로 Task 9의 1층 출처 검사를 재적용해 신뢰성 연결
 - **검증**: 잡 생성/폴링/완료/타임아웃/사이드카 다운 시 처리 mock 테스트
 - **커밋**: `feat: deep research via gpt-researcher sidecar`
 
 #### Task 16: 배포 패키징
-- **파일**: `Dockerfile`(next-app, multi-stage), `sidecar/Dockerfile`, `docker-compose.prod.yml`, 배포 문서
+- **파일**: `deploy/Dockerfile.web`(next-app, multi-stage), `sidecar/Dockerfile`, `deploy/docker-compose.prod.yml`, 배포 문서
 - **내용**: 2컨테이너 프로덕션 구성(Next.js standalone 빌드 + uvicorn), 환경변수 주입, SQLite 볼륨(또는 PostgreSQL 서비스), 헬스체크·재시작 정책, 기존 Ubuntu 서버 배포 가이드 갱신
 - **검증**: Compose 기동 → 로그인 → 분석 1회 → 리포트 다운로드 E2E 수동 확인
 - **커밋**: `chore: production docker packaging`
@@ -373,19 +378,19 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 
 ## 실행 순서 및 의존성
 
+**원칙: 제품의 존재 이유(환각 검증)를 사이드카·외부 재무 데이터 없이 먼저 완주한다.** 사이드카가 "선택 계층"이라는 설계는 개발 순서로 보장한다.
+
 ```
-Task 1 → Task 2 → Task 3 (기반)
-Task 3 이후 병렬 가능:
-  ├─ Task 4 (국세청)
-  ├─ Task 5 → Task 6 (DART·정규화)
-  ├─ Task 7 → Task 8 (뉴스·분석)
-Task 8 → Task 9 → Task 10 (검증·리포트)
-Task 10 이후 (Phase B, 상호 병렬 가능):
-  ├─ Task 11 (리스크)
-  ├─ Task 12 → Task 13 (벤치마킹→XAI)
-  └─ Task 14 (이력)
-Task 15 (딥리서치 — Task 3·9 완료 후) → Task 16 (배포)
+Task 1 → 2a → 2b → 2c                       (Phase 0 기반, 사이드카 없음)
+      → Task 7 → Task 8 → Task 9 → Task 10  (핵심 루프: 수집→분석→검증→리포트)
+Task 10 이후 병렬:
+  ├─ Task 4 (국세청) · Task 5 → 5b (DART·나라장터)   외부 데이터 보강
+  ├─ Task 3 (사이드카 스캐폴딩) → Task 6 → Task 15   선택 계층
+  └─ Task 11 · Task 12 → 13 · Task 14                Phase B
+Task 16 (배포) — 전부 완료 후
 ```
+
+이전 순서(1→2→3→4·5·7...)에서 바꾼 이유: Task 3 이 모든 것의 선행이었으나 Task 4·5·7·8·9·10 은 사이드카를 쓰지 않는다. 사이드카를 뒤로 보내면 "죽어도 동작" 폴백이 설계가 아니라 기본 상태가 된다.
 
 ## 리스크 및 대응
 
@@ -409,11 +414,16 @@ Task 15 (딥리서치 — Task 3·9 완료 후) → Task 16 (배포)
 | HUB 가 향후 유료화 예정 (단가 미정) | 월 775,000건 무료 한도 내 운영, 50개사 일괄 분석 시 호출량 로깅. 유료화 시 구글 뉴스 RSS 비중 확대 |
 | 네이버 쇼핑·책·전문자료 검색 완전 종료 | 해당 소스 사용 계획 없음 — 뉴스 검색만 사용 |
 | data.go.kr Decoding 키를 URL 에 직접 삽입하면 `+` 가 공백으로 깨짐 | 쿼리 파라미터로 전달해 인코딩 (`URL.searchParams.set`), 템플릿 문자열 금지 |
+| Anthropic 429·과금 — 50개사 × (분석 N건 + judge) 호출 폭증 | SDK `maxRetries` 기본 2 + 동시성 상한(기업 단위 3 병렬), 시스템 프롬프트 `cache_control` 로 프롬프트 캐시, 일괄 처리는 Message Batches API(50%) 검토. `AnalysisRun` 에 `usage` 토큰 저장해 건당 비용 가시화 |
+| Sonnet 5 가 `temperature`/`top_p` 를 거부(400) — 레거시 `temperature=0.3`·judge `temperature=0` 이관 불가 | 샘플링 파라미터를 보내지 않는다. 결정성은 `output_config.effort: "low"` + 구조화 출력으로 확보 |
+| 모델 전환(gpt-4o-mini → Sonnet 5)으로 레거시 대비 분석 결과 편차 | 산식 버전 `v2-anthropic` 으로 이력 구분, Task 8 에서 샘플 3건 대조 기록 |
 
 ## 완료 정의 (Definition of Done)
 
 - 전체 테스트 통과 (`vitest run`, 사이드카는 `pytest`), 프로덕션 Compose 기동 확인
 - E2E 시나리오: 로그인 → 기업 50개사 등록(사업자번호·산업 포함) → 일괄 뉴스 분석(SSE 진행률) → 자동 검증(다층) → 벤치마킹 랭킹 → XAI 기여도 확인 → 딥리서치 1건 → 엑셀 리포트(다차원 검증·리스크·심층조사 시트) 다운로드
-- 소스코드에 평문 API 키 없음
-- 사이드카 중단 시에도 메인 분석·리포트 기능 정상 동작 (폴백 확인)
-- 기존 DB 데이터 이관 완료 검증 (건수·샘플 일치)
+- 소스코드에 평문 API 키 없음, `.env.example` 이 실제 필요한 키 이름과 일치
+- 사이드카 중단 시에도 메인 분석·리포트 기능 정상 동작 — 수동 확인이 아니라 Task 6·15 의 "사이드카 다운" mock 테스트가 `npm test` 에 포함돼 회귀를 막는다
+- 기존 DB 데이터 이관 완료 검증 — `scripts/migrate-legacy.ts` 가 users 10 / archives 3 / companies 42 를 단정
+- 측정치: 50개사 일괄 분석(기업당 뉴스 ≤ 30건)이 **60분 이내**, 토큰 비용이 `AnalysisRun.usage` 합산 기준 **$30 이하** (Sonnet 5 단가). 초과 시 동시성·프롬프트 캐시·Batches 순으로 조정
+- 검증 임계값(0.85/0.5/0.4)은 초기값이다 — 레거시 결과 샘플 10건에 적용해 verified 비율을 완료 노트에 기록하고, 판정 근거 없이 임계값을 낮추지 않는다
