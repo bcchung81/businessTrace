@@ -9,8 +9,8 @@ if [ -z "$f" ] || [ ! -f "$f" ]; then
 fi
 
 block() {
-  jq -n --arg r "$1" '{decision: "block", reason: $r}'
-  exit 0
+  printf '%s\n' "$1" >&2
+  exit 2
 }
 
 warn() {

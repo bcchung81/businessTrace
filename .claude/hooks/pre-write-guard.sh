@@ -1,19 +1,14 @@
 #!/usr/bin/env bash
 # PreToolUse(Write) — 파일이 생기기 전에 막는다.
+# exit 2 + stderr 는 권한 모드와 무관하게 도구 호출을 차단한다.
 set -uo pipefail
 
 f=$(jq -r '.tool_input.file_path // ""')
 [ -z "$f" ] && exit 0
 
 deny() {
-  jq -n --arg r "$1" '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "deny",
-      permissionDecisionReason: $r
-    }
-  }'
-  exit 0
+  printf '%s\n' "$1" >&2
+  exit 2
 }
 
 case "$f" in

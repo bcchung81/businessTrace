@@ -6,14 +6,8 @@ root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$root" || exit 0
 
 deny() {
-  jq -n --arg r "$1" '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "deny",
-      permissionDecisionReason: $r
-    }
-  }'
-  exit 0
+  printf '%s\n' "$1" >&2
+  exit 2
 }
 
 if ! out=$(npm test 2>&1); then
