@@ -87,220 +87,43 @@ src/app/api/verification/route.ts            9
 **스크립트**: `db:generate` · `db:migrate` · `db:migrate:test`(테스트 DB 에 deploy) · `postinstall`(clone 후 자동 generate — `src/generated` 는 gitignore 된다)
 
 
-### Task 2b: Credentials 인증 + 레거시 scrypt 호환
+### Task 2b: Credentials 인증 + 레거시 scrypt 호환 — ✅ 완료 (2026-08-27)
 
-**Files:**
-- Create: `src/lib/services/password.ts`, `src/auth.ts`, `src/app/api/auth/[...nextauth]/route.ts`, `src/proxy.ts`, `src/app/login/page.tsx`, `src/components/layout/login-form.tsx`
-- Test: `src/lib/services/password.test.ts`, `src/proxy.test.ts`
+**구현 결과**: 테스트 22건 추가(전체 52건 통과), `npm run lint`·`npm run build` 통과, 실제 dev 서버로 로그인 전 경로 확인.
 
-**Interfaces:**
-- Consumes: `prisma` (2a)
-- Produces: `verifyPassword(password: string, stored: string): Promise<boolean>`, `hashPassword(password: string): Promise<string>` (werkzeug 형식 `scrypt:32768:8:1$<salt>$<hex>`), `auth()` (세션 조회), `signIn`/`signOut`
+**파일**: `src/lib/services/password.ts` · `src/lib/services/authenticate.ts` · `src/lib/routeAccess.ts` · `src/auth.ts` · `src/proxy.ts` · `src/app/api/auth/[...nextauth]/route.ts` · `src/app/login/page.tsx` · `src/components/layout/login-form.tsx` · shadcn `input`·`label`
 
-- [ ] **Step 1: 의존성**
+**테스트가 고정한 동작**:
+- werkzeug 가 만든 실제 해시로 로그인된다 — `backup/` 파이썬 환경에서 `generate_password_hash('Passw0rd!')` 를 돌려 얻은 값을 픽스처로 박았다. **이 값이 호환성의 유일한 증거다**
+- 신규 가입도 같은 `scrypt:32768:8:1$salt$hex` 형식으로 저장한다 — 이관 계정과 신규 계정이 한 컬럼을 공유한다
+- 다른 알고리즘(`pbkdf2:`)·깨진 해시는 예외를 던지지 않고 `false`
+- 이메일은 공백 제거 + 소문자로 정규화한다 (Flask `User.__init__` 과 동일)
+- 비활성 계정은 비밀번호가 맞아도 거부
+- 반환값에 `passwordHash` 가 없다 — 세션 계층으로 새지 않는다
+- 공개 경로는 `/login`·`/api/auth` 뿐이고 `/loginhack`·`/api/authorize` 같은 유사 접두사는 막힌다
 
-```bash
-npm i next-auth@5.0.0-beta.32
-```
-설치 후 `node_modules/next-auth/README.md` 와 `node_modules/next/dist/docs/` 의 proxy 문서를 읽는다. Auth.js 문서의 `middleware.ts` 예제는 그대로 쓰지 않는다.
+**설계 결정 — 테스트가 강제한 분리**: `proxy.ts` 를 그대로 테스트하려 했더니 next-auth 가 `next/server` 를 vitest 에서 해석하지 못해 실패했다. 순수 정책을 `src/lib/routeAccess.ts` 로, 인증 판정을 `src/lib/services/authenticate.ts` 로 빼고 `auth.ts`·`proxy.ts` 는 프레임워크 배선만 남겼다. CLAUDE.md 의 "Route Handler 는 얇게" 와 같은 방향이다.
 
-- [ ] **Step 2: 실패 테스트 — 비밀번호**
+**실측으로 확인한 함정**:
 
-`src/lib/services/password.test.ts`:
-```ts
-import { describe, it, expect } from "vitest";
-import { hashPassword, verifyPassword } from "@/lib/services/password";
+| 항목 | 실제 |
+|---|---|
+| `promisify(crypto.scrypt)` | options 오버로드를 잃는다. `as (password, salt, keylen, options: ScryptOptions) => Promise<Buffer>` 로 명시해야 빌드가 통과한다 |
+| next-auth v5 + vitest | `@/auth` 를 import 하는 순간 `Cannot find module 'next/server'` 로 죽는다. 테스트 대상은 next-auth 를 물지 않는 모듈로 분리한다 |
+| `zod` v4 | `z.string().email()` 은 deprecated — `z.email()` 을 쓴다 |
+| `AUTH_SECRET` | 없으면 dev 에서도 세션이 서명되지 않는다. `.env` 에 `openssl rand -base64 32` 로 생성해 넣었다 |
 
-describe("werkzeug scrypt compatibility", () => {
-  it("verifies a hash produced by werkzeug generate_password_hash", async () => {
-    const stored =
-      "scrypt:32768:8:1$abcdefghijklmnop$" +
-      "REPLACE_WITH_HEX_FROM_STEP_3";
-    expect(await verifyPassword("Passw0rd!", stored)).toBe(true);
-    expect(await verifyPassword("wrong", stored)).toBe(false);
-  });
+**dev 서버 실측 검증** (`npm run dev` + curl):
 
-  it("round-trips a freshly hashed password in the same format", async () => {
-    const stored = await hashPassword("Secret123!");
-    expect(stored.startsWith("scrypt:32768:8:1$")).toBe(true);
-    expect(await verifyPassword("Secret123!", stored)).toBe(true);
-  });
+| 시나리오 | 결과 |
+|---|---|
+| 미인증으로 `/` 접근 | `307 → /login?callbackUrl=%2F` |
+| 올바른 비밀번호 | `302 → /`, 세션에 `smoke@example.com` |
+| 인증 쿠키로 `/` 접근 | `200` |
+| 틀린 비밀번호 | `302 → /login?error=CredentialsSignin`, 세션 `null` |
+| 비활성 계정 + 올바른 비밀번호 | `302 → /login?error=CredentialsSignin`, 세션 `null` |
 
-  it("rejects unknown formats", async () => {
-    expect(await verifyPassword("x", "pbkdf2:sha256$a$b")).toBe(false);
-  });
-});
-```
-
-- [ ] **Step 3: 실측 해시 확보**
-
-`backup/` 파이썬 환경에서 werkzeug 로 알려진 비밀번호의 해시를 하나 만든다 (루트에 `.py` 파일을 두지 말고 `-c` 로 실행):
-```bash
-cd backup && uv run --with werkzeug python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('Passw0rd!'))"
-```
-출력의 salt 와 hex 를 Step 2 테스트에 붙여넣는다. 이 값이 실제 호환성의 유일한 증거다.
-
-Run: `npx vitest run src/lib/services/password.test.ts` → FAIL (`Cannot find module`)
-
-- [ ] **Step 4: 구현**
-
-`src/lib/services/password.ts`:
-```ts
-import { randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
-
-const scrypt = promisify(scryptCb);
-const N = 32768;
-const R = 8;
-const P = 1;
-const KEYLEN = 64;
-const MAXMEM = 128 * N * R * 2;
-
-function saltString() {
-  const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  return Array.from(randomBytes(16), (b) => alphabet[b % alphabet.length]).join("");
-}
-
-async function derive(password: string, salt: string, n: number, r: number, p: number) {
-  const key = (await scrypt(password, salt, KEYLEN, { N: n, r, p, maxmem: MAXMEM })) as Buffer;
-  return key.toString("hex");
-}
-
-export async function hashPassword(password: string) {
-  const salt = saltString();
-  const hex = await derive(password, salt, N, R, P);
-  return `scrypt:${N}:${R}:${P}$${salt}$${hex}`;
-}
-
-export async function verifyPassword(password: string, stored: string) {
-  const [method, salt, hex] = stored.split("$");
-  if (!method || !salt || !hex) return false;
-  const [algo, n, r, p] = method.split(":");
-  if (algo !== "scrypt") return false;
-  const actual = await derive(password, salt, Number(n), Number(r), Number(p));
-  const a = Buffer.from(actual, "hex");
-  const b = Buffer.from(hex, "hex");
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-```
-
-Run: `npx vitest run src/lib/services/password.test.ts` → PASS
-
-- [ ] **Step 5: NextAuth 설정**
-
-`src/auth.ts`:
-```ts
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { z } from "zod";
-import { prisma } from "@/lib/db";
-import { verifyPassword } from "@/lib/services/password";
-
-const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8).max(128),
-});
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
-  providers: [
-    Credentials({
-      credentials: { email: {}, password: {} },
-      async authorize(raw) {
-        const parsed = credentialsSchema.safeParse(raw);
-        if (!parsed.success) return null;
-        const email = parsed.data.email.toLowerCase().trim();
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.isActive) return null;
-        const ok = await verifyPassword(parsed.data.password, user.passwordHash);
-        if (!ok) return null;
-        return { id: String(user.id), email: user.email };
-      },
-    }),
-  ],
-});
-```
-
-`src/app/api/auth/[...nextauth]/route.ts`:
-```ts
-import { handlers } from "@/auth";
-
-export const { GET, POST } = handlers;
-```
-
-`src/proxy.ts`:
-```ts
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { auth } from "@/auth";
-
-const PUBLIC_PATHS = ["/login", "/api/auth"];
-
-export function isPublicPath(pathname: string) {
-  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-}
-
-export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  if (isPublicPath(pathname)) return NextResponse.next();
-  const session = await auth();
-  if (session?.user) return NextResponse.next();
-  const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("callbackUrl", pathname);
-  return NextResponse.redirect(loginUrl);
-}
-
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
-};
-```
-
-`auth()` 를 proxy 안에서 호출하는 방식이 설치본 next-auth 에서 동작하지 않으면 `next-auth/jwt` 의 `getToken({ req, secret })` 으로 대체한다. 어느 쪽이든 `export function proxy` 이름은 유지한다.
-
-`src/proxy.test.ts`:
-```ts
-import { describe, it, expect } from "vitest";
-import { isPublicPath } from "@/proxy";
-
-describe("isPublicPath", () => {
-  it("allows login and auth api", () => {
-    expect(isPublicPath("/login")).toBe(true);
-    expect(isPublicPath("/api/auth/callback/credentials")).toBe(true);
-  });
-  it("protects everything else", () => {
-    expect(isPublicPath("/")).toBe(false);
-    expect(isPublicPath("/api/analyze")).toBe(false);
-  });
-});
-```
-
-- [ ] **Step 6: 로그인 화면**
-
-`src/components/layout/login-form.tsx` — shadcn `Button` + 기본 `input`, 서버 액션으로 `signIn("credentials", { email, password, redirectTo })` 호출. `src/app/login/page.tsx` 는 `searchParams` 를 **await** 해서 `callbackUrl` 을 폼에 넘긴다:
-```tsx
-export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { callbackUrl } = await searchParams;
-  return <LoginForm callbackUrl={typeof callbackUrl === "string" ? callbackUrl : "/"} />;
-}
-```
-`PageProps` 타입은 `npx next typegen` 으로 생성한다.
-
-- [ ] **Step 7: 검증**
-
-```bash
-npx next typegen && npm test && npm run lint && npm run build
-```
-수동: `npm run dev` → `/` 접근 시 `/login` 리다이렉트 → 2c 이관 후 실제 계정으로 로그인 성공 (2c 완료 후 재확인).
-
-- [ ] **Step 8: 커밋**
-
-```bash
-git add src/auth.ts src/proxy.ts src/proxy.test.ts src/lib/services/password.ts src/lib/services/password.test.ts src/app/api/auth src/app/login src/components/layout/login-form.tsx package.json package-lock.json
-git commit -m "feat: credentials auth with legacy scrypt compatibility"
-```
-
----
+검증용 계정은 확인 후 삭제했다.
 
 ### Task 2c: 레거시 SQLite 이관 스크립트
 
