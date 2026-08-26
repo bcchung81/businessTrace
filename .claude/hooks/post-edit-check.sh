@@ -3,6 +3,8 @@
 # 과거 사고에서 도출된 규칙만 담는다. docs/incidents.md 참조.
 set -uo pipefail
 
+command -v jq >/dev/null 2>&1 || { echo "훅 실패 — jq 를 찾을 수 없어 검사를 수행할 수 없다. PATH 를 확인할 것." >&2; exit 2; }
+
 f=$(jq -r '.tool_response.filePath // .tool_input.file_path // ""')
 if [ -z "$f" ] || [ ! -f "$f" ]; then
   exit 0

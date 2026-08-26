@@ -3,6 +3,8 @@
 # exit 2 + stderr 는 권한 모드와 무관하게 도구 호출을 차단한다.
 set -uo pipefail
 
+command -v jq >/dev/null 2>&1 || { echo "훅 실패 — jq 를 찾을 수 없어 검사를 수행할 수 없다. PATH 를 확인할 것." >&2; exit 2; }
+
 f=$(jq -r '.tool_input.file_path // ""')
 [ -z "$f" ] && exit 0
 

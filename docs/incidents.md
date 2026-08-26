@@ -22,6 +22,27 @@ CLAUDE.md → 코드 쓸 때 매번 필요한 것이 아니면 추가하지 않�
 
 ---
 
+## 2026-08-26 · 훅이 jq 부재 시 조용히 통과 (fail-open)
+
+- **증상**: 세션 중 `PATH` 가 호출마다 흔들려 `jq` 를 못 찾는 경우가 생겼고, 그때 `serviceKey=${key}` 같은 차단 대상이 검사 없이 통과했다
+- **원인**: `f=$(jq ...)` 가 빈 문자열이 되고 `[ -z "$f" ] && exit 0` 로 빠졌다. 도구 부재가 "검사할 파일 없음" 과 같은 경로를 탔다
+- **발견**: 훅 단위 테스트 중 exit=127 과 exit=0 이 번갈아 나오는 것을 눈으로 확인. 성공 판정에 "검사가 실제로 수행됐는가" 가 빠져 있었다 — 스모크 테스트 0건 PASS 와 같은 유형
+- **재발 방지**: 세 훅 모두 첫 줄에서 `jq` 부재 시 exit 2. [`src/hooks.test.ts`](../src/hooks.test.ts) 가 `PATH=/nonexistent` 로 fail-closed 를 단정하고 `npm test` 에 수집되므로 커밋 게이트가 훅 자신을 검증한다
+
+## 2026-08-26 · settings.json 의 훅 `if` 필드가 무시돼 모든 Bash 에 게이트 발화
+
+- **증상**: `git commit` 이 아닌 일반 Bash 호출에서 `커밋 차단 — npm test 실패` 가 떴다
+- **원인**: `"if": "Bash(git commit *)"` 는 settings 스키마에 없는 키다. 테스트가 늘 통과해서 매 Bash 마다 test+lint 가 돌고 있던 것을 못 봤다
+- **발견**: 실패하는 테스트를 처음 추가한 직후 무관한 Bash 가 차단됨
+- **재발 방지**: 스크립트가 `tool_input.command` 를 읽어 `git commit` 만 통과시킨다. 존재하지 않는 설정 키 대신 **필터 로직은 스크립트 안에 둔다**. 테스트가 비커밋 명령 exit 0 을 단정
+
+## 2026-08-26 · permissionDecision JSON 이 훅 차단으로 동작하지 않음
+
+- **증상**: `{"permissionDecision":"deny"}` 를 stdout 으로 내도 도구 호출이 진행됐다
+- **원인**: 현재 Claude Code 에서 범용 차단자는 **exit 2 + stderr** 다. JSON 은 사유 전달용이고, 권한 모드에 따라 무시될 수 있다
+- **발견**: 커밋 `9977747` 에서 교정. 이후 OSS 조사에서 claude-code-harness 의 hookcodec 주석("Exit code 2 is the universal blocker across all hosts")으로 재확인
+- **재발 방지**: 세 훅의 `deny`/`block` 이 전부 exit 2. 테스트가 exit code 를 단정하므로 JSON 방식으로 되돌리면 실패한다
+
 ## 2026-08-26 · 네이버 검색 API 이관을 설정 실수로 오진
 
 - **증상**: `Scopes are Empty` 401. 개발자센터 애플리케이션 등록 화면의 "사용 API" 목록에 검색이 없었다

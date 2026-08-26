@@ -19,9 +19,8 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/pre-commit-gate.sh\"",
-            "if": "Bash(git commit *)",
             "timeout": 300,
-            "statusMessage": "커밋 전 test + lint 게이트"
+            "statusMessage": "git commit 전 test + lint 게이트"
           }
         ]
       }
