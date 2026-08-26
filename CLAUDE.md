@@ -1,1 +1,103 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 @AGENTS.md
+
+> `AGENTS.md` is generated and re-written by `next dev` (`node_modules/next/dist/server/lib/generate-agent-files.js`). Never put project knowledge there — it will be overwritten. This file is the place for it.
+
+## 프로젝트
+
+**성과돋보기** — 뉴스와 공공·금융 데이터를 AI로 분석해 우수기업 50개사 선정 근거를 만들고, 평가위원회에 다차원 분석자료를 제공하는 시스템. 핵심 요구사항은 **AI 환각 방지**로, 분석 결과를 공식 출처(DART 재무, 국세청 휴폐업)와 대조해 자동 검증하는 것이 제품의 존재 이유다.
+
+기존 Flask 앱을 **Next.js 풀스택 + Python 사이드카**로 재구축하는 중이다. 현재 Phase 0 Task 1(스캐폴딩)까지 완료됐고, 나머지는 아직 코드가 없다.
+
+## 플랜 주도 개발
+
+`docs/superpowers/plans/`가 작업의 원천이다. 코드를 쓰기 전에 현행 플랜을 읽는다.
+
+- **현행**: `2026-08-26-nextjs-rearchitecture.md` — Task 1~16, 의존성 그래프, 리스크 대응표
+- **폐기**: `2026-08-26-p0-trust-verification.md` — Flask 기준. 참고만 하고 따르지 않는다
+
+규칙: 태스크 단위 커밋(메시지는 플랜에 명시됨), 각 태스크는 실패 테스트 → 구현 → 통과 순서, **신규 코드에 주석 금지**, 외부 API 테스트는 전부 mock(네트워크 의존 테스트 금지).
+
+## 명령어
+
+```bash
+npm run dev            # Turbopack 개발 서버
+npm run build          # 프로덕션 빌드 (타입 체크 포함)
+npm run lint           # ESLint flat config — next lint 는 v16에서 제거됨
+npm test               # vitest run (1회 실행)
+npm run test:watch     # 감시 모드
+
+npx vitest run src/components/ui/button.test.tsx    # 단일 파일
+npx vitest run -t "renders its label"               # 테스트명으로 필터
+npx next typegen                                    # PageProps/LayoutProps/RouteContext 재생성
+```
+
+테스트는 `src/**/*.test.{ts,tsx}`만 수집한다(`vitest.config.mts`). jsdom + Testing Library, `vitest.setup.ts`에서 jest-dom 매처를 로드한다.
+
+## 아키텍처
+
+목표 구성(플랜 기준):
+
+```
+[Next.js 풀스택] ── Prisma ──→ [SQLite → PostgreSQL]
+   화면 · Route Handlers · SSE 진행률
+   뉴스수집 · GPT분석 · 검증 · 벤치마킹 · 엑셀 리포트
+        │
+        ├─HTTP─→ [Python 사이드카 (FastAPI)]  Python 전용 라이브러리만
+        │           /research  gpt-researcher 딥리서치 (비동기 잡)
+        │           /finance   dartlab 재무 정규화
+        └─HTTPS→ 국세청 · OpenDART · 나라장터 · 네이버/구글 뉴스 · Tavily
+```
+
+**사이드카는 선택적 계층이다.** 사이드카가 죽어도 뉴스 수집·GPT 분석·검증·리포트 같은 메인 기능은 폴백으로 동작해야 한다.
+
+디렉터리 규약: `src/components/ui`(shadcn), `src/components/layout`, `src/lib/services`(외부 API·도메인 로직), `src/lib/repositories`(DB 접근). Route Handler는 얇게 유지하고 로직은 services에 둔다.
+
+**Next.js는 저장소 루트, 사이드카는 `sidecar/` 하위**로 확정됐다(플랜의 "저장소 구조" 절에 근거와 전환 트리거). **루트에 Python 파일을 두지 않는다** — 전부 `sidecar/` 또는 `scripts/`. 경계가 암묵적이라 샌 전례가 있으므로(ESLint가 `backup/` 레거시 JS를 훑어 경고 21건) 새 최상위 디렉터리를 만들면 `tsconfig` `exclude`와 `eslint.config.mjs` `globalIgnores`를 함께 갱신한다.
+
+### 사이드카 파이썬 런타임
+
+**3.12로 핀하고 `gpt-researcher==0.15.1`로 고정한다.** 0.16.0은 `query_processing.py`에서 `Any`·`List`를 import하지 않는 업스트림 버그가 있어 3.12/3.13에서 import가 죽는다(3.14는 PEP 649 지연 평가로 가려질 뿐 코드가 정상인 게 아니다). 로컬 기본 파이썬이 3.14이므로 `uv`로 3.12를 강제해야 한다.
+
+`scripts/sidecar_env_check.py`가 이 조합을 실제 설치·import까지 검증한다. 의존성이나 파이썬 버전을 건드리면 이 스크립트를 먼저 돌린다.
+
+```bash
+python3 scripts/sidecar_env_check.py                 # 버전별 해결 매트릭스
+python3 scripts/sidecar_env_check.py --install 3.12  # 실제 설치·import 검증
+```
+
+### 검증 파이프라인
+
+제품의 핵심이므로 임의로 단순화하지 말 것. 4층 구조 — ① 출처 인용 검사 ② LLM-as-judge 근거충실도 ③ evidence-match 어휘 겹침(LLM 호출 없음) ④ 반증 분석. 판정은 `faithfulness ≥ 0.85 AND 출처커버리지 ≥ 0.5 AND evidence-match ≥ 0.4`일 때만 verified이고, **오류·파싱 실패는 무조건 needs_review**(검증 실패 = 신뢰 불가).
+
+## Next.js 16 함정
+
+설치본은 16.3.3이다. v15 기준 예제를 복사하면 깨진다. 상세는 플랜의 "Next.js 16 반영 사항" 표와 `node_modules/next/dist/docs/`를 볼 것.
+
+- `cookies`·`headers`·`params`·`searchParams`는 **Promise** — 동기 접근 호환은 제거됐다
+- 미들웨어는 `proxy.ts` + `export function proxy()` — nodejs 런타임 고정, edge 미지원. Auth.js 공식 middleware 예제가 그대로 동작하지 않는다
+- Turbopack 기본 — webpack 커스텀 설정 금지, 필요 시 `next.config.ts`의 `turbopack` 키
+- `images.domains` deprecated → `remotePatterns`
+
+## 레거시 Flask 앱
+
+`backup/`에 있고 **gitignore된다**(원본 이력은 커밋 `1457554`). 포팅이 아니라 플랜 기반 재구현이므로 참고용으로만 읽는다 — `backup/app/routes.py`는 4,600줄이다.
+
+이관 대상 실데이터는 Flask instance 폴더 관례에 따라 **`backup/instance/news_homepage.db`**에 있다(users 10 / archives 3 / companies 42). 루트의 `backup/news_homepage.db`는 빈 파일이고 `.backup`은 오래된 스냅샷이니 쓰지 말 것.
+
+## 외부 API 실측 사항
+
+`api_smoke_test.py`가 실제 호출로 검증한 결과다. 재검증 전에 뒤집지 말 것.
+
+- **OpenDART**: 기업개황 `company.json`의 `bizr_no`로 사업자번호를 얻을 수 있다. 대상 기업 상당수가 DART 미등록이라 재무제표 부재가 정상 케이스 — "미제공" 폴백 필수
+- **나라장터**: `getPrcrmntCorpBasicInfo02` + `inqryDiv=3` + `bizno`로 **사업자번호 조회만** 가능하고 업체명 역검색은 없다. 공공데이터포털 **Decoding 키**를 써야 한다(Encoding 키는 코드 30 오류)
+- **국세청**: `api.odcloud.kr/api/nts-businessman/v1/status`에 POST, `b_stt_cd == "01"`이 계속사업자
+
+키는 전부 `.env`(gitignore됨): `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`, `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `TAVILY_API_KEY`, `GMAIL_*`, `SMTP_*`.
+
+## OSS 차용 원칙
+
+플랜의 "OSS 채택 검증 결과"를 따른다. `dartlab`(Apache-2.0)만 의존성으로 직접 채용하고, **라이선스가 없는 저장소의 코드는 한 줄도 복사하지 않는다** — 아이디어만 참고해 자체 구현한다.

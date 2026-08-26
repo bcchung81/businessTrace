@@ -39,6 +39,42 @@
 - Python 사이드카: **Python 전용 라이브러리가 필요한 기능만** (gpt-researcher, dartlab). 최소한의 API 표면 유지
 - 배포: Docker Compose (next-app + python-sidecar 2컨테이너) — 기존 Ubuntu VPS 또는 클라우드
 
+## 저장소 구조 (2026-08-26 확정)
+
+**Next.js 를 저장소 루트에 두고 사이드카를 `sidecar/` 하위에 둔다.** 대칭 분리(`web/` + `sidecar/`)를 검토했으나 채택하지 않았다.
+
+```
+project1000/
+├── src/  next.config.ts  package.json      주 앱 (루트)
+├── prisma/                                  Task 2
+├── sidecar/                                 자립형 Python 프로젝트
+│   ├── pyproject.toml                       uv, requires-python 핀
+│   ├── app/  tests/  Dockerfile  .dockerignore
+├── scripts/
+│   ├── setup.sh  dev.sh                     실행환경 구축·동시 기동
+│   ├── api_smoke_test.py                    외부 API 실증
+│   └── sidecar_env_check.py                 파이썬 런타임 호환성 검증
+├── deploy/  docker-compose.yml  Dockerfile.web
+├── docs/  backup/
+└── .dockerignore
+```
+
+**루트 유지 근거:**
+- 사이드카는 대등한 서비스가 아니라 선택적 부속이다 — 엔드포인트 2개, 상태 비저장, 장애 시 폴백으로 메인 기능 계속 동작
+- `next dev` 가 `generate-agent-files.js:90` 의 `writeAgentFiles(projectDir)` 로 프로젝트 루트에 `AGENTS.md`·`CLAUDE.md` 를 재생성한다. Next 를 하위로 옮기면 `web/CLAUDE.md` 가 새로 생성되어 루트 `CLAUDE.md` 와 이원화되고, 매 `next dev` 마다 재발한다
+- 분리안의 실질 이점(빌드 컨텍스트 격리)은 `.dockerignore` 로 상쇄된다
+- shadcn·vitest·eslint 가 이미 루트 기준으로 검증 완료됐다
+
+**분리안으로 전환할 트리거** (하나라도 충족되면 재검토):
+- 두 번째 Python 서비스가 생긴다 (워커, 크론 등)
+- 웹과 사이드카가 공유하는 TypeScript 패키지가 필요해진다
+- 서비스별로 배포 파이프라인을 분리해야 한다
+
+**경계 강화** (암묵적 경계가 실제로 샌 전례가 있다 — ESLint 가 `backup/` 레거시 JS 를 훑어 경고 21건 발생):
+- `.dockerignore` 로 웹 이미지에서 `sidecar/`·`backup/`·`docs/`·`.next/` 제외, 사이드카는 `context: ./sidecar` 로 컨텍스트 자체 분리
+- `tsconfig.json` 의 `exclude` 와 `eslint.config.mjs` 의 `globalIgnores` 에 `sidecar/` 추가
+- 루트에 Python 파일을 두지 않는다 — 전부 `sidecar/` 또는 `scripts/`
+
 ## 기술 스택
 
 | 영역 | 선택 |
@@ -49,7 +85,7 @@
 | 인증 | Auth.js (세션 기반, 기존 회원 스키마 이관) — 라우트 보호는 `proxy.ts`(구 middleware) |
 | 검증 | Vitest + Testing Library + jsdom (`@vitejs/plugin-react`, `vite-tsconfig-paths`) |
 | 엑셀 | exceljs |
-| 사이드카 | FastAPI + gpt-researcher + dartlab, uvicorn |
+| 사이드카 | FastAPI + uvicorn, **Python 3.12 핀**, `gpt-researcher==0.15.1` 핀, dartlab (uv 관리) |
 | 배포 | Docker Compose (next-app, python-sidecar, db) |
 
 ## Next.js 16 반영 사항 (설치본 `node_modules/next/dist/docs/` 확인)
@@ -74,6 +110,23 @@
 - 기존 DB(users, archives, companies) 데이터는 Prisma 스키마로 이관하는 1회 마이그레이션 스크립트 제공
 - 기존 Flask 코드는 포팅이 아닌 **플랜 기반 재구현** — 기존 로직은 참고용으로만 활용
 - 신규 코드 주석 금지, 커밋은 태스크 단위
+- 사이드카 파이썬은 **3.12 로 핀**한다. 로컬 기본이 3.14 이므로 `uv` 로 3.12 venv 를 강제 생성할 것
+
+## 사이드카 런타임 실측 (2026-08-26, `scripts/sidecar_env_check.py`)
+
+macOS arm64 에서 후보 버전별로 의존성 해결 + venv 설치 + import 를 실제 수행한 결과다.
+
+| 파이썬 | gpt-researcher 0.16.0 | gpt-researcher 0.15.1 (핀) |
+|---|---|---|
+| 3.12 | **FAIL** — import 시 `NameError: name 'Any' is not defined` | PASS |
+| 3.13 | **FAIL** — 동일 | PASS |
+| 3.14 | PASS | PASS |
+
+**원인:** gpt-researcher 0.16.0 의 `gpt_researcher/actions/query_processing.py` 가 `Any`·`List` 를 import 하지 않는 업스트림 버그. Python 3.14 는 PEP 649 로 애노테이션을 지연 평가해 버그가 드러나지 않을 뿐, 코드가 정상인 것이 아니다.
+
+**결정:** Python 3.12 + `gpt-researcher==0.15.1` 핀. 3.14 로 최신 버전을 쓰는 선택지는, 언어의 애노테이션 평가 방식 변경이 실제 버그를 가려주는 데 의존하므로 채택하지 않는다. 업스트림 수정 후 핀을 해제한다.
+
+**미검증:** 위 결과는 macOS arm64 기준이다. 211개 패키지 트리의 리눅스 휠 가용성은 다를 수 있으므로 Task 3 에서 컨테이너 안에서 재검증한다 (venv 약 1.1GB).
 
 ## OSS 채택 검증 결과 (GitHub API 기준, 2026-08-26 확인)
 
@@ -116,12 +169,16 @@
 - **커밋**: `feat: prisma schema with auth and data migration`
 
 #### Task 3: Python 사이드카 스캐폴딩
-- **파일**: `sidecar/main.py`, `sidecar/routers/`, `docker-compose.yml`, `sidecar/requirements.txt`
+- **파일**: `sidecar/pyproject.toml`, `sidecar/app/main.py`, `sidecar/app/routers/`, `sidecar/tests/`, `sidecar/Dockerfile`, `sidecar/.dockerignore`, `deploy/docker-compose.yml`, `scripts/setup.sh`, `scripts/dev.sh`, `.dockerignore`
 - **내용**:
+  - `sidecar/pyproject.toml`: uv 관리, `requires-python = ">=3.12,<3.13"`, `gpt-researcher==0.15.1` 핀
   - FastAPI 앱: `/health`, `/research`(POST — 잡 생성, GET — 상태·결과 조회), `/finance/normalize`(POST — dartlab 정규화·비율)
   - 딥리서치 비동기 잡 구조: 잡 ID 발급 → 백그라운드 실행 → JSON 결과 파일 저장 → 폴링/SSE로 상태 전달
-  - Docker Compose: next-app(3000) + python-sidecar(8000) 서비스 정의, 사이드카 헬스체크
-- **검증**: `/health` 200 응답 테스트, Compose 기동 후 Next.js에서 사이드카 호출 통합 테스트
+  - Docker Compose: next-app(3000) + python-sidecar(8000), 사이드카 헬스체크. 사이드카는 `context: ./sidecar`
+  - `scripts/setup.sh`(npm ci + uv sync + prisma migrate), `scripts/dev.sh`(next dev + uvicorn --reload 동시 기동)
+  - 경계 강화: 루트 `.dockerignore`, `tsconfig.json` `exclude` 와 `eslint.config.mjs` `globalIgnores` 에 `sidecar/` 추가
+  - **컨테이너 안에서 `scripts/sidecar_env_check.py` 재실행** — 리눅스 휠 가용성 확인
+- **검증**: `/health` 200 응답 테스트(pytest), Compose 기동 후 Next.js에서 사이드카 호출 통합 테스트, `npm run lint`·`npm test` 가 사이드카 파일을 집지 않음
 - **커밋**: `feat: fastapi sidecar scaffold with docker compose`
 
 ### Phase A: 데이터 연동·검증 (P0 대응)
@@ -282,6 +339,9 @@ Task 15 (딥리서치 — Task 3·9 완료 후) → Task 16 (배포)
 | 리스크 키워드 오탐 | 담당자 확인 플래그 필수, 확인된 알림만 감점 |
 | 연도별 점수 산식 변경 | SelectionRecord에 산식 버전 필드, 버전 간 비교 시 주석 |
 | 기존 데이터 이관 실패 | 이관 스크립트 + 건수·샘플 검증 절차, 이관 전 DB 백업 |
+| gpt-researcher 0.16.0 이 3.12/3.13 에서 import 불가 (업스트림 버그) | 0.15.1 핀 + `scripts/sidecar_env_check.py` 로 회귀 검증. 업스트림 수정 시 핀 해제 |
+| 사이드카 venv 가 1.1GB — 이미지 비대 | 멀티스테이지 빌드, 런타임 스테이지에 venv 만 복사 |
+| 리눅스 휠 가용성 미검증 (실측은 macOS arm64) | Task 3 에서 컨테이너 내 재검증, 실패 시 파이썬 버전 재선택 |
 
 ## 완료 정의 (Definition of Done)
 
