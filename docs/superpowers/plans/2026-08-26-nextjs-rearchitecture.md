@@ -142,7 +142,7 @@ macOS arm64 에서 후보 버전별로 의존성 해결 + venv 설치 + import �
 | DART 사업자번호(`company.json`) | **PASS** | 삼성전자 1248100998, 올림플래닛 1208824298 |
 | Tavily | **PASS** | 검색결과 정상 |
 | Anthropic | **PASS** | claude-sonnet-4-5 응답 정상 |
-| 네이버 뉴스 | **FAIL** | `Scopes are Empty` 401 — Task 7 블로커 |
+| 네이버 뉴스 | **FAIL** | 개발자센터 신규 신청 종료(2026-07-31). NAVER API HUB 로 이관 필요 |
 | 나라장터 | **PASS** | 삼성전자·올림플래닛 조회 성공. 엔드포인트 정정 후 해결 |
 
 **해결된 버그:** 국세청 호출이 401 이었던 원인은 data.go.kr **Decoding 키를 URL 에 인코딩 없이 문자열로 삽입**해 `+` 가 공백으로 해석된 것이다. 쿼리 파라미터로 넘겨 인코딩하면 200 이다. TypeScript 구현 시 `URL.searchParams.set()` 을 쓰면 자동 처리된다 — 절대 템플릿 문자열로 키를 URL 에 넣지 말 것.
@@ -157,8 +157,23 @@ https://apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02
 
 `NO_OPENAPI_SERVICE_ERROR`(reasonCode 12) 는 미구독이 아니라 **경로 불일치**에서도 발생한다. 미구독이면 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR` 가 온다 — 두 에러를 구분할 것. 인증키는 `NTS_SERVICE_KEY` 를 그대로 쓸 수 있어 별도 키 분리는 불필요하다.
 
+**네이버 검색 API 이관 (2026-06~07):** 네이버가 검색 API 를 개발자센터에서 **NAVER API HUB(네이버 클라우드)** 로 이관했다. 개발자센터 애플리케이션 등록 화면의 "사용 API" 목록에 **검색·데이터랩이 더 이상 없다** — 신규 신청이 막힌 것이지 설정 실수가 아니다.
+
+| 구분 | 개발자센터 (레거시) | NAVER API HUB (신규) |
+|---|---|---|
+| 도메인 | `openapi.naver.com` | `naverapihub.apigw.ntruss.com` |
+| 경로 | `/v1/search/news.json` | `/search/v1/news` |
+| 인증 헤더 | `X-Naver-Client-Id` / `X-Naver-Client-Secret` | `X-NCP-APIGW-API-KEY-ID` / `X-NCP-APIGW-API-KEY` |
+| 응답 필드 | `title·originallink·link·description·pubDate` | 동일 |
+
+- 2026-06-25 HUB 정식 출시 → **2026-07-31 개발자센터 신규 신청 종료** → 2027-06-30 기존 키 지원 종료
+- 현재 무료, 검색 API 통합 월 775,000건 / 키당 50 RPS, 초과 시 429. 향후 유료화 예정(단가 미정)
+- **쇼핑·책·전문자료 검색은 2026-07-31 완전 종료**되어 대체 API 가 없다. 뉴스 검색은 이관 대상으로 생존
+- 응답 필드가 동일하므로 파서는 재사용 가능하다. `src/lib/services/newsCollector.ts` 는 **엔드포인트·헤더만 환경변수로 분기**해 두 방식을 모두 지원한다
+
 **미해결 블로커 1건 (사용자 조치 필요):**
-- **네이버 뉴스 API** — `Scopes are Empty` 401. 뉴스·블로그·백과사전·데이터랩 전 엔드포인트가 동일하게 실패하므로 개별 API 문제가 아니라 **애플리케이션에 사용 API 가 하나도 등록되지 않은 상태**다. developers.naver.com 에서 해당 애플리케이션에 "검색" API 를 추가해야 한다. Task 7 착수 전 필수
+- **네이버 뉴스 API** — 네이버 클라우드 플랫폼에서 Application 생성 → Search API 선택 → 발급받은 키를 `NCP_APIGW_API_KEY_ID` / `NCP_APIGW_API_KEY` 로 설정. 기존 `NAVER_CLIENT_ID/SECRET` 은 사용 API 가 비어 있어 복구 불가(신규 신청 종료). Task 7 착수 전 필수
+- 위 HUB 스펙은 2차 자료 기준이므로, 키 발급 시 네이버 클라우드 공식 문서로 경로·헤더를 재확인할 것
 
 ## OSS 채택 검증 결과 (GitHub API 기준, 2026-08-26 확인)
 
@@ -257,7 +272,9 @@ https://apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02
 
 #### Task 7: 뉴스 수집 이관 (TS)
 - **파일**: `src/lib/services/newsCollector.ts`, `src/app/api/news/route.ts`, 테스트
-- **내용**: 네이버 뉴스 API + 구글 뉴스 RSS 수집을 TS로 재구현 (fetch + rss-parser), 중복 제거·언론사 매핑 유지, 기존 `domain_press_mapping.json` 재사용. 기간 필터·건수 옵션 동일
+- **내용**: 네이버 뉴스 API + 구글 뉴스 RSS 수집을 TS로 재구현 (fetch + rss-parser), 중복 제거·언론사 매핑 유지, 기존 `domain_press_mapping.json` 복사 재사용. 기간 필터·건수 옵션 동일
+  - 네이버는 **API HUB 방식을 기본**으로 하고 레거시 개발자센터 방식을 환경변수로 분기 (응답 필드 동일하므로 파서 공용)
+  - 50 RPS 제한·429 응답 처리, 월 775,000건 한도를 고려한 호출량 로깅
 - **검증**: 파싱/중복제거/필터 단위 테스트 (샘플 RSS·API 응답 fixture 사용)
 - **커밋**: `feat: news collection service in typescript`
 
@@ -375,7 +392,9 @@ Task 15 (딥리서치 — Task 3·9 완료 후) → Task 16 (배포)
 | gpt-researcher 0.16.0 이 3.12/3.13 에서 import 불가 (업스트림 버그) | 0.15.1 핀 + `scripts/sidecar_env_check.py` 로 회귀 검증. 업스트림 수정 시 핀 해제 |
 | 사이드카 venv 가 1.1GB — 이미지 비대 | 멀티스테이지 빌드, 런타임 스테이지에 venv 만 복사 |
 | 리눅스 휠 가용성 미검증 (실측은 macOS arm64) | Task 3 에서 컨테이너 내 재검증, 실패 시 파이썬 버전 재선택 |
-| 네이버 뉴스 API 인증 실패 (애플리케이션에 사용 API 미등록) | Task 7 착수 전 developers.naver.com 에서 검색 API 추가. 미해결 시 구글 뉴스 RSS 단독 수집으로 축소 운영 |
+| 네이버 검색 API 가 NAVER API HUB 로 이관 (개발자센터 신규 신청 종료) | 네이버 클라우드에서 키 발급 후 `NCP_APIGW_API_KEY_ID/KEY` 설정. 수집기는 엔드포인트·헤더를 환경변수로 분기 |
+| HUB 가 향후 유료화 예정 (단가 미정) | 월 775,000건 무료 한도 내 운영, 50개사 일괄 분석 시 호출량 로깅. 유료화 시 구글 뉴스 RSS 비중 확대 |
+| 네이버 쇼핑·책·전문자료 검색 완전 종료 | 해당 소스 사용 계획 없음 — 뉴스 검색만 사용 |
 | data.go.kr Decoding 키를 URL 에 직접 삽입하면 `+` 가 공백으로 깨짐 | 쿼리 파라미터로 전달해 인코딩 (`URL.searchParams.set`), 템플릿 문자열 금지 |
 
 ## 완료 정의 (Definition of Done)

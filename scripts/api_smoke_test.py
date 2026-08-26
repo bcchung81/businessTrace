@@ -191,26 +191,41 @@ def test_narajangteo(target, bizno):
 
 
 def test_naver_news():
-    cid = os.environ.get("NAVER_CLIENT_ID", "")
-    secret = os.environ.get("NAVER_CLIENT_SECRET", "")
-    if not cid or not secret:
-        record("네이버뉴스", "-", None, "NAVER_CLIENT_ID/SECRET 없음")
-        return
+    hub_id = os.environ.get("NCP_APIGW_API_KEY_ID", "")
+    hub_key = os.environ.get("NCP_APIGW_API_KEY", "")
+    if hub_id and hub_key:
+        mode = "API HUB"
+        url = "https://naverapihub.apigw.ntruss.com/search/v1/news"
+        headers = {"X-NCP-APIGW-API-KEY-ID": hub_id, "X-NCP-APIGW-API-KEY": hub_key}
+    else:
+        mode = "개발자센터(레거시)"
+        cid = os.environ.get("NAVER_CLIENT_ID", "")
+        secret = os.environ.get("NAVER_CLIENT_SECRET", "")
+        if not cid or not secret:
+            record("네이버뉴스", "-", None, "NCP_APIGW_API_KEY_ID/KEY 또는 NAVER_CLIENT_ID/SECRET 없음")
+            return
+        url = "https://openapi.naver.com/v1/search/news.json"
+        headers = {"X-Naver-Client-Id": cid, "X-Naver-Client-Secret": secret}
     try:
         r = requests.get(
-            "https://openapi.naver.com/v1/search/news.json",
+            url,
             params={"query": REF_LISTED, "display": 5, "sort": "date"},
-            headers={"X-Naver-Client-Id": cid, "X-Naver-Client-Secret": secret},
+            headers=headers,
             timeout=10,
         )
         if r.status_code == 401:
-            record("네이버뉴스", REF_LISTED, False, f"인증 실패 — 검색 API 사용 신청 필요: {r.text[:80]}")
+            record(
+                "네이버뉴스",
+                f"{REF_LISTED} [{mode}]",
+                False,
+                "인증 실패 — 검색 API 는 NAVER API HUB 로 이관됨. 네이버 클라우드에서 발급 후 NCP_APIGW_API_KEY_ID/KEY 설정",
+            )
             return
         r.raise_for_status()
         body = r.json()
-        record("네이버뉴스", REF_LISTED, True, f"총 {body.get('total')}건, 수신 {len(body.get('items', []))}건")
+        record("네이버뉴스", f"{REF_LISTED} [{mode}]", True, f"총 {body.get('total')}건, 수신 {len(body.get('items', []))}건")
     except Exception as e:
-        record("네이버뉴스", "-", False, f"호출 실패: {e}")
+        record("네이버뉴스", f"-  [{mode}]", False, f"호출 실패: {e}")
 
 
 def test_tavily():

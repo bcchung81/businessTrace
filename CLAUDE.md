@@ -135,7 +135,16 @@ uv run --python 3.12 --with requests --with python-dotenv scripts/api_smoke_test
 
 | API | 증상 | 필요 조치 | 블로킹 |
 |---|---|---|---|
-| 네이버 뉴스 | 401 `Scopes are Empty` (뉴스·블로그·백과사전·데이터랩 전부 동일) | developers.naver.com에서 해당 애플리케이션에 "검색" API 추가 | Task 7 |
+| 네이버 뉴스 | 401 `Scopes are Empty` | 네이버 클라우드(API HUB)에서 Search API 키 발급 → `NCP_APIGW_API_KEY_ID`/`NCP_APIGW_API_KEY` 설정 | Task 7 |
+
+**네이버 검색 API는 NAVER API HUB로 이관됐다(2026-06~07).** developers.naver.com 애플리케이션 등록 화면의 "사용 API" 목록에 **검색·데이터랩이 없는 것이 정상**이다 — 2026-07-31에 신규 신청이 종료됐다. 설정 실수로 오진하지 말 것.
+
+| | 개발자센터 (레거시) | API HUB (신규) |
+|---|---|---|
+| 엔드포인트 | `openapi.naver.com/v1/search/news.json` | `naverapihub.apigw.ntruss.com/search/v1/news` |
+| 헤더 | `X-Naver-Client-Id` / `X-Naver-Client-Secret` | `X-NCP-APIGW-API-KEY-ID` / `X-NCP-APIGW-API-KEY` |
+
+응답 필드(`title`·`originallink`·`link`·`description`·`pubDate`)는 동일하므로 **파서는 공용이고 엔드포인트·헤더만 분기**한다. 무료이나 향후 유료화 예정이며 검색 API 통합 월 775,000건 / 키당 50 RPS, 초과 시 429다. 레거시 키는 2027-06-30까지만 지원된다. 쇼핑·책·전문자료 검색은 대체 없이 완전 종료됐다.
 
 키는 전부 `.env`(gitignore됨): `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`, `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `TAVILY_API_KEY`, `GMAIL_*`, `SMTP_*`.
 
