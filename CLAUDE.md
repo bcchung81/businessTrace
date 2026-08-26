@@ -131,20 +131,18 @@ uv run --python 3.12 --with requests --with python-dotenv scripts/api_smoke_test
   응답에 `emplyeNum`(종업원수), `corpBsnsDivNm`(조달업무구분), `opbizDt`(개업일), `mnfctDivNm`(제조구분)이 온다. DART에 재무가 없는 비상장 기업도 여기선 잡히므로 Task 12 지표 보강에 쓸 수 있다
 - **data.go.kr 에러 코드 구분**: `NO_OPENAPI_SERVICE_ERROR`는 **경로 불일치**, `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`가 미구독이다. 전자를 구독 문제로 오진하지 말 것
 
-**현재 막혀 있는 것 1건** — 착수 전 사용자 조치가 필요하다.
-
-| API | 증상 | 필요 조치 | 블로킹 |
-|---|---|---|---|
-| 네이버 뉴스 | 401 `Scopes are Empty` | 네이버 클라우드(API HUB)에서 Search API 키 발급 → `NCP_APIGW_API_KEY_ID`/`NCP_APIGW_API_KEY` 설정 | Task 7 |
-
 **네이버 검색 API는 NAVER API HUB로 이관됐다(2026-06~07).** developers.naver.com 애플리케이션 등록 화면의 "사용 API" 목록에 **검색·데이터랩이 없는 것이 정상**이다 — 2026-07-31에 신규 신청이 종료됐다. 설정 실수로 오진하지 말 것.
 
-| | 개발자센터 (레거시) | API HUB (신규) |
+| | 개발자센터 (레거시) | API HUB (현재 사용) |
 |---|---|---|
 | 엔드포인트 | `openapi.naver.com/v1/search/news.json` | `naverapihub.apigw.ntruss.com/search/v1/news` |
 | 헤더 | `X-Naver-Client-Id` / `X-Naver-Client-Secret` | `X-NCP-APIGW-API-KEY-ID` / `X-NCP-APIGW-API-KEY` |
+| env | `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET` | `NCP_APIGW_API_KEY_ID` / `NCP_APIGW_API_KEY` |
+| 키 길이 | ID 20자 / Secret 10자 | ID 10자 / Secret 40자 |
 
-응답 필드(`title`·`originallink`·`link`·`description`·`pubDate`)는 동일하므로 **파서는 공용이고 엔드포인트·헤더만 분기**한다. 무료이나 향후 유료화 예정이며 검색 API 통합 월 775,000건 / 키당 50 RPS, 초과 시 429다. 레거시 키는 2027-06-30까지만 지원된다. 쇼핑·책·전문자료 검색은 대체 없이 완전 종료됐다.
+**엔드포인트와 헤더는 한 쌍으로 바꿔야 한다** — HUB 키를 레거시 엔드포인트에 쓰면 `NID AUTH Result Invalid (1000)`이 난다. 응답 필드(`title`·`originallink`·`link`·`description`·`pubDate`)는 동일하므로 **파서는 공용이고 엔드포인트·헤더만 분기**한다.
+
+키 발급은 네이버 클라우드 콘솔 → All Services > Application Services > NAVER API HUB → Application 등록. API별 개별 신청 없이 Application 하나로 검색 전체와 데이터랩을 쓴다. 무료이나 향후 유료화 예정이고 초과 시 429다. 쇼핑·책·전문자료 검색은 대체 없이 완전 종료됐다.
 
 키는 전부 `.env`(gitignore됨): `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`, `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `TAVILY_API_KEY`, `GMAIL_*`, `SMTP_*`.
 

@@ -142,7 +142,7 @@ macOS arm64 에서 후보 버전별로 의존성 해결 + venv 설치 + import �
 | DART 사업자번호(`company.json`) | **PASS** | 삼성전자 1248100998, 올림플래닛 1208824298 |
 | Tavily | **PASS** | 검색결과 정상 |
 | Anthropic | **PASS** | claude-sonnet-4-5 응답 정상 |
-| 네이버 뉴스 | **FAIL** | 개발자센터 신규 신청 종료(2026-07-31). NAVER API HUB 로 이관 필요 |
+| 네이버 뉴스 | **PASS** | API HUB 키로 총 4,439,545건 조회 확인 |
 | 나라장터 | **PASS** | 삼성전자·올림플래닛 조회 성공. 엔드포인트 정정 후 해결 |
 
 **해결된 버그:** 국세청 호출이 401 이었던 원인은 data.go.kr **Decoding 키를 URL 에 인코딩 없이 문자열로 삽입**해 `+` 가 공백으로 해석된 것이다. 쿼리 파라미터로 넘겨 인코딩하면 200 이다. TypeScript 구현 시 `URL.searchParams.set()` 을 쓰면 자동 처리된다 — 절대 템플릿 문자열로 키를 URL 에 넣지 말 것.
@@ -171,9 +171,22 @@ https://apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02
 - **쇼핑·책·전문자료 검색은 2026-07-31 완전 종료**되어 대체 API 가 없다. 뉴스 검색은 이관 대상으로 생존
 - 응답 필드가 동일하므로 파서는 재사용 가능하다. `src/lib/services/newsCollector.ts` 는 **엔드포인트·헤더만 환경변수로 분기**해 두 방식을 모두 지원한다
 
-**미해결 블로커 1건 (사용자 조치 필요):**
-- **네이버 뉴스 API** — 네이버 클라우드 플랫폼에서 Application 생성 → Search API 선택 → 발급받은 키를 `NCP_APIGW_API_KEY_ID` / `NCP_APIGW_API_KEY` 로 설정. 기존 `NAVER_CLIENT_ID/SECRET` 은 사용 API 가 비어 있어 복구 불가(신규 신청 종료). Task 7 착수 전 필수
-- 위 HUB 스펙은 2차 자료 기준이므로, 키 발급 시 네이버 클라우드 공식 문서로 경로·헤더를 재확인할 것
+**HUB 스펙 실증 완료 (2026-08-26).** 실제 발급 키로 호출해 200 을 확인했다.
+
+```
+GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&display=3&sort=date
+  X-NCP-APIGW-API-KEY-ID: <Client ID>
+  X-NCP-APIGW-API-KEY:    <Client Secret>
+→ 200, total 4,439,545 / items[].title·originallink·link·description·pubDate
+```
+
+- 키 발급 경로: 네이버 클라우드 콘솔 → **All Services > Application Services > NAVER API HUB** → Application 등록 → 인증정보에서 Client ID/Secret 확인 (콘솔 메뉴 `AI·NAVER API > Application` 경로로도 접근)
+- 키 형식: Client ID 10자 / Client Secret 40자. 개발자센터 레거시 키(ID 20자·Secret 10자)와 길이가 다르다
+- **레거시 엔드포인트로는 HUB 키가 동작하지 않는다** — `NID AUTH Result Invalid (1000)`. 엔드포인트와 헤더를 한 쌍으로 바꿔야 한다
+- 환경변수는 `NCP_APIGW_API_KEY_ID` / `NCP_APIGW_API_KEY` 를 쓴다. HUB 키를 `NAVER_CLIENT_ID/SECRET` 이름에 넣으면 레거시로 오인돼 실패한다
+- HUB 는 API 별 개별 신청이 없다 — Application 하나로 검색(뉴스·블로그·이미지·지역·지식iN 등)과 데이터랩을 함께 쓴다
+
+**미해결 블로커: 없음.** 외부 API 11건 전부 PASS (2026-08-26 기준)
 
 ## OSS 채택 검증 결과 (GitHub API 기준, 2026-08-26 확인)
 
