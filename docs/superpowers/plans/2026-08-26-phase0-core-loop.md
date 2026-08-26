@@ -720,6 +720,8 @@ export type NewsItem = {
   source: string;
   provider: "naver" | "google";
   titleMatch: boolean;
+  mentions: number;
+  relevance: "primary" | "mention" | "unrelated";
 };
 export function resolveGoogleNewsUrl(link: string, deps?: { fetch?: typeof fetch }): Promise<string>;
 export function fetchArticleBody(url: string, deps?: { fetch?: typeof fetch }): Promise<string>;
@@ -736,7 +738,7 @@ export type CollectOptions = {
 export type CollectResult = {
   items: NewsItem[];
   duplicatesRemoved: number;
-  titleMatchCount: number;
+  primaryCount: number;
   noNews: boolean;
 };
 export function collectNews(opts: CollectOptions, deps?: { fetch?: typeof fetch }): Promise<CollectResult>;
@@ -919,8 +921,30 @@ npm i rss-parser
   "페어리" 처럼 일반명사와 겹치는 상호는 `date` 정렬에서 게임·애니 기사로 뒤덮인다(30건 중 29건이 무관). 분석 대상을 상위 N건으로 자르는 구조에서는 정렬 기준이 곧 분석 품질이다.
 
   **레거시는 이 문제를 그대로 안고 운영됐다**: 옥타코 리포트 143건 중 제목매치 13건(9%), 타사 악재가 섞여 감성 평균이 7.31 → 5.78 로 깎였다. [`docs/incidents.md` 2026-08-27 항목](../../incidents.md) 참조. 레거시의 `title_match or content_match` 필터는 네이버 `description` 이 매칭 문맥이라 사실상 무력했다 — **같은 필터를 이관하면 같은 결과가 나온다**
-- **제목 매칭을 관련도 신호로 기록한다**: `titleMatch = title.includes(회사명)`. 하드 필터로 버리지 않는다 — 넷록스처럼 회사명이 본문에만 있는 정상 기사가 있다. 대신 정렬 시 `titleMatch` 우선, 동률이면 최신순
-- **회사명이 제목에 하나도 없으면 "뉴스 없음" 으로 판정한다**: 논스랩은 100건 중 제목 매치 0건이었다. 이 경우 수집된 항목 전부가 노이즈이므로 분석에 넘기면 다른 회사 뉴스로 평가가 만들어진다. `AnalysisRun.status = "no_news"` 로 종료하고 리포트에 "분석 가능한 뉴스 없음" 을 명시한다 — **환각 방지의 첫 관문이다**
+- **관련도 3등급을 기록한다** (`NewsItem.relevance`). 본문을 크롤링하므로 레거시가 못 하던 판별이 가능하다 — 레거시는 네이버 스니펫만 봐서 "언급됨" 과 "주제임" 을 구분할 수 없었다. 본문 확보 후 계산한다:
+
+  ```
+  mentions = 본문 내 회사명 등장 횟수, firstPos = 첫 등장 위치 / 본문 길이
+
+  primary   : titleMatch || mentions >= 3 || (mentions >= 2 && firstPos < 0.15)
+  mention   : mentions >= 1                     — 언급은 되나 기사 주제가 아님
+  unrelated : mentions === 0                    — 본문에 회사명이 없음
+  ```
+
+  실측 판별력(2026-08-27, 본문 크롤링 후):
+
+  | 기업 | 제목매치 기사 | 본문에만 있는 기사 |
+  |---|---|---|
+  | 넷록스 | 평균 8.5회 언급, 첫등장 11% 지점 | 평균 **1.1회**, 첫등장 43% 지점 (21건 중 18건이 1회) |
+  | 페어리 | 평균 4.6회 | 평균 **1.5회** (16건 중 11건이 1회) |
+  | 옥타코 | 평균 8.0회, 리드 300자 내 39/40 | `sort=sim` 에서 0건 |
+
+  **언급 1회는 거의 예외 없이 스쳐 지나가는 언급이다** — 「TTA·6G포럼, 필리핀·말레이 통신사와 B5G·6G 교류」 본문 27% 지점에 참여기업으로 한 번 나오는 식이다
+
+- **`mention` 등급을 버리지 않는다.** 위 TTA 사례는 넷록스가 실제로 참여한 사업 실적이라 삭제하면 정보를 잃는다. 대신 **감성 점수 집계에서 제외**한다 — 옥타코 사고의 직접 원인이 타사 악재(SK쉴더스 해킹 −6, 다크웹 유출 −8)를 옥타코 감성에 합산한 것이었다. 리포트에는 "언급 기사" 로 구분 표기하고, 수상·투자 판정은 `primary` 기사에서만 인정한다
+- **주의 — 부분 문자열 오탐**: 한국어는 단어 경계가 없어 `includes` 가 오탐을 낸다. 실측에서 "페어리" 가 식물 기사 본문에 7회 나왔는데 페어리링(균사체) 이었다. `mentions >= 3` 만으로 `primary` 를 주면 이런 기사가 통과한다 — Task 8 프롬프트에 "이 기사가 대상 기업에 관한 것인지 먼저 판단하라" 를 넣어 LLM 이 2차로 걸러내게 하고, 그 판단을 `NewsAnalysis.isAboutCompany` 로 받아 집계에서 제외한다
+- 정렬은 `primary` 우선, 동률이면 최신순
+- **`primary` 가 0건이면 "뉴스 없음" 으로 판정한다**: 논스랩은 100건 중 제목 매치 0건이었다. 이 경우 수집된 항목 전부가 노이즈이므로 분석에 넘기면 다른 회사 뉴스로 평가가 만들어진다. `AnalysisRun.status = "no_news"` 로 종료하고 리포트에 "분석 가능한 뉴스 없음" 을 명시한다 — **환각 방지의 첫 관문이다**
 - **페이징**: `display=100`, `start` 1·101·201…, `start <= 1000`(API 상한). `items` 가 비거나 `display` 미만이면 중단. `sort=sim` 에서는 기간 기반 조기 종료가 불가능하므로 기간 필터는 수집 후 적용한다
 - 실측 소요: 기업당 1.2~5.9초 (수집 + 본문 30건 크롤링 포함, 동시성 4)
 
