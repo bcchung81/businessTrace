@@ -84,7 +84,20 @@ python3 scripts/sidecar_env_check.py --install 3.12  # 실제 설치·import 검
 
 ## 레거시 Flask 앱
 
-`backup/`에 있고 **gitignore된다**(원본 이력은 커밋 `1457554`). 포팅이 아니라 플랜 기반 재구현이므로 참고용으로만 읽는다 — `backup/app/routes.py`는 4,600줄이다.
+`backup/`에 있고 **gitignore된다**(원본 이력은 커밋 `1457554`).
+
+**활용 방침: 통째로 재사용하지 않는다. 필요하면 참조해서 신규 작성하거나, 자산 성격의 것은 복사해서 쓴다.** 판단 기준은 "로직이냐 자산이냐"다.
+
+| 복사해서 쓸 것 (운영에서 검증된 자산) | 참조만 하고 재작성할 것 |
+|---|---|
+| `domain_press_mapping.json` — 도메인→언론사 181건 | `app/routes.py` 4,642줄 — Route Handler + services로 분해 |
+| `app/news_analyzer.py`의 GPT 프롬프트 문자열 | `app/static/app.js` 196KB, `style.css` 100KB |
+| `app/routes.py:1520~2065`의 엑셀 시트 구성·스타일 | `app/templates/*.html` 2,334줄 — React/shadcn으로 |
+| `app/email_service.py`의 발송 템플릿 | `app/news_service.py`의 수집·중복제거 휴리스틱 |
+
+복사할 때는 그대로 옮기되 Python→TypeScript 변환과 네이밍만 현재 규약에 맞춘다. 프롬프트는 운영에서 튜닝된 것이므로 **문구를 임의로 개선하지 않는다** — 바꾸면 분석 결과가 달라진다.
+
+**주의: `backup/`은 gitignore되므로 복사해 온 것만 살아남는다.** 이 폴더를 정리하기 전에 필요한 자산을 모두 추출했는지 확인할 것.
 
 이관 대상 실데이터는 Flask instance 폴더 관례에 따라 **`backup/instance/news_homepage.db`**에 있다(users 10 / archives 3 / companies 42). 루트의 `backup/news_homepage.db`는 빈 파일이고 `.backup`은 오래된 스냅샷이니 쓰지 말 것.
 
