@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime      @updatedAt
+  archives     Archive[]
+  analysisRuns AnalysisRun[]
+}
+
+model Company {
+  id           Int           @id @default(autoincrement())
+  name         String
+  year         Int
+  displayOrder Int           @default(0)
+  isActive     Boolean       @default(true)
+  businessNo   String?
+  industry     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  analysisRuns AnalysisRun[]
+
+  @@unique([name, year])
+  @@index([year])
+}
+
+model AnalysisRun {
+  id             Int                 @id @default(autoincrement())
+  companyId      Int
+  company        Company             @relation(fields: [companyId], references: [id])
+  userId         Int
+  user           User                @relation(fields: [userId], references: [id])
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  formulaVersion String              @default("v2-anthropic")
+  model          String
+  status         String              @default("running")
+  newsJson       String
+  resultJson     String?
+  usageJson      String?
+  createdAt      DateTime            @default(now())
+  completedAt    DateTime?
+  verification   VerificationResult?
+
+  @@index([companyId, createdAt])
+}
+
+model VerificationResult {
+  id                Int         @id @default(autoincrement())
+  analysisRunId     Int         @unique
+  analysisRun       AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  status            String
+  faithfulness      Float?
+  sourceCoverage    Float?
+  evidenceMatch     Float?
+  unsupportedClaims String
+  counterEvidence   String
+  detailJson        String
+  createdAt         DateTime    @default(now())
+}
+
+model Archive {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalFilename String
+  storedFilename   String
+  filePath         String
+  fileSize         Int
+  companyName      String
+  analyzerName     String
+  analysisPeriod   String?
+  createdAt        DateTime @default(now())
+}

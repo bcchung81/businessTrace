@@ -8,19 +8,19 @@ const hooksDir = resolve(__dirname, "../.claude/hooks");
 
 type Outcome = { exit: number; stdout: string; stderr: string };
 
-function runHook(name: string, input: object, env?: NodeJS.ProcessEnv): Outcome {
+function runHook(name: string, input: object, env?: Record<string, string>): Outcome {
   const r = spawnSync("/bin/bash", [join(hooksDir, name)], {
     input: JSON.stringify(input),
     encoding: "utf8",
-    env: env ?? process.env,
+    env: { ...process.env, ...env },
   });
   return { exit: r.status ?? -1, stdout: r.stdout, stderr: r.stderr };
 }
 
-const preWrite = (path: string, env?: NodeJS.ProcessEnv) =>
+const preWrite = (path: string, env?: Record<string, string>) =>
   runHook("pre-write-guard.sh", { tool_input: { file_path: path } }, env);
 
-const postEdit = (path: string, env?: NodeJS.ProcessEnv) =>
+const postEdit = (path: string, env?: Record<string, string>) =>
   runHook("post-edit-check.sh", { tool_input: { file_path: path } }, env);
 
 let sandbox: string;
@@ -117,7 +117,7 @@ describe("post-edit-check", () => {
 });
 
 describe("pre-commit-gate", () => {
-  const gate = (command: string, env?: NodeJS.ProcessEnv) =>
+  const gate = (command: string, env?: Record<string, string>) =>
     runHook("pre-commit-gate.sh", { tool_input: { command } }, env);
 
   test("ignores bash commands that are not git commit", () => {

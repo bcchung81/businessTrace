@@ -42,3 +42,8 @@ next-env.d.ts
 
 # legacy backup
 /backup
+
+# prisma
+/prisma/*.db
+/prisma/*.db-journal
+/src/generated

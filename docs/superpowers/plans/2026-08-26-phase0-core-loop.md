@@ -54,279 +54,38 @@ src/app/api/verification/route.ts            9
 
 ---
 
-### Task 2a: Prisma 스키마와 DB 클라이언트
+### Task 2a: Prisma 스키마와 DB 클라이언트 — ✅ 완료 (2026-08-27)
 
-**Files:**
-- Create: `prisma/schema.prisma`, `prisma.config.ts`, `src/lib/db.ts`, `.env.example`
-- Modify: `package.json` (scripts `db:migrate`, `db:generate`), `.gitignore` (`prisma/*.db`, `prisma/*.db-journal`)
-- Test: `src/lib/db.test.ts`
+**구현 결과**: 테스트 8건 추가(전체 30건 통과), `npm run lint`·`npm run build` 통과.
 
-**Interfaces:**
-- Produces: `prisma` (PrismaClient 싱글턴) from `src/lib/db.ts`; 모델 `User`, `Company`, `Archive`, `AnalysisRun`, `VerificationResult`, `RiskAlert`, `SelectionRecord`, `FinancialSnapshot`, `DartCorpCode`, `ResearchJob`
+**파일**: `prisma/schema.prisma` · `prisma.config.ts` · `src/lib/db.ts` · `src/lib/test-support/db.ts` · `.env.example` · 마이그레이션 3개
 
-- [ ] **Step 1: 의존성 설치**
+**구현한 모델 5개**: `User` · `Company` · `Archive` · `AnalysisRun` · `VerificationResult`
 
-```bash
-npm i @prisma/client@7.10.0 @prisma/adapter-better-sqlite3@7.10.0 better-sqlite3
-npm i -D prisma@7.10.0 @types/better-sqlite3 tsx
-```
+**의도적으로 뺀 모델 5개**: `RiskAlert`(Task 11) · `SelectionRecord`(Task 14) · `FinancialSnapshot`(Task 6) · `DartCorpCode`(Task 5) · `ResearchJob`(Task 15). 지금 넣으면 그 동작을 검증하는 테스트가 없어 TDD 의 "실패 테스트 없이 프로덕션 코드 없음" 을 어긴다. 각 태스크가 자기 테스트와 함께 마이그레이션을 추가한다 — 개발 단계 SQLite 라 마이그레이션 추가 비용은 없다.
 
-Prisma 7 은 드라이버 어댑터가 필수다. 설치 후 `node_modules/prisma/README.md` 와 `node_modules/@prisma/adapter-better-sqlite3/README.md` 를 읽고 `prisma.config.ts` 형식을 확인한 뒤 Step 3 을 작성한다.
+**테스트가 고정한 동작** (`src/lib/db.test.ts`, `src/lib/repositories/{company,analysisRun}.test.ts`):
+- 클라이언트가 실제로 연결되고 `user` 테이블을 읽는다
+- `Company` 는 같은 이름을 다른 연도에 허용하고 같은 연도에는 거부한다 (레거시 `unique_company_year` 계승)
+- `businessNo`·`industry` 는 null 로 시작한다 — DART 조회가 나중에 채운다
+- `AnalysisRun.formulaVersion` 기본값이 `v2-anthropic` 이고 `status` 는 `running`
+- `AnalysisRun` 삭제 시 `VerificationResult` 가 함께 삭제된다
+- `VerificationResult` 점수 3종은 nullable — **judge 실패가 0점으로 보이면 안 된다**
+- `VerificationResult` 는 실행당 1건만 허용
 
-- [ ] **Step 2: 실패 테스트**
+**실측으로 확인한 함정** (문서·추측과 달랐던 것):
 
-`src/lib/db.test.ts`:
-```ts
-import { describe, it, expect } from "vitest";
-import { prisma } from "@/lib/db";
+| 항목 | 실제 |
+|---|---|
+| 어댑터 클래스명 | `PrismaBetterSqlite3` — `SQLite3` 가 아니다 |
+| `prisma migrate dev` | **클라이언트를 재생성하지 않는다.** `npm run db:migrate` 가 `migrate dev && prisma generate` 를 체인한다. 이걸 놓치면 새 모델이 `undefined` 로 나온다 |
+| `prisma.config.ts` | `{ schema, migrations: { path }, datasource: { url } }` — `defineConfig` 는 `prisma/config` 에서 import |
+| 테스트 환경 | jsdom 에서 Prisma·better-sqlite3 가 그대로 동작한다. node 환경 분리 불필요 |
+| 테스트 병렬 실행 | **DB 테스트 파일이 서로의 행을 지워 FK 위반이 난다.** `fileParallelism: false` + FK 순서대로 지우는 `resetDatabase()` 헬퍼로 해결. 정리 순서는 verification → analysisRun → archive → company → user |
+| `@types/node` 상향 | `NodeJS.ProcessEnv` 의 `NODE_ENV` 가 필수가 돼 기존 `src/hooks.test.ts` 빌드가 깨졌다. `env: { ...process.env, ...env }` 로 수정 |
 
-describe("prisma client", () => {
-  it("connects and lists users table", async () => {
-    const count = await prisma.user.count();
-    expect(count).toBeGreaterThanOrEqual(0);
-  });
-});
-```
+**스크립트**: `db:generate` · `db:migrate` · `db:migrate:test`(테스트 DB 에 deploy) · `postinstall`(clone 후 자동 generate — `src/generated` 는 gitignore 된다)
 
-Run: `npx vitest run src/lib/db.test.ts` → FAIL (`Cannot find module '@/lib/db'`)
-
-- [ ] **Step 3: 스키마·설정·클라이언트**
-
-`prisma/schema.prisma`:
-```prisma
-generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
-}
-
-datasource db {
-  provider = "sqlite"
-}
-
-model User {
-  id           Int       @id @default(autoincrement())
-  email        String    @unique
-  passwordHash String
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  archives     Archive[]
-  analysisRuns AnalysisRun[]
-}
-
-model Company {
-  id            Int      @id @default(autoincrement())
-  name          String
-  year          Int
-  displayOrder  Int      @default(0)
-  isActive      Boolean  @default(true)
-  businessNo    String?
-  industry      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  analysisRuns  AnalysisRun[]
-  riskAlerts    RiskAlert[]
-  selections    SelectionRecord[]
-  financials    FinancialSnapshot[]
-  researchJobs  ResearchJob[]
-
-  @@unique([name, year])
-  @@index([year])
-}
-
-model Archive {
-  id               Int      @id @default(autoincrement())
-  userId           Int
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  originalFilename String
-  storedFilename   String
-  filePath         String
-  fileSize         Int
-  companyName      String
-  analyzerName     String
-  analysisPeriod   String?
-  createdAt        DateTime @default(now())
-}
-
-model AnalysisRun {
-  id             Int       @id @default(autoincrement())
-  companyId      Int
-  company        Company   @relation(fields: [companyId], references: [id])
-  userId         Int
-  user           User      @relation(fields: [userId], references: [id])
-  periodStart    DateTime?
-  periodEnd      DateTime?
-  formulaVersion String    @default("v2-anthropic")
-  model          String
-  status         String    @default("running")
-  newsJson       String
-  resultJson     String?
-  usageJson      String?
-  createdAt      DateTime  @default(now())
-  completedAt    DateTime?
-  verification   VerificationResult?
-
-  @@index([companyId, createdAt])
-}
-
-model VerificationResult {
-  id                  Int         @id @default(autoincrement())
-  analysisRunId       Int         @unique
-  analysisRun         AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
-  status              String
-  faithfulness        Float?
-  sourceCoverage      Float?
-  evidenceMatch       Float?
-  unsupportedClaims   String
-  counterEvidence     String
-  detailJson          String
-  createdAt           DateTime    @default(now())
-}
-
-model RiskAlert {
-  id          Int      @id @default(autoincrement())
-  companyId   Int
-  company     Company  @relation(fields: [companyId], references: [id])
-  category    String
-  severity    Int
-  score       Float
-  newsLink    String
-  headline    String
-  confirmed   Boolean  @default(false)
-  confirmedBy String?
-  createdAt   DateTime @default(now())
-}
-
-model SelectionRecord {
-  id             Int      @id @default(autoincrement())
-  companyId      Int
-  company        Company  @relation(fields: [companyId], references: [id])
-  year           Int
-  grade          String
-  totalScore     Float
-  scoresJson     String
-  formulaVersion String
-  createdAt      DateTime @default(now())
-
-  @@unique([companyId, year])
-}
-
-model FinancialSnapshot {
-  id         Int      @id @default(autoincrement())
-  companyId  Int
-  company    Company  @relation(fields: [companyId], references: [id])
-  fiscalYear Int
-  source     String
-  dataJson   String
-  fetchedAt  DateTime @default(now())
-
-  @@unique([companyId, fiscalYear, source])
-}
-
-model DartCorpCode {
-  corpCode  String   @id
-  corpName  String
-  stockCode String?
-  modifyDate String
-  fetchedAt DateTime @default(now())
-
-  @@index([corpName])
-}
-
-model ResearchJob {
-  id          String    @id @default(cuid())
-  companyId   Int
-  company     Company   @relation(fields: [companyId], references: [id])
-  mode        String
-  status      String    @default("queued")
-  progress    Int       @default(0)
-  reportJson  String?
-  error       String?
-  createdAt   DateTime  @default(now())
-  completedAt DateTime?
-}
-```
-
-`prisma.config.ts` (형식은 Step 1 에서 읽은 README 기준으로 맞춘다):
-```ts
-import "dotenv/config";
-import { defineConfig } from "prisma/config";
-
-export default defineConfig({
-  schema: "prisma/schema.prisma",
-  migrations: { path: "prisma/migrations" },
-  datasource: { url: process.env.DATABASE_URL ?? "file:./prisma/dev.db" },
-});
-```
-
-`src/lib/db.ts`:
-```ts
-import { PrismaClient } from "@/generated/prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-
-const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
-
-function createClient() {
-  const adapter = new PrismaBetterSqlite3({ url });
-  return new PrismaClient({ adapter });
-}
-
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
-
-export const prisma = globalForPrisma.prisma ?? createClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
-```
-
-`.env.example`:
-```
-DATABASE_URL=file:./prisma/dev.db
-AUTH_SECRET=
-ANTHROPIC_API_KEY=
-ANTHROPIC_MODEL=claude-sonnet-5
-NCP_APIGW_API_KEY_ID=
-NCP_APIGW_API_KEY=
-DART_API_KEY=
-NTS_SERVICE_KEY=
-TAVILY_API_KEY=
-GMAIL_ADDRESS=
-GMAIL_APP_PASSWORD=
-SMTP_HOST=
-SMTP_PORT=
-```
-
-`package.json` scripts 추가:
-```json
-"db:generate": "prisma generate",
-"db:migrate": "prisma migrate dev"
-```
-
-`.gitignore` 추가: `prisma/*.db`, `prisma/*.db-journal`, `src/generated/`
-
-`vitest.setup.ts` 상단에 테스트 DB 분리:
-```ts
-process.env.DATABASE_URL = "file:./prisma/test.db";
-```
-
-- [ ] **Step 4: 마이그레이션 실행 후 테스트 통과**
-
-```bash
-npx prisma migrate dev --name init
-DATABASE_URL=file:./prisma/test.db npx prisma migrate deploy
-npx vitest run src/lib/db.test.ts
-```
-Expected: PASS. `npm run build` 도 통과해야 한다 (generated 경로 tsconfig 인식 확인).
-
-- [ ] **Step 5: 커밋**
-
-```bash
-git add prisma prisma.config.ts src/lib/db.ts src/lib/db.test.ts .env.example package.json package-lock.json .gitignore vitest.setup.ts
-git commit -m "feat: prisma schema and database client"
-```
-
----
 
 ### Task 2b: Credentials 인증 + 레거시 scrypt 호환
 
