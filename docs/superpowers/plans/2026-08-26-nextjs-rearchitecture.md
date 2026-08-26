@@ -132,6 +132,27 @@ macOS arm64 에서 후보 버전별로 의존성 해결 + venv 설치 + import �
 
 **미검증:** 위 결과는 macOS arm64 기준이다. 211개 패키지 트리의 리눅스 휠 가용성은 다를 수 있으므로 Task 3 에서 컨테이너 안에서 재검증한다 (venv 약 1.1GB).
 
+## 외부 API 실증 결과 (2026-08-26 재실행, `scripts/api_smoke_test.py`)
+
+| API | 결과 | 비고 |
+|---|---|---|
+| 국세청 휴폐업 | **PASS** | 삼성전자 계속사업자·부가가치세 일반과세자 확인 |
+| DART 공시(`list.json`) | **PASS** | 삼성전자 2024년 10건, 올림플래닛 1건(감사보고서 2023.12) |
+| DART 재무(`fnlttSinglAcnt`) | **PASS**(상장사만) | 삼성전자 사업보고서 30항목. 올림플래닛은 `status=013` |
+| DART 사업자번호(`company.json`) | **PASS** | 삼성전자 1248100998, 올림플래닛 1208824298 |
+| Tavily | **PASS** | 검색결과 정상 |
+| Anthropic | **PASS** | claude-sonnet-4-5 응답 정상 |
+| 네이버 뉴스 | **FAIL** | `Scopes are Empty` 401 — Task 7 블로커 |
+| 나라장터 | **FAIL** | `NO_OPENAPI_SERVICE_ERROR` — Task 5b 블로커 |
+
+**해결된 버그:** 국세청 호출이 401 이었던 원인은 data.go.kr **Decoding 키를 URL 에 인코딩 없이 문자열로 삽입**해 `+` 가 공백으로 해석된 것이다. 쿼리 파라미터로 넘겨 인코딩하면 200 이다. TypeScript 구현 시 `URL.searchParams.set()` 을 쓰면 자동 처리된다 — 절대 템플릿 문자열로 키를 URL 에 넣지 말 것.
+
+**대상 기업 재무 결측이 기본값이다.** 검증 대상 5개사 중 4개사(크립토랩·넷록스·페어리·논스랩)는 DART 고유번호조차 없고, 올림플래닛은 공시는 있으나 `fnlttSinglAcnt`(상장사 대상)로는 재무제표가 나오지 않는다. 벤치마킹의 "결측 지표 제외 정규화"는 예외 처리가 아니라 **주 경로**다.
+
+**미해결 블로커 2건 (사용자 조치 필요):**
+1. **네이버 뉴스 API** — 애플리케이션에 검색 API 사용 신청이 되어 있지 않다. 신청 후 `NAVER_CLIENT_ID/SECRET` 갱신. Task 7 착수 전 필수
+2. **나라장터** — 현재 `NTS_SERVICE_KEY` 로는 미구독이다. 공공데이터포털에서 "조달청_나라장터 사용자정보 서비스" 활용신청 후 **별도 키를 `G2B_SERVICE_KEY` 로 분리** 설정. Task 5b 착수 전 필수
+
 ## OSS 채택 검증 결과 (GitHub API 기준, 2026-08-26 확인)
 
 **라이브러리 직접 차용 (의존성 추가):**
@@ -346,6 +367,9 @@ Task 15 (딥리서치 — Task 3·9 완료 후) → Task 16 (배포)
 | gpt-researcher 0.16.0 이 3.12/3.13 에서 import 불가 (업스트림 버그) | 0.15.1 핀 + `scripts/sidecar_env_check.py` 로 회귀 검증. 업스트림 수정 시 핀 해제 |
 | 사이드카 venv 가 1.1GB — 이미지 비대 | 멀티스테이지 빌드, 런타임 스테이지에 venv 만 복사 |
 | 리눅스 휠 가용성 미검증 (실측은 macOS arm64) | Task 3 에서 컨테이너 내 재검증, 실패 시 파이썬 버전 재선택 |
+| 네이버 뉴스 API 인증 실패 (검색 API 미신청) | Task 7 착수 전 사용 신청·키 갱신. 미해결 시 구글 뉴스 RSS 단독 수집으로 축소 운영 |
+| 나라장터 API 미구독 | Task 5b 착수 전 활용신청 + `G2B_SERVICE_KEY` 분리. 미해결 시 Task 5b 를 보류하고 DART 사업자번호만 사용 |
+| data.go.kr Decoding 키를 URL 에 직접 삽입하면 `+` 가 공백으로 깨짐 | 쿼리 파라미터로 전달해 인코딩 (`URL.searchParams.set`), 템플릿 문자열 금지 |
 
 ## 완료 정의 (Definition of Done)
 

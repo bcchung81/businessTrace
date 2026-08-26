@@ -103,11 +103,24 @@ python3 scripts/sidecar_env_check.py --install 3.12  # 실제 설치·import 검
 
 ## 외부 API 실측 사항
 
-`api_smoke_test.py`가 실제 호출로 검증한 결과다. 재검증 전에 뒤집지 말 것.
+`scripts/api_smoke_test.py`가 실제 호출로 검증한 결과다. 재검증 전에 뒤집지 말 것.
 
-- **OpenDART**: 기업개황 `company.json`의 `bizr_no`로 사업자번호를 얻을 수 있다. 대상 기업 상당수가 DART 미등록이라 재무제표 부재가 정상 케이스 — "미제공" 폴백 필수
-- **나라장터**: `getPrcrmntCorpBasicInfo02` + `inqryDiv=3` + `bizno`로 **사업자번호 조회만** 가능하고 업체명 역검색은 없다. 공공데이터포털 **Decoding 키**를 써야 한다(Encoding 키는 코드 30 오류)
+```bash
+uv run --python 3.12 --with requests --with python-dotenv scripts/api_smoke_test.py
+```
+
+- **data.go.kr 키(국세청·나라장터)는 반드시 쿼리 파라미터로 넘긴다.** Decoding 키를 URL에 문자열로 박으면 `+`가 공백으로 해석돼 401이 난다. TS에서는 `URL.searchParams.set()`을 쓰고 템플릿 문자열은 금지
 - **국세청**: `api.odcloud.kr/api/nts-businessman/v1/status`에 POST, `b_stt_cd == "01"`이 계속사업자
+- **OpenDART**: 기업개황 `company.json`의 `bizr_no`로 사업자번호를 얻는다(삼성전자 1248100998, 올림플래닛 1208824298 확인). 재무는 `fnlttSinglAcnt` + `reprt_code=11011`(사업보고서)
+- **재무 결측이 주 경로다.** 검증 대상 5개사 중 4개사는 DART 고유번호조차 없고, 올림플래닛은 공시는 있으나 `fnlttSinglAcnt`로는 재무제표가 안 나온다(비상장). 벤치마킹의 결측 지표 제외 정규화는 예외가 아니라 기본 동작
+- **나라장터**: `getPrcrmntCorpBasicInfo02` + `inqryDiv=3` + `bizno`로 **사업자번호 조회만** 가능하고 업체명 역검색은 없다
+
+**현재 막혀 있는 것 2건** — 착수 전 사용자 조치가 필요하다.
+
+| API | 증상 | 필요 조치 | 블로킹 |
+|---|---|---|---|
+| 네이버 뉴스 | 401 `Scopes are Empty` | 애플리케이션에 검색 API 사용 신청 후 키 갱신 | Task 7 |
+| 나라장터 | `NO_OPENAPI_SERVICE_ERROR` | 활용신청 후 `G2B_SERVICE_KEY`로 분리 설정 | Task 5b |
 
 키는 전부 `.env`(gitignore됨): `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`, `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `TAVILY_API_KEY`, `GMAIL_*`, `SMTP_*`.
 
