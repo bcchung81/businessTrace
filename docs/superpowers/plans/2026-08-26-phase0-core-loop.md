@@ -125,160 +125,81 @@ src/app/api/verification/route.ts            9
 
 검증용 계정은 확인 후 삭제했다.
 
-### Task 2c: 레거시 SQLite 이관 스크립트
+### Task 2c: 관리자 계정 부트스트랩 — ✅ 완료 (2026-08-27)
+
+**레거시 데이터는 이관하지 않는다 (2026-08-27 결정).** 신규 시스템을 실행해 데이터를 새로 만든다. 이전 계획의 `migrate-legacy.ts` 는 폐기한다. `backup/instance/news_homepage.db` 의 users 10 / archives 3 / companies 42 는 참조용으로만 남는다.
+
+**이 제품은 관리자 전용이다.** 공개 회원가입을 열지 않는다 — 우수기업 선정 근거를 만드는 내부 도구라 계정은 운영자가 발급한다. 자율 가입은 향후 확장 사항으로 두고, 지금은 확장 지점만 남긴다(`User` 에 role 컬럼을 넣지 않는다 — 전원이 관리자다. 역할 분리가 필요해지면 그때 추가한다).
 
 **Files:**
-- Create: `src/lib/services/legacyMigration.ts`, `scripts/migrate-legacy.ts`
-- Test: `src/lib/services/legacyMigration.test.ts`
+- Create: `src/lib/services/passwordPolicy.ts`, `src/lib/services/adminAccount.ts`, `scripts/create-admin.ts`
+- Test: `src/lib/services/passwordPolicy.test.ts`, `src/lib/services/adminAccount.test.ts`
 
 **Interfaces:**
-- Consumes: `prisma` (2a)
-- Produces: `migrateLegacy(sourcePath: string, db: PrismaClient): Promise<{ users: number; archives: number; companies: number }>`
-
-- [ ] **Step 1: 실패 테스트**
-
-테스트는 `better-sqlite3` 로 임시 레거시 DB 를 만들어 사용한다 (실 backup 파일에 의존하지 않는다).
-
-`src/lib/services/legacyMigration.test.ts`:
+- Consumes: `prisma` (2a), `hashPassword` (2b)
+- Produces:
 ```ts
-import { describe, it, expect, beforeEach } from "vitest";
-import Database from "better-sqlite3";
-import { mkdtempSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { prisma } from "@/lib/db";
-import { migrateLegacy } from "@/lib/services/legacyMigration";
-
-function makeLegacyDb() {
-  const dir = mkdtempSync(join(tmpdir(), "legacy-"));
-  const path = join(dir, "news_homepage.db");
-  const db = new Database(path);
-  db.exec(`
-    CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT, created_at TEXT, updated_at TEXT, is_active INTEGER);
-    CREATE TABLE archives (id INTEGER PRIMARY KEY, user_id INTEGER, original_filename TEXT, stored_filename TEXT, file_path TEXT, file_size INTEGER, company_name TEXT, analyzer_name TEXT, analysis_period TEXT, created_at TEXT);
-    CREATE TABLE companies (id INTEGER PRIMARY KEY, name TEXT, year INTEGER, display_order INTEGER, is_active INTEGER, created_at TEXT, updated_at TEXT);
-    INSERT INTO users VALUES (1,'a@b.kr','scrypt:32768:8:1$s$h','2025-01-01 00:00:00','2025-01-01 00:00:00',1);
-    INSERT INTO archives VALUES (1,1,'r.xlsx','r.xlsx','/x/r.xlsx',10,'넷록스','a@b.kr','2024',
-      '2025-01-02 00:00:00');
-    INSERT INTO companies VALUES (1,'넷록스',2024,0,1,'2025-01-01 00:00:00','2025-01-01 00:00:00');
-  `);
-  db.close();
-  return path;
-}
-
-describe("migrateLegacy", () => {
-  beforeEach(async () => {
-    await prisma.archive.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.company.deleteMany();
-  });
-
-  it("copies users, archives, companies preserving ids", async () => {
-    const counts = await migrateLegacy(makeLegacyDb(), prisma);
-    expect(counts).toEqual({ users: 1, archives: 1, companies: 1 });
-    const user = await prisma.user.findUnique({ where: { id: 1 } });
-    expect(user?.passwordHash).toBe("scrypt:32768:8:1$s$h");
-  });
-
-  it("is idempotent", async () => {
-    const path = makeLegacyDb();
-    await migrateLegacy(path, prisma);
-    const counts = await migrateLegacy(path, prisma);
-    expect(counts.users).toBe(1);
-  });
-});
+export type PasswordCheck = { ok: true } | { ok: false; message: string };
+export function checkPasswordStrength(password: string): PasswordCheck;
+export function createAdminAccount(input: { email: string; password: string }): Promise<
+  { ok: true; id: number; email: string } | { ok: false; message: string }
+>;
 ```
 
-Run: `npx vitest run src/lib/services/legacyMigration.test.ts` → FAIL
+**비밀번호 규칙은 레거시 `backup/app/models.py:validate_password` 를 그대로 옮긴다** — 8자 이상 128자 이하, 영문·숫자·특수문자 중 2가지 이상 조합. 운영에서 쓰던 규칙이라 계정 발급 기준이 달라지면 혼란이 생긴다.
 
-- [ ] **Step 2: 구현**
+- [ ] **Step 1: 실패 테스트 — 비밀번호 정책**
 
-`src/lib/services/legacyMigration.ts`:
-```ts
-import Database from "better-sqlite3";
-import type { PrismaClient } from "@/generated/prisma/client";
+경계값을 고정한다: 7자 거부 / 8자 허용 / 129자 거부 / 영문만 거부 / 영문+숫자 허용 / 영문+특수문자 허용 / 숫자+특수문자 허용 / 빈 문자열 거부. 메시지는 레거시 문구 그대로.
 
-type LegacyUser = { id: number; email: string; password_hash: string; created_at: string; updated_at: string; is_active: number };
-type LegacyArchive = { id: number; user_id: number; original_filename: string; stored_filename: string; file_path: string; file_size: number; company_name: string; analyzer_name: string; analysis_period: string | null; created_at: string };
-type LegacyCompany = { id: number; name: string; year: number; display_order: number; is_active: number; created_at: string; updated_at: string };
+- [ ] **Step 2: 실패 테스트 — 계정 생성**
 
-function toDate(s: string | null) {
-  return s ? new Date(s.replace(" ", "T") + "Z") : new Date();
-}
+이메일 정규화(공백·대소문자), 중복 이메일 거부, 약한 비밀번호 거부(정책 재사용), 저장된 해시가 `verifyPassword` 로 검증되는지, 반환값에 해시가 없는지.
 
-export async function migrateLegacy(sourcePath: string, db: PrismaClient) {
-  const legacy = new Database(sourcePath, { readonly: true });
-  const users = legacy.prepare("SELECT * FROM users").all() as LegacyUser[];
-  const archives = legacy.prepare("SELECT * FROM archives").all() as LegacyArchive[];
-  const companies = legacy.prepare("SELECT * FROM companies").all() as LegacyCompany[];
-  legacy.close();
+- [ ] **Step 3: 구현 후 통과 확인**
 
-  for (const u of users) {
-    await db.user.upsert({
-      where: { id: u.id },
-      create: { id: u.id, email: u.email, passwordHash: u.password_hash, isActive: u.is_active === 1, createdAt: toDate(u.created_at), updatedAt: toDate(u.updated_at) },
-      update: { email: u.email, passwordHash: u.password_hash, isActive: u.is_active === 1 },
-    });
-  }
-  for (const c of companies) {
-    await db.company.upsert({
-      where: { id: c.id },
-      create: { id: c.id, name: c.name, year: c.year, displayOrder: c.display_order, isActive: c.is_active === 1, createdAt: toDate(c.created_at), updatedAt: toDate(c.updated_at) },
-      update: { name: c.name, year: c.year, displayOrder: c.display_order, isActive: c.is_active === 1 },
-    });
-  }
-  for (const a of archives) {
-    await db.archive.upsert({
-      where: { id: a.id },
-      create: { id: a.id, userId: a.user_id, originalFilename: a.original_filename, storedFilename: a.stored_filename, filePath: a.file_path, fileSize: a.file_size, companyName: a.company_name, analyzerName: a.analyzer_name, analysisPeriod: a.analysis_period, createdAt: toDate(a.created_at) },
-      update: {},
-    });
-  }
-  return { users: users.length, archives: archives.length, companies: companies.length };
-}
-```
+- [ ] **Step 4: CLI 래퍼**
 
-`scripts/migrate-legacy.ts`:
-```ts
-import { prisma } from "../src/lib/db";
-import { migrateLegacy } from "../src/lib/services/legacyMigration";
-
-const source = process.argv[2];
-if (!source) {
-  console.error("usage: npx tsx scripts/migrate-legacy.ts backup/instance/news_homepage.db");
-  process.exit(1);
-}
-
-const expected = { users: 10, archives: 3, companies: 42 };
-
-migrateLegacy(source, prisma).then((counts) => {
-  console.log(counts);
-  const mismatch = (Object.keys(expected) as (keyof typeof expected)[]).filter((k) => counts[k] !== expected[k]);
-  if (mismatch.length) {
-    console.error(`count mismatch: ${mismatch.join(", ")}`);
-    process.exit(2);
-  }
-});
-```
-
-`tsconfig.json` 의 `include` 에 `scripts/**/*.ts` 가 없다면 추가하지 **않는다** — 스크립트는 `tsx` 로 직접 실행하고 빌드에서 제외한다. `eslint.config.mjs` 는 `scripts/**` 를 lint 대상으로 둔다.
-
-Run: `npx vitest run src/lib/services/legacyMigration.test.ts` → PASS
-
-- [ ] **Step 3: 실 데이터 이관**
+`scripts/create-admin.ts` 는 얇게 유지한다 — 인자 파싱 → `createAdminAccount` 호출 → 결과 출력, 실패 시 exit 1.
 
 ```bash
-cp prisma/dev.db prisma/dev.db.bak-$(date +%Y%m%d)
-npx tsx scripts/migrate-legacy.ts backup/instance/news_homepage.db
+npx tsx scripts/create-admin.ts <email> <password>
 ```
-Expected: `{ users: 10, archives: 3, companies: 42 }`, exit 0. 이어서 2b Step 7 의 수동 로그인을 실제 계정으로 확인한다.
 
-- [ ] **Step 4: 커밋**
+비밀번호를 인자로 받으면 셸 히스토리에 남는다. `ADMIN_PASSWORD` 환경변수를 우선 읽고, 없을 때만 인자를 쓴다.
 
-```bash
-git add src/lib/services/legacyMigration.ts src/lib/services/legacyMigration.test.ts scripts/migrate-legacy.ts
-git commit -m "feat: legacy sqlite migration script"
-```
+- [ ] **Step 5: 커밋** — `feat: admin account bootstrap script`
+
+**구현 결과**: 테스트 11건 추가(전체 63건 통과), lint·build 통과. CLI 로 만든 계정으로 dev 서버 로그인까지 확인했다.
+
+| CLI 경로 | 결과 |
+|---|---|
+| 인자 없음 | usage 출력, exit 1 |
+| 약한 비밀번호 | `비밀번호는 최소 8자 이상이어야 합니다.`, exit 1 |
+| 잘못된 이메일 | `올바른 이메일 형식이 아닙니다.`, exit 1 |
+| 정상 | `계정 생성 완료 — admin@kca.kr (id 3)`, exit 0 |
+| 중복 | `이미 등록된 이메일입니다.`, exit 1 — 기존 비밀번호는 그대로 |
+
+**실측 함정**: `scripts/*.ts` 에서 **top-level await 가 안 된다.** `package.json` 에 `type: module` 이 없어 tsx 가 CJS 로 트랜스파일하고 esbuild 가 거부한다(`Top-level await is currently not supported with the "cjs" output format`). 스크립트는 `async function main()` 으로 감싸고 마지막에 `main()` 을 호출한다.
+
+---
+
+### Task 2d: 기업 관리
+
+관리자가 분석 대상 기업을 등록·수정·비활성화한다. **Task 7~9 가 실제 기업 데이터 위에서 돌려면 이것이 선행돼야 한다** — 레거시 이관을 하지 않으므로 기업 42건도 새로 입력한다.
+
+**Files:**
+- Create: `src/lib/repositories/companyRepository.ts`, `src/app/api/companies/route.ts`, `src/app/api/companies/[id]/route.ts`, `src/app/companies/page.tsx`, `src/components/layout/company-table.tsx`
+- Test: `src/lib/repositories/companyRepository.test.ts`
+
+**Interfaces:**
+- Produces: `listCompanies(year?)`, `createCompany({name, year, businessNo?, industry?})`, `updateCompany(id, patch)`, `deactivateCompany(id)`
+
+레거시 `routes.py:4450~4626` 의 `/api/companies` GET·POST·PUT·DELETE·`/years` 구성을 참조하되, **삭제는 하드 삭제 대신 `isActive=false`** 로 한다 — 분석 이력(`AnalysisRun`)이 기업을 참조하므로 지우면 이력이 끊긴다.
+
+일괄 등록이 필요하다(50개사). CSV 또는 줄바꿈 구분 텍스트를 붙여넣어 `name` 목록을 한 번에 만드는 경로를 포함한다. 연도는 화면에서 선택한다.
+
+**커밋**: `feat: company management for admins`
 
 ---
 
