@@ -10,11 +10,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **성과돋보기** — 뉴스와 공공·금융 데이터를 AI로 분석해 우수기업 50개사 선정 근거를 만들고, 평가위원회에 다차원 분석자료를 제공한다. 핵심 요구사항은 **AI 환각 방지**로, 분석 결과를 공식 출처와 대조해 자동 검증하는 것이 제품의 존재 이유다.
 
-기존 Flask 앱을 **Next.js 풀스택 + Python 사이드카**로 재구축하는 중이다. Phase 0 Task 1(스캐폴딩)까지 완료됐다.
+기존 Flask 앱을 **Next.js 풀스택 + Python 사이드카**로 재구축하는 중이다. Phase 0 은 Task 1(스캐폴딩)·2a(Prisma 스키마)까지 완료됐고 다음은 2b(인증)다.
 
 ## 플랜 주도 개발
 
-`docs/superpowers/plans/2026-08-26-nextjs-rearchitecture.md` 가 작업의 원천이다. 코드를 쓰기 전에 읽는다. (같은 폴더의 `p0-trust-verification.md` 는 Flask 기준 폐기본이다.)
+플랜은 두 층이다. **마스터 로드맵** `docs/superpowers/plans/2026-08-26-nextjs-rearchitecture.md` 가 결정·순서·리스크의 원천이고, **실행 플랜** `docs/superpowers/plans/2026-08-26-phase0-core-loop.md` 가 진행 중인 태스크의 파일·인터페이스·테스트를 담는다. 코드를 쓰기 전에 둘 다 읽는다.
 
 - 태스크 단위 커밋 — 메시지는 플랜에 명시돼 있다
 - 각 태스크는 **실패 테스트 → 구현 → 통과** 순서

@@ -4,7 +4,7 @@
 **갱신:** 2026-08-26 — 설치본 기준 Next.js 16.3.3으로 현행화 (v15 표기 정정, v16 breaking change 반영)
 **갱신 2:** 2026-08-26 — LLM 공급자 Anthropic 확정, 실행 순서를 핵심 루프 우선으로 재배치, 경로·환경변수 불일치 정정. 실행 단위 플랜은 `2026-08-26-phase0-core-loop.md` 로 분리
 **역할:** 이 문서는 **마스터 로드맵**이다 — 결정·순서·리스크를 담는다. 태스크별 파일·인터페이스·테스트 코드는 페이즈별 실행 플랜에 둔다. 외부 API 스펙의 단일 출처는 `.claude/skills/external-apis/SKILL.md` 다
-**이전 플랜(`2026-08-26-p0-trust-verification.md`, Flask 기반)을 대체 — 스택 전환 및 차용 요소 반영**
+**Flask 기반 이전 플랜을 대체 — 스택 전환 및 차용 요소 반영.** 폐기본은 2026-08-27 삭제했고 고유 내용(기본 가중치·리스크 키워드)은 Task 11·12 로 이관했다. 원본이 필요하면 `git log --diff-filter=D -- docs/superpowers/plans/2026-08-26-p0-trust-verification.md` 로 찾는다
 
 **목표:** 뉴스+AI 기반 기업 분석 프로덕션을 Next.js 풀스택으로 재구축하고, Python 사이드카를 통해 딥리서치(gpt-researcher)·재무 정규화(dartlab) 기능을 차용한다. 환각 검증·DART/국세청 연동·리스크 모니터링·벤치마킹·XAI·연도별 이력 트래킹을 포함해 우수기업 선정의 신뢰성·객관성을 강화한다.
 
@@ -326,7 +326,7 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 #### Task 11: 리스크 모니터링
 - **파일**: `src/lib/services/riskMonitor.ts`, `prisma` RiskAlert, `src/app/api/company/risk-alerts/route.ts`, UI 컴포넌트, 테스트
 - **내용**:
-  - 카테고리별 리스크 키워드 사전(처벌/제재/소송/분쟁/리콜 등), 뉴스 스캔 → **점수화 → 임계치 초과 시 경보** 2단계 구조 (news-sentiment-analysis 패턴 차용)
+  - 카테고리별 리스크 키워드 사전 — **처벌·제재·소송·기소·압수수색·배임·횡령·리콜·환수·분쟁**. 뉴스 스캔 → **점수화 → 임계치 초과 시 경보** 2단계 구조 (news-sentiment-analysis 패턴 차용)
   - dartlab 급변동 감지(재무) 신호도 리스크로 추가 (Task 6 연계)
   - 심각도는 참고 수준 — **담당자 확인 플래그 필수, 확인된 알림만 감점 적용** (오탐 방지)
   - UI: 알림 목록 + 확인 처리 버튼, 엑셀 "리스크" 시트 반영
@@ -338,6 +338,7 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 - **내용**:
   - 지표: 뉴스 감성, 수상·투자 실적, 재무(정규화 비율), 검증상태(verified 가점), 리스크(확인된 것만 감점)
   - **산업별 가중치 루브릭**을 JSON 설정으로 분리 (ICT/제조/바이오 등 — startup-evaluator 패턴 차용), Company.industry 필드 기반 적용
+  - 산업 무관 **기본 가중치**: 감성 0.3 / 수상 0.2 / 투자 0.2 / 재무 0.2 / 검증 0.1, 리스크는 감점. 산업별 루브릭이 없는 기업에 이 값을 쓴다
   - min-max 정규화, 결측 지표 제외 정규화, 총점·순위 산출
   - UI: 랭킹 테이블(정렬·필터), 엑셀 랭킹 시트, 가중치 명시 표기
 - **검증**: 정규화/순위/결측 처리/산업별 루브릭 적용 테스트
