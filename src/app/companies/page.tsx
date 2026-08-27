@@ -15,6 +15,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   const year = Number.isInteger(requested) ? requested : (years[0] ?? currentYear());
   const notice = typeof params.notice === "string" ? params.notice : undefined;
   const companies = await listCompanies({ year, includeInactive: true });
+  const active = companies.filter((company) => company.isActive).length;
 
   async function register(formData: FormData) {
     "use server";
@@ -31,23 +32,52 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 p-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">기업 관리</h1>
-        <p className="text-sm text-muted-foreground">
-          분석 대상 기업을 평가연도별로 등록합니다. {year}년 {companies.length}개사.
-        </p>
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {year}년 평가
+          </p>
+          <h1 className="text-[24px] font-bold tracking-[-0.03em]">기업 관리</h1>
+        </div>
+        <dl className="flex items-end gap-6">
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-[11px] text-muted-foreground">분석 대상</dt>
+            <dd className="font-mono text-[20px] font-semibold leading-none">{active}</dd>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-[11px] text-muted-foreground">등록 전체</dt>
+            <dd className="font-mono text-[20px] font-semibold leading-none text-muted-foreground">
+              {companies.length}
+            </dd>
+          </div>
+        </dl>
       </header>
 
+      {years.length > 1 ? (
+        <nav aria-label="평가연도" className="flex flex-wrap gap-1.5">
+          {years.map((entry) => (
+            <a
+              key={entry}
+              href={`/companies?year=${entry}`}
+              aria-current={entry === year ? "page" : undefined}
+              className="rounded-md border border-border px-2.5 py-1 font-mono text-[12px] text-muted-foreground transition-colors hover:bg-surface aria-[current=page]:border-primary aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground"
+            >
+              {entry}
+            </a>
+          ))}
+        </nav>
+      ) : null}
+
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">일괄 등록</h2>
+        <h2 className="text-[13px] font-semibold text-muted-foreground">일괄 등록</h2>
         <CompanyBulkForm year={year} action={register} notice={notice} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">등록된 기업</h2>
+        <h2 className="text-[13px] font-semibold text-muted-foreground">등록된 기업</h2>
         <CompanyTable companies={companies} />
       </section>
-    </main>
+    </div>
   );
 }

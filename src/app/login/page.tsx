@@ -28,7 +28,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const autofillEnabled = process.env.NODE_ENV !== "production";
 
   return (
-    <main className="flex min-h-svh items-center justify-center p-6">
+    <div className="flex min-h-svh items-center justify-center bg-surface p-6">
       <LoginForm
         callbackUrl={callbackUrl}
         error={error}
@@ -36,6 +36,6 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         defaultEmail={autofillEnabled ? process.env.DEV_AUTOFILL_EMAIL : undefined}
         defaultPassword={autofillEnabled ? process.env.DEV_AUTOFILL_PASSWORD : undefined}
       />
-    </main>
+    </div>
   );
 }

@@ -63,6 +63,16 @@ Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는
 - Turbopack 기본 — webpack 커스텀 설정 금지
 - `images.domains` deprecated → `remotePatterns`
 
+## 디자인
+
+**Montage(Wanted Design System)의 디자인 언어만 차용한다.** 구현은 shadcn/ui + Tailwind v4 그대로다.
+
+- 런타임은 쓸 수 없다 — `@wanteddev/wds` 는 GitHub Packages 사설 레지스트리에 있고, MCP 서버(`montage.wanted.co.kr/mcp`)는 구글 OAuth 에 `hd=wantedlab.com` 이 걸려 사내 계정 전용이다. 저장소만 MIT 공개다
+- 색·간격 토큰은 `packages/wds-theme`(MIT) 값을 `src/app/globals.css` 의 CSS 변수로 옮겼다. primary `#0066FF`, label `#171719`, line `#E1E2E4`, status positive/cautionary/negative
+- 상태 색은 이 제품의 의미에 묶는다 — `verified`(검증 통과) · `review`(검토 필요) · `risk`(리스크). 장식으로 쓰지 않는다
+- 본문 폰트는 Pretendard(CDN, `layout.tsx` head). 숫자 열은 `tabular-nums` — 사업자번호·점수가 세로로 정렬돼야 스캔이 된다
+- **시그니처: 대조 가능성 표시.** 사업자번호가 없는 기업은 국세청·DART 와 대조할 수 없어 뉴스 외 근거가 없다. 빈칸이 아니라 경고로 다룬다
+
 ## OSS 차용 원칙
 
 `dartlab`(Apache-2.0)만 의존성으로 직접 채용한다. **라이선스가 없는 저장소의 코드는 한 줄도 복사하지 않는다** — 아이디어만 참고해 자체 구현한다.

@@ -10,31 +10,31 @@ const NAV_ITEMS = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-svh bg-background text-foreground">
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
-        <nav aria-label="주요 메뉴" className="flex flex-col gap-1 p-3">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-md px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-5">
-          <Link href="/" className="text-sm font-semibold tracking-tight">
-            성과돋보기
+    <div className="flex min-h-svh flex-col bg-surface text-foreground">
+      <header className="sticky top-0 z-10 border-b border-hairline bg-background/85 backdrop-blur">
+        <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-6 px-5">
+          <Link href="/" className="flex items-baseline gap-2">
+            <span className="text-[15px] font-bold tracking-[-0.03em]">성과돋보기</span>
+            <span className="hidden text-[11px] font-medium text-muted-foreground sm:inline">
+              우수기업 선정 근거 관리
+            </span>
           </Link>
-          <span className="text-xs text-muted-foreground">
-            뉴스·AI 기반 기업 분석
-          </span>
-        </header>
-        <main className="min-w-0 flex-1 p-6">{children}</main>
-      </div>
+
+          <nav aria-label="주요 메뉴" className="flex items-center gap-1 overflow-x-auto">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-md px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8">{children}</main>
     </div>
   );
 }
