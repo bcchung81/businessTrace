@@ -15,11 +15,14 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
     "@prisma/adapter-better-sqlite3": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "better-sqlite3": "^13.0.3",
+    "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "iconv-lite": "^0.7.3",
     "lucide-react": "^1.34.0",
     "next": "16.3.3",
     "next-auth": "^5.0.0-beta.32",
@@ -27,6 +30,7 @@
     "radix-ui": "^1.6.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "rss-parser": "^3.13.0",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },
@@ -36,6 +40,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@types/better-sqlite3": "^9.6.0",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

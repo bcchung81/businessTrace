@@ -213,7 +213,7 @@ npx tsx scripts/create-admin.ts <email> <password>
 
 ---
 
-### Task 7: 뉴스 수집 서비스 (네이버 API HUB + 구글 RSS)
+### Task 7: 뉴스 수집 서비스 (네이버 API HUB + 구글 RSS) — ✅ 완료 (2026-08-27)
 
 **Files:**
 - Create: `src/lib/services/newsCollector.ts`, `src/lib/services/articleBody.ts`, `src/lib/services/pressMapping.json` (`cp backup/domain_press_mapping.json`), `src/app/api/news/route.ts`
@@ -588,6 +588,29 @@ Run: `npx vitest run src/lib/services/newsCollector.test.ts` → PASS
 git add src/lib/services/newsCollector.ts src/lib/services/newsCollector.test.ts src/lib/services/articleBody.ts src/lib/services/articleBody.test.ts src/lib/services/__fixtures__ src/lib/services/pressMapping.json src/app/api/news package.json package-lock.json
 git commit -m "feat: news collection service in typescript"
 ```
+
+**구현 결과**: 테스트 40건 추가(전체 128건 통과), lint·build 통과, 실제 네이버 HUB 호출로 확인.
+
+**파일**: `newsTypes.ts` · `textSimilarity.ts` · `articleBody.ts` · `newsCollector.ts` · `pressMapping.json` · `src/app/api/news/route.ts` · 픽스처 3개
+
+**언론사 매핑**: JSON(181) 이 하드코딩 딕셔너리(173) 의 상위집합이었다 — 드리프트 우려는 근거 없었다. JSON 을 그대로 쓴다.
+
+**실제 API 검증** (`GET /api/news?query=...&limit=10`):
+
+| 기업 | 수집 | 중복제거 | primary | 상위 항목 |
+|---|---|---|---|---|
+| 넷록스 | 10 | 12 | 5 | 언급 13·8·6·7회, 전부 넷록스가 주제 |
+| 논스랩 | 10 | 24 | 2 | 블록체인 지갑 '콜렛' 등 — 스파이크의 제목매치 0건보다 개선 |
+
+논스랩은 제목에 사명이 한 번도 없어 스파이크에서 `no_news` 로 판정됐는데, **본문 크롤링 + 언급 3회 기준을 더하니 실제 관련 기사 2건을 건졌다.** 제목만으로 잘랐다면 놓쳤을 기사다 — `mention` 을 버리지 않고 등급으로 남긴 결정이 실측으로 뒷받침됐다.
+
+**실측 함정**:
+
+| 항목 | 실제 |
+|---|---|
+| base64 폴백 URL 추출 | 정규식이 `[^\s"'\\]+` 였을 때 protobuf 구분자 바이트(`\xd2`)가 URL 끝에 붙었다. 문자 집합을 URL 허용 문자로 좁혀야 한다 — 테스트가 잡았다 |
+| vitest 픽스처 로딩 | `readFileSync(new URL(..., import.meta.url))` 는 `The URL must be of scheme file` 로 죽는다. vite 네이티브 `?raw` import 를 쓰고 `src/vite-raw.d.ts` 로 타입을 선언한다 |
+| `jsdom` | 타입이 없어 빌드가 깨진다. `@types/jsdom` 필요 |
 
 ---
 

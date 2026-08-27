@@ -1,0 +1,212 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  collectNews,
+  removeDuplicates,
+  pressNameFromUrl,
+  classifyRelevance,
+  NewsRateLimitError,
+} from "@/lib/services/newsCollector";
+import type { NewsItem } from "@/lib/services/newsTypes";
+import naverFixture from "./__fixtures__/naver-news.json";
+import googleFixture from "./__fixtures__/google-news.rss?raw";
+
+function fakeFetch(overrides: { naverStatus?: number } = {}) {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("naverapihub.apigw.ntruss.com")) {
+      if (overrides.naverStatus && overrides.naverStatus !== 200) {
+        return new Response("", { status: overrides.naverStatus });
+      }
+      const start = Number(new URL(url).searchParams.get("start") ?? "1");
+      return new Response(JSON.stringify(start === 1 ? naverFixture : { items: [] }), { status: 200 });
+    }
+    if (url.includes("news.google.com/rss/search")) {
+      return new Response(googleFixture, { status: 200 });
+    }
+    return new Response("<html><body></body></html>", { status: 200 });
+  }) as unknown as typeof fetch;
+}
+
+describe("pressNameFromUrl", () => {
+  it("maps a known publisher domain to its Korean name", () => {
+    expect(pressNameFromUrl("https://www.etnews.com/2024")).toBe("전자신문");
+  });
+
+  it("falls back to the hostname for an unmapped publisher", () => {
+    expect(pressNameFromUrl("https://unknown.example.com/a")).toBe("unknown.example.com");
+  });
+
+  it("does not throw on a malformed link", () => {
+    expect(pressNameFromUrl("not-a-url")).toBe("알 수 없음");
+  });
+});
+
+describe("removeDuplicates", () => {
+  const base: NewsItem = {
+    title: "",
+    link: "",
+    description: "",
+    content: "",
+    published: "2025-01-01T00:00:00.000Z",
+    source: "",
+    provider: "naver",
+    titleMatch: false,
+    mentions: 0,
+    relevance: "unrelated",
+  };
+
+  it("drops a rewritten headline that says the same thing", () => {
+    const { items, removed } = removeDuplicates(
+      [
+        { ...base, title: "넷록스, 시리즈A 투자 유치" },
+        { ...base, title: "넷록스 시리즈A 투자유치" },
+        { ...base, title: "전혀 다른 기사 제목입니다" },
+      ],
+      0.5,
+    );
+
+    expect(items).toHaveLength(2);
+    expect(removed).toBe(1);
+  });
+
+  it("keeps everything when the threshold disables deduplication", () => {
+    const { removed } = removeDuplicates([{ ...base, title: "같은 제목" }, { ...base, title: "같은 제목" }], 0);
+
+    expect(removed).toBe(0);
+  });
+});
+
+describe("classifyRelevance", () => {
+  it("treats a title match as the article being about the company", () => {
+    expect(classifyRelevance({ title: "넷록스 투자 유치", content: "본문", name: "넷록스" })).toMatchObject({
+      titleMatch: true,
+      relevance: "primary",
+    });
+  });
+
+  it("treats three or more body mentions as the article being about the company", () => {
+    expect(
+      classifyRelevance({ title: "통신 3사 협력", content: "넷록스 넷록스 넷록스", name: "넷록스" }),
+    ).toMatchObject({ titleMatch: false, mentions: 3, relevance: "primary" });
+  });
+
+  it("treats a single passing mention as a mention, not a subject", () => {
+    expect(
+      classifyRelevance({
+        title: "TTA·6G포럼, 필리핀 통신사와 교류",
+        content: "참여 기업으로 넷록스 등이 이름을 올렸다",
+        name: "넷록스",
+      }),
+    ).toMatchObject({ mentions: 1, relevance: "mention" });
+  });
+
+  it("promotes two mentions when the company appears in the lead", () => {
+    expect(
+      classifyRelevance({ title: "업계 동향", content: `넷록스가 나선다. ${"내용 ".repeat(200)}넷록스`, name: "넷록스" }),
+    ).toMatchObject({ relevance: "primary" });
+  });
+
+  it("marks an article that never names the company as unrelated", () => {
+    expect(classifyRelevance({ title: "삼성전자 실적", content: "반도체", name: "넷록스" })).toMatchObject({
+      mentions: 0,
+      relevance: "unrelated",
+    });
+  });
+});
+
+describe("collectNews", () => {
+  beforeEach(() => {
+    process.env.NCP_APIGW_API_KEY_ID = "hub-id";
+    process.env.NCP_APIGW_API_KEY = "hub-secret";
+  });
+
+  it("calls the API HUB endpoint with the HUB headers, not the legacy ones", async () => {
+    const fetchImpl = fakeFetch();
+
+    await collectNews({ query: "넷록스", google: false }, { fetchImpl });
+
+    const [url, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(String(url)).toContain("https://naverapihub.apigw.ntruss.com/search/v1/news");
+    expect((init as RequestInit).headers).toMatchObject({
+      "X-NCP-APIGW-API-KEY-ID": "hub-id",
+      "X-NCP-APIGW-API-KEY": "hub-secret",
+    });
+  });
+
+  it("searches by relevance and quotes the company name", async () => {
+    const fetchImpl = fakeFetch();
+
+    await collectNews({ query: "넷록스", google: false }, { fetchImpl });
+
+    const url = new URL(String((fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0]));
+    expect(url.searchParams.get("sort")).toBe("sim");
+    expect(url.searchParams.get("query")).toBe('"넷록스"');
+  });
+
+  it("strips the markup Naver wraps around matched terms", async () => {
+    const { items } = await collectNews({ query: "넷록스", google: false }, { fetchImpl: fakeFetch() });
+
+    expect(items.every((item) => !item.title.includes("<b>"))).toBe(true);
+    expect(items[0].title).toContain("넷록스");
+  });
+
+  it("merges both providers and records where each item came from", async () => {
+    const { items } = await collectNews({ query: "넷록스" }, { fetchImpl: fakeFetch() });
+
+    expect(items.some((item) => item.provider === "naver")).toBe(true);
+    expect(items.some((item) => item.provider === "google")).toBe(true);
+  });
+
+  it("reports no news when nothing collected is about the company", async () => {
+    const { noNews, primaryCount } = await collectNews(
+      { query: "논스랩", google: false },
+      { fetchImpl: fakeFetch() },
+    );
+
+    expect(primaryCount).toBe(0);
+    expect(noNews).toBe(true);
+  });
+
+  it("puts articles about the company ahead of passing mentions", async () => {
+    const { items } = await collectNews({ query: "넷록스", google: false }, { fetchImpl: fakeFetch() });
+
+    const firstMention = items.findIndex((item) => item.relevance !== "primary");
+    const lastPrimary = items.map((item) => item.relevance).lastIndexOf("primary");
+    expect(firstMention === -1 || lastPrimary < firstMention).toBe(true);
+  });
+
+  it("drops articles published before the requested period", async () => {
+    const { items } = await collectNews(
+      { query: "넷록스", google: false, startDate: "2030-01-01" },
+      { fetchImpl: fakeFetch() },
+    );
+
+    expect(items).toHaveLength(0);
+  });
+
+  it("caps the collection at the requested limit", async () => {
+    const { items } = await collectNews({ query: "넷록스", google: false, limit: 2 }, { fetchImpl: fakeFetch() });
+
+    expect(items).toHaveLength(2);
+  });
+
+  it("raises a typed error when the HUB quota is exhausted", async () => {
+    await expect(
+      collectNews({ query: "넷록스", google: false }, { fetchImpl: fakeFetch({ naverStatus: 429 }) }),
+    ).rejects.toBeInstanceOf(NewsRateLimitError);
+  });
+
+  it("still returns Naver results when Google RSS is down", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("naverapihub")) return new Response(JSON.stringify(naverFixture), { status: 200 });
+      if (url.includes("news.google.com")) return new Response("", { status: 503 });
+      return new Response("<html></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const { items, errors } = await collectNews({ query: "넷록스" }, { fetchImpl });
+
+    expect(items.length).toBeGreaterThan(0);
+    expect(errors.join(" ")).toContain("google");
+  });
+});

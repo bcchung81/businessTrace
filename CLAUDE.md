@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **성과돋보기** — 뉴스와 공공·금융 데이터를 AI로 분석해 우수기업 50개사 선정 근거를 만들고, 평가위원회에 다차원 분석자료를 제공한다. 핵심 요구사항은 **AI 환각 방지**로, 분석 결과를 공식 출처와 대조해 자동 검증하는 것이 제품의 존재 이유다.
 
-기존 Flask 앱을 **Next.js 풀스택 + Python 사이드카**로 재구축하는 중이다. **관리자 전용 도구다** — 공개 회원가입을 열지 않고 계정은 `npx tsx scripts/create-admin.ts` 로 발급한다. 자율 가입은 향후 확장 사항이다. 레거시 데이터는 이관하지 않고 신규 시스템으로 새로 만든다. Phase 0 은 Task 1·2a·2b·2c·2d 까지 완료됐고 다음은 핵심 루프(7 수집 → 8 분석 → 9 검증 → 10 리포트)다.
+기존 Flask 앱을 **Next.js 풀스택 + Python 사이드카**로 재구축하는 중이다. **관리자 전용 도구다** — 공개 회원가입을 열지 않고 계정은 `npx tsx scripts/create-admin.ts` 로 발급한다. 자율 가입은 향후 확장 사항이다. 레거시 데이터는 이관하지 않고 신규 시스템으로 새로 만든다. Phase 0 은 Task 1·2a·2b·2c·2d 까지 완료됐고 핵심 루프는 Task 7(뉴스 수집)까지 완료됐고 다음은 8(Anthropic 분석)이다.
 
 ## 플랜 주도 개발
 
