@@ -1,0 +1,205 @@
+import { z } from "zod";
+import type { LlmClient, Usage } from "@/lib/services/llm";
+import { resolveModel } from "@/lib/services/llm";
+import type { NewsItem } from "@/lib/services/newsTypes";
+import {
+  SYSTEM_NEWS,
+  awardPrompt,
+  investmentPrompt,
+  opinionPrompt,
+  trendPrompt,
+} from "@/lib/services/prompts/legacy";
+
+const yesNo = z.union([z.literal("Y"), z.literal("N")]);
+
+const trendSchema = z.object({
+  trend_analysis: z.object({
+    is_about_company: yesNo,
+    news_trend_summary: z.string(),
+    sentiment_score: z.number().int().min(-10).max(10),
+    sentiment_label: z.string(),
+  }),
+});
+
+const awardSchema = z.object({
+  award_analysis: z.object({
+    is_award_related: yesNo,
+    award_name: z.string(),
+    award_reason: z.string(),
+  }),
+});
+
+const investmentSchema = z.object({
+  investment_analysis: z.object({
+    is_investment_related: yesNo,
+    investment_name: z.string(),
+    investment_reason: z.string(),
+  }),
+});
+
+const opinionSchema = z.object({ comprehensive_opinion: z.string() });
+
+export type Trend = z.infer<typeof trendSchema>["trend_analysis"];
+export type Award = z.infer<typeof awardSchema>["award_analysis"];
+export type Investment = z.infer<typeof investmentSchema>["investment_analysis"];
+
+export type NewsAnalysis = {
+  news: NewsItem;
+  isAboutCompany: boolean;
+  trend: Trend;
+  award: Award;
+  investment: Investment;
+};
+
+export type AnalysisStats = {
+  totalNews: number;
+  scoredNews: number;
+  excludedNews: number;
+  averageSentiment: number;
+  positiveCount: number;
+  negativeCount: number;
+  neutralCount: number;
+  awardCount: number;
+  investmentCount: number;
+};
+
+export type AnalysisResult = {
+  companyName: string;
+  model: string;
+  analyses: NewsAnalysis[];
+  comprehensiveOpinion: string;
+  stats: AnalysisStats;
+  usage: Usage;
+};
+
+export type AnalyzeStep = "trend" | "award" | "investment" | "opinion";
+
+export type AnalyzeEvent =
+  | { type: "progress"; step: AnalyzeStep; current: number; total: number }
+  | { type: "news_done"; index: number; analysis: NewsAnalysis }
+  | { type: "complete"; runId: number; result: AnalysisResult }
+  | { type: "error"; message: string };
+
+const NEUTRAL_TREND: Trend = {
+  is_about_company: "N",
+  news_trend_summary: "동향실적 분석에 실패해 중립으로 처리했습니다.",
+  sentiment_score: 0,
+  sentiment_label: "중립",
+};
+
+const NO_AWARD: Award = {
+  is_award_related: "N",
+  award_name: "",
+  award_reason: "수상실적 분석에 실패했습니다.",
+};
+
+const NO_INVESTMENT: Investment = {
+  is_investment_related: "N",
+  investment_name: "",
+  investment_reason: "투자실적 분석에 실패했습니다.",
+};
+
+function addUsage(total: Usage, next: Usage): Usage {
+  return {
+    inputTokens: total.inputTokens + next.inputTokens,
+    outputTokens: total.outputTokens + next.outputTokens,
+    cacheReadTokens: total.cacheReadTokens + next.cacheReadTokens,
+  };
+}
+
+function round(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function summarise(analyses: NewsAnalysis[]): AnalysisStats {
+  const about = analyses.filter((analysis) => analysis.isAboutCompany);
+  const scores = about.map((analysis) => analysis.trend.sentiment_score);
+  const total = scores.reduce((sum, score) => sum + score, 0);
+
+  return {
+    totalNews: analyses.length,
+    scoredNews: about.length,
+    excludedNews: analyses.length - about.length,
+    averageSentiment: about.length === 0 ? 0 : round(total / about.length),
+    positiveCount: scores.filter((score) => score > 0).length,
+    negativeCount: scores.filter((score) => score < 0).length,
+    neutralCount: scores.filter((score) => score === 0).length,
+    awardCount: about.filter((analysis) => analysis.award.is_award_related === "Y").length,
+    investmentCount: about.filter((analysis) => analysis.investment.is_investment_related === "Y").length,
+  };
+}
+
+export async function* analyzeCompany(
+  companyName: string,
+  news: NewsItem[],
+  deps: { llm: LlmClient; model?: string },
+): AsyncGenerator<AnalyzeEvent> {
+  if (news.length === 0) {
+    yield { type: "error", message: "분석할 뉴스가 없습니다." };
+    return;
+  }
+
+  const model = deps.model ?? resolveModel();
+  const analyses: NewsAnalysis[] = [];
+  let usage: Usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
+
+  async function ask<T>(prompt: string, schema: z.ZodType<T>, fallback: T): Promise<T> {
+    try {
+      const answer = await deps.llm.json({ system: SYSTEM_NEWS, prompt, schema });
+      usage = addUsage(usage, answer.usage);
+      return answer.data;
+    } catch {
+      return fallback;
+    }
+  }
+
+  for (const [index, item] of news.entries()) {
+    const position = index + 1;
+
+    yield { type: "progress", step: "trend", current: position, total: news.length };
+    const trend = (
+      await ask(trendPrompt(companyName, item), trendSchema, { trend_analysis: NEUTRAL_TREND })
+    ).trend_analysis;
+
+    yield { type: "progress", step: "award", current: position, total: news.length };
+    const award = (await ask(awardPrompt(companyName, item), awardSchema, { award_analysis: NO_AWARD }))
+      .award_analysis;
+
+    yield { type: "progress", step: "investment", current: position, total: news.length };
+    const investment = (
+      await ask(investmentPrompt(companyName, item), investmentSchema, {
+        investment_analysis: NO_INVESTMENT,
+      })
+    ).investment_analysis;
+
+    const analysis: NewsAnalysis = {
+      news: item,
+      isAboutCompany: trend.is_about_company === "Y",
+      trend,
+      award,
+      investment,
+    };
+    analyses.push(analysis);
+    yield { type: "news_done", index, analysis };
+  }
+
+  const stats = summarise(analyses);
+
+  yield { type: "progress", step: "opinion", current: news.length, total: news.length };
+  const opinion = await ask(opinionPrompt(companyName, stats), opinionSchema, {
+    comprehensive_opinion: "종합분석 생성에 실패했습니다.",
+  });
+
+  yield {
+    type: "complete",
+    runId: 0,
+    result: {
+      companyName,
+      model,
+      analyses,
+      comprehensiveOpinion: opinion.comprehensive_opinion,
+      stats,
+      usage,
+    },
+  };
+}

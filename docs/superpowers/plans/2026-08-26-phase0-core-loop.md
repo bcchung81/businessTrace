@@ -614,7 +614,7 @@ git commit -m "feat: news collection service in typescript"
 
 ---
 
-### Task 8: Anthropic 분석 엔진 + SSE
+### Task 8: Anthropic 분석 엔진 + SSE — ✅ 완료 (2026-08-27)
 
 **Files:**
 - Create: `src/lib/services/llm.ts`, `src/lib/services/prompts/legacy.ts`, `src/lib/services/analyzer.ts`, `src/lib/repositories/analysisRun.ts`, `src/app/api/analyze/route.ts`
@@ -891,6 +891,34 @@ Run: `npm test` → PASS, `npm run build` → PASS
 ```bash
 git add src/lib/services/llm.ts src/lib/services/llm.test.ts src/lib/services/prompts src/lib/services/analyzer.ts src/lib/services/analyzer.test.ts src/lib/repositories/analysisRun.ts src/app/api/analyze package.json package-lock.json docs/superpowers/plans/2026-08-26-phase0-core-loop.md
 git commit -m "feat: anthropic analysis engine with SSE streaming"
+```
+
+**구현 결과**: 테스트 38건 추가(전체 166건 통과), lint·build 통과, 실제 Anthropic 호출로 2개사 검증.
+
+**파일**: `llm.ts` · `prompts/legacy.ts` · `analyzer.ts` · `sessionClaims.ts` · `repositories/analysisRun.ts` · `app/api/analyze/route.ts`
+
+**옥타코 사고 수정이 실측으로 확인됐다.** 동향 프롬프트에 `is_about_company` 판정을 넣고, 집계에서 제외한다:
+
+```
+옥타코 6건 분석 (2026-08-27 실측)
+  [집계] score= 6 primary m=17 | "보안키를 넘어"...옥타코, AI시대를 위한 디지털 트러스트
+  [제외] score= 0 mention m= 2 | [인증 보안 ②] 로그인 넘어 실시간 검증으로…OT부터 AI까지
+  [집계] score= 5 primary m=14 | "생체인증 넘어 AI 에이전트도 승인"…옥타코, '이지핑거' 고도화
+  ...
+완료: 집계 5/6건 (제외 1) 평균감성 5
+```
+
+레거시라면 저 `mention` 기사의 점수도 옥타코 실적에 합산됐다. 수상·투자 판정도 `primary` 기사에서만 센다.
+
+넷록스 3건 실측: 토큰 in=19,132 / out=3,226, 평균감성 5, 투자 2건.
+
+**실측 함정**:
+
+| 항목 | 실제 |
+|---|---|
+| `session.user.id` | next-auth JWT 전략은 **id 를 세션에 싣지 않는다.** `/api/companies` 는 `user` 존재만 봐서 통과했지만 `/api/analyze` 가 401 로 막혔다. `jwt`·`session` 콜백으로 `uid` 를 날라야 한다 — Task 2b 의 결함이 여기서 드러났다 |
+| 테스트 페이크 디스패치 | 종합의견 프롬프트에 "수상 관련: 2건" 이 들어 있어 `prompt.includes("수상")` 이 수상 분기로 잘못 빠졌다. 페이크는 프롬프트 고유 문구로 갈라야 한다 |
+| `AnalysisRun.status` | 집계 대상이 0건이면 `completed` 가 아니라 `no_news` 다. 분석은 돌았지만 근거가 없다는 뜻이라 구분해야 한다 |
 ```
 
 ---
