@@ -1,0 +1,116 @@
+import { describe, it, expect } from "vitest";
+import { checkSources, evidenceMatch, decide } from "@/lib/services/verificationScores";
+import type { NewsAnalysis } from "@/lib/services/analyzer";
+import type { NewsItem } from "@/lib/services/newsTypes";
+
+function analysis(patch: { link?: string; summary?: string; content?: string; title?: string } = {}) {
+  const news: NewsItem = {
+    title: patch.title ?? "넷록스, 시리즈A 투자 유치",
+    link: patch.link ?? "https://www.etnews.com/1",
+    description: "요약",
+    content: patch.content ?? "넷록스가 시리즈A 투자를 유치했다고 30일 밝혔다.",
+    published: "2025-01-15T00:12:00.000Z",
+    source: "전자신문",
+    provider: "naver",
+    titleMatch: true,
+    mentions: 4,
+    relevance: "primary",
+  };
+
+  return {
+    news,
+    isAboutCompany: true,
+    trend: {
+      is_about_company: "Y" as const,
+      news_trend_summary: patch.summary ?? "넷록스가 시리즈A 투자를 유치했다",
+      sentiment_score: 6,
+      sentiment_label: "긍정적",
+    },
+    award: { is_award_related: "N" as const, award_name: "", award_reason: "" },
+    investment: { is_investment_related: "Y" as const, investment_name: "시리즈A", investment_reason: "" },
+  } satisfies NewsAnalysis;
+}
+
+describe("checkSources", () => {
+  it("counts only http links as citable sources", () => {
+    const result = checkSources([
+      analysis({ link: "https://www.etnews.com/1" }),
+      analysis({ link: "not-a-url" }),
+      analysis({ link: "" }),
+    ]);
+
+    expect(result.coverage).toBeCloseTo(1 / 3);
+    expect(result.invalid).toHaveLength(2);
+  });
+
+  it("rejects a non-http scheme so a javascript link cannot pass as a citation", () => {
+    expect(checkSources([analysis({ link: "javascript:alert(1)" })]).coverage).toBe(0);
+  });
+
+  it("reports full coverage when every article carries a real link", () => {
+    expect(checkSources([analysis(), analysis()]).coverage).toBe(1);
+  });
+
+  it("treats an empty analysis as zero coverage rather than dividing by zero", () => {
+    expect(checkSources([]).coverage).toBe(0);
+  });
+});
+
+describe("evidenceMatch", () => {
+  it("scores high when the summary reuses the wording of the article", () => {
+    const score = evidenceMatch([
+      analysis({
+        summary: "넷록스가 시리즈A 투자를 유치했다",
+        content: "넷록스가 시리즈A 투자를 유치했다고 30일 밝혔다.",
+      }),
+    ]);
+
+    expect(score).toBeGreaterThan(0.6);
+  });
+
+  it("scores low when the summary talks about something the article never says", () => {
+    const score = evidenceMatch([
+      analysis({ summary: "삼성전자가 반도체 실적을 발표했다", content: "넷록스가 시리즈A 투자를 유치했다." }),
+    ]);
+
+    expect(score).toBeLessThan(0.3);
+  });
+
+  it("averages across every analysed article", () => {
+    const score = evidenceMatch([
+      analysis({ summary: "넷록스가 시리즈A 투자를 유치했다", content: "넷록스가 시리즈A 투자를 유치했다" }),
+      analysis({ summary: "전혀 무관한 문장입니다", content: "넷록스가 시리즈A 투자를 유치했다" }),
+    ]);
+
+    expect(score).toBeGreaterThan(0.2);
+    expect(score).toBeLessThan(0.8);
+  });
+
+  it("is zero when there is nothing to compare", () => {
+    expect(evidenceMatch([])).toBe(0);
+    expect(evidenceMatch([analysis({ summary: "", content: "" })])).toBe(0);
+  });
+});
+
+describe("decide", () => {
+  const cases: Array<[number | null, number, number, string]> = [
+    [0.85, 0.5, 0.4, "verified"],
+    [0.849, 0.5, 0.4, "needs_review"],
+    [0.85, 0.499, 0.4, "needs_review"],
+    [0.85, 0.5, 0.399, "needs_review"],
+    [1, 1, 1, "verified"],
+    [null, 1, 1, "needs_review"],
+    [0, 0, 0, "needs_review"],
+  ];
+
+  it.each(cases)(
+    "faithfulness=%s coverage=%s evidence=%s decides %s",
+    (faithfulness, sourceCoverage, evidenceMatchScore, expected) => {
+      expect(decide({ faithfulness, sourceCoverage, evidenceMatch: evidenceMatchScore })).toBe(expected);
+    },
+  );
+
+  it("never verifies when the judge score is missing, however good the other gates are", () => {
+    expect(decide({ faithfulness: null, sourceCoverage: 1, evidenceMatch: 1 })).toBe("needs_review");
+  });
+});

@@ -923,7 +923,7 @@ git commit -m "feat: anthropic analysis engine with SSE streaming"
 
 ---
 
-### Task 9: 다층 환각 검증기
+### Task 9: 다층 환각 검증기 — ✅ 완료 (2026-08-28)
 
 스킬 `verification-pipeline` 을 먼저 읽는다. 임의 단순화 금지.
 
@@ -1074,6 +1074,40 @@ Run: `npm test` → PASS, `npm run build` → PASS
 ```bash
 git add src/lib/services/verification.ts src/lib/services/verification.test.ts src/lib/services/textSimilarity.ts src/lib/services/newsCollector.ts src/lib/repositories/verificationResult.ts src/app/api/verification src/app/api/analyze/route.ts docs/superpowers/plans/2026-08-26-phase0-core-loop.md
 git commit -m "feat: multi-layer hallucination verification"
+```
+
+**구현 결과**: 테스트 38건 추가(전체 204건 통과), lint·build 통과, 실제 Anthropic 으로 4층 전부 검증.
+
+**파일**: `verificationScores.ts`(층①③·판정) · `prompts/verification.ts`(층②④) · `verification.ts`(조립) · `repositories/verificationResult.ts` · `api/analyze/route.ts` 통합
+
+**실측 — 검증이 실제로 붙잡았다** (넷록스 3건, 2026-08-28):
+
+```
+분석 완료: 집계 3/3건 평균감성 4.67
+판정: needs_review
+  ① 출처커버리지   1.00  (기준 0.5)  통과
+  ② 근거충실도     0.80  (기준 0.85) 미달
+  ③ evidence-match 0.300 (기준 0.4)  미달
+  ④ 반증 2건
+```
+
+반증 분석이 평가위원회 유의사항으로 쓸 만한 것을 냈다:
+1. "감성 점수(4.67)는 원문에 명시된 수치가 아니라 AI 가 산출한 정성적 판단으로, 기사 원문만으로는 산출 근거를 검증할 수 없음"
+2. "3건 중 2건(IT조선)은 유사한 보도자료성 내용을 반복해 독립 취재원이 아닐 가능성이 있으며 표본 다양성을 제한함"
+
+**관찰 — 종합의견은 구조적으로 층② 를 통과하기 어렵다.** 종합의견에는 평균 감성 4.67 같은 AI 파생 수치가 들어가는데, 이는 기사 원문에 없으므로 judge 가 `supported: false` 로 판정한다. 위 실측에서 미확인 주장 1건이 정확히 이것이었다. 기사 수가 늘면 분모가 커져 영향은 줄지만 체계적 감점은 남는다.
+
+**이것을 버그로 보고 종합의견을 분모에서 빼지 않았다.** 종합의견도 평가위원회에 제출되는 분석이고, "이 수치는 AI 가 산출한 것"이라는 사실은 위원회가 알아야 한다. `needs_review` 는 사람이 확인하라는 뜻이므로 제품 논지대로 동작한 것이다. 임계값을 조정하려면 이 구조를 먼저 고려할 것.
+
+**임계값은 초기값 그대로 둔다** — 0.85 / 0.5 / 0.4. 샘플 1건으로 조정할 근거가 없다. 10건 이상 쌓인 뒤 verified 비율을 보고 판단한다.
+
+**실측 함정**:
+
+| 항목 | 실제 |
+|---|---|
+| judge `temperature=0` | 스킬 문구는 레거시 기준이다. Sonnet 5 는 `temperature` 를 400 으로 거부하므로 `output_config.effort: "low"` 로 대체했다 |
+| claims 0건 | judge 가 빈 배열을 주면 `supported/total` 이 `0/0` 이다. **1 이 아니라 0 으로 처리**한다 — 검증할 것이 없다는 건 통과가 아니다 |
+| 검증 실패 격리 | 검증은 `complete` 이벤트를 보낸 **뒤** 실행한다. judge 가 죽어도 분석 결과와 리포트는 이미 저장·전송된 상태다 |
 ```
 
 ---

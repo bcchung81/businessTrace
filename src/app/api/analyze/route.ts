@@ -5,6 +5,8 @@ import { completeRun, createRun, failRun } from "@/lib/repositories/analysisRun"
 import { analyzeCompany } from "@/lib/services/analyzer";
 import { defaultLlmClient, resolveModel } from "@/lib/services/llm";
 import { NewsRateLimitError, collectNews } from "@/lib/services/newsCollector";
+import { saveVerification } from "@/lib/repositories/verificationResult";
+import { verifyAnalysis } from "@/lib/services/verification";
 
 const bodySchema = z.object({
   companyId: z.number().int(),
@@ -62,6 +64,16 @@ export async function POST(request: Request) {
           if (event.type === "complete") {
             await completeRun(run.id, event.result);
             send({ ...event, runId: run.id });
+
+            send({ type: "verifying", runId: run.id });
+            try {
+              const verification = await verifyAnalysis(event.result, { llm: defaultLlmClient() });
+              await saveVerification(run.id, verification);
+              send({ type: "verified", runId: run.id, verification });
+            } catch (caught) {
+              const reason = caught instanceof Error ? caught.message : "알 수 없는 오류";
+              send({ type: "verification_failed", runId: run.id, message: reason });
+            }
           } else {
             send(event);
           }
