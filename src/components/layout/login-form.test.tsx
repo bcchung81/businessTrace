@@ -29,3 +29,26 @@ describe("LoginForm", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
+
+describe("LoginForm test-period autofill", () => {
+  it("prefills the credentials it is handed so testers skip typing", () => {
+    render(<LoginForm callbackUrl="/" defaultEmail="admin@kca.kr" defaultPassword="Passw0rd!" />);
+
+    expect(screen.getByLabelText("이메일")).toHaveValue("admin@kca.kr");
+    expect(screen.getByLabelText("비밀번호")).toHaveValue("Passw0rd!");
+  });
+
+  it("says on screen that the prefill is temporary", () => {
+    render(<LoginForm callbackUrl="/" defaultEmail="admin@kca.kr" defaultPassword="Passw0rd!" />);
+
+    expect(screen.getByTestId("autofill-notice")).toHaveTextContent("테스트 기간");
+  });
+
+  it("leaves the fields empty and shows no notice when nothing is handed in", () => {
+    render(<LoginForm callbackUrl="/" />);
+
+    expect(screen.getByLabelText("이메일")).toHaveValue("");
+    expect(screen.getByLabelText("비밀번호")).toHaveValue("");
+    expect(screen.queryByTestId("autofill-notice")).toBeNull();
+  });
+});

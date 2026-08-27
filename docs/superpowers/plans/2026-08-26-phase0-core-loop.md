@@ -184,7 +184,7 @@ npx tsx scripts/create-admin.ts <email> <password>
 
 ---
 
-### Task 2d: 기업 관리
+### Task 2d: 기업 관리 — ✅ 완료 (2026-08-27)
 
 관리자가 분석 대상 기업을 등록·수정·비활성화한다. **Task 7~9 가 실제 기업 데이터 위에서 돌려면 이것이 선행돼야 한다** — 레거시 이관을 하지 않으므로 기업 42건도 새로 입력한다.
 
@@ -200,6 +200,16 @@ npx tsx scripts/create-admin.ts <email> <password>
 일괄 등록이 필요하다(50개사). CSV 또는 줄바꿈 구분 텍스트를 붙여넣어 `name` 목록을 한 번에 만드는 경로를 포함한다. 연도는 화면에서 선택한다.
 
 **커밋**: `feat: company management for admins`
+
+**구현 결과**: 테스트 22건 추가(전체 88건 통과), lint·build 통과, dev 서버로 등록·조회 확인.
+
+**테스트가 고정한 동작**: 붙여넣은 이름의 공백을 잘라 쌍둥이 기업을 막는다 · 사업자번호는 하이픈을 빼고 10자리만 저장하고 아니면 거부 · 일괄 등록이 중복을 건너뛰고 무엇을 건너뛰었는지 돌려준다 · 붙여넣은 순서가 `displayOrder` 로 유지된다 · 비활성 기업은 기본 목록에서 빠지되 행은 남아 `AnalysisRun` 이 기업을 계속 참조한다 · 같은 연도 안에서 다른 기업 이름으로 개명하면 거부
+
+**로그인 자동입력 (테스트 기간 한정)**: `LoginForm` 이 `defaultEmail`·`defaultPassword` 를 받으면 채워 넣고 "테스트 기간 동안 계정이 자동으로 입력됩니다." 를 띄운다. 페이지가 **이중 게이트**로 주입한다 — `NODE_ENV !== "production"` **그리고** `DEV_AUTOFILL_EMAIL`/`DEV_AUTOFILL_PASSWORD` 가 설정된 경우에만. 프로덕션 빌드에서는 값이 있어도 무시된다. 배포 전 `.env` 에서 두 키를 지운다
+
+**실행 스크립트 `scripts/dev.sh`**: `.env` 존재·필수 키 검사 → `prisma generate` → 개발·테스트 DB 마이그레이션 → 관리자 계정 수 확인(0이면 발급 명령 안내) → 자동입력 활성 시 경고 → `next dev`. 사이드카가 생기면 여기에 uvicorn 동시 기동을 추가한다
+
+**미테스트 — 의도적**: `src/app/api/companies/**` Route Handler 는 vitest 에서 `auth()` 를 import 하는 순간 next-auth 가 `next/server` 를 해석하지 못해 죽는다(Task 2b 와 같은 제약). 로직은 전부 `companyRepository` 에 있고 테스트됐으며, 핸들러는 인증 확인 + 파싱 + 호출뿐이다. dev 서버 E2E 로 확인했다 — 미인증 307, 일괄 등록 `{created:5, skipped:["크립토랩"]}`, 목록 순서 유지
 
 ---
 
