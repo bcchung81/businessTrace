@@ -22,6 +22,10 @@ function isCitable(link: string) {
   }
 }
 
+/**
+ * 층① 출처 인용 검사 — 인용 가능한 링크의 비율을 낸다.
+ * http(s) 가 아닌 링크는 근거로 쓸 수 없으므로 미인용으로 센다.
+ */
 export function checkSources(analyses: NewsAnalysis[]): SourceCheck {
   const invalid = analyses
     .filter((analysis) => !isCitable(analysis.news.link))
@@ -37,6 +41,10 @@ export function checkSources(analyses: NewsAnalysis[]): SourceCheck {
   };
 }
 
+/**
+ * 층③ evidence-match — 분석 요약이 원문 어휘를 얼마나 반복하는지 낸다.
+ * LLM 을 쓰지 않는다. judge 자신의 오판을 걸러낼 독립 신호가 필요하기 때문이다.
+ */
 export function evidenceMatch(analyses: NewsAnalysis[]) {
   if (analyses.length === 0) return 0;
 
@@ -50,6 +58,10 @@ export function evidenceMatch(analyses: NewsAnalysis[]) {
   return scores.reduce((sum, score) => sum + score, 0) / scores.length;
 }
 
+/**
+ * 세 게이트의 논리곱으로 검증 상태를 판정한다.
+ * judge 점수가 없으면 다른 게이트가 완벽해도 needs_review 다.
+ */
 export function decide(scores: {
   faithfulness: number | null;
   sourceCoverage: number;

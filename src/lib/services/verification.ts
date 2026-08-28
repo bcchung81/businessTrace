@@ -41,6 +41,10 @@ export type VerificationOutput = {
 
 const NO_USAGE: Usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
 
+/**
+ * 4층 환각 검증을 실행해 판정과 근거를 낸다.
+ * judge 실패·거부·파싱 오류는 전부 needs_review 다. 검증 실패는 신뢰 불가를 뜻한다.
+ */
 export async function verifyAnalysis(
   result: AnalysisResult,
   deps: { llm: LlmClient },

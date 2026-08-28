@@ -22,6 +22,10 @@ export type LlmClient = {
 export class LlmRefusalError extends Error {}
 export class LlmParseError extends Error {}
 
+/**
+ * 사용할 Anthropic 모델 id 를 결정한다.
+ * 모델 지정을 이 함수 한 곳으로 모아 호출부에 흩어지지 않게 한다.
+ */
 export function resolveModel(env: Record<string, string | undefined> = process.env) {
   return env.ANTHROPIC_MODEL || DEFAULT_MODEL;
 }
@@ -50,6 +54,10 @@ function extractJson(text: string) {
   }
 }
 
+/**
+ * 구조화 JSON 응답을 돌려주는 LLM 클라이언트를 만든다.
+ * Sonnet 5 가 거부하므로 temperature 를 보내지 않는다. 결정성은 effort 로 조절한다.
+ */
 export function createLlmClient(sdk: StreamingMessages, model = resolveModel()): LlmClient {
   return {
     async json<T>({ system, prompt, schema, effort = "medium" }: LlmRequest<T>) {
@@ -88,6 +96,9 @@ export function createLlmClient(sdk: StreamingMessages, model = resolveModel()):
   };
 }
 
+/**
+ * 환경변수 자격증명으로 기본 LLM 클라이언트를 만든다.
+ */
 export function defaultLlmClient() {
   return createLlmClient(new Anthropic({ maxRetries: 3 }) as unknown as StreamingMessages);
 }

@@ -16,6 +16,9 @@ function normaliseBusinessNo(businessNo: string | null | undefined) {
   return digits.length === 10 ? digits : undefined;
 }
 
+/**
+ * 분석 대상 기업을 평가연도와 함께 등록한다.
+ */
 export async function createCompany(input: CompanyInput): Promise<CompanyResult> {
   const name = input.name.trim();
   if (!name) return { ok: false, message: "기업명을 입력해주세요." };
@@ -37,6 +40,9 @@ export async function createCompany(input: CompanyInput): Promise<CompanyResult>
   return { ok: true, company };
 }
 
+/**
+ * 붙여넣은 기업명 목록을 한 번에 등록하고 건너뛴 항목을 알려준다.
+ */
 export async function createCompanies(input: { year: number; names: string[] }) {
   const skipped: string[] = [];
   let created = 0;
@@ -53,6 +59,9 @@ export async function createCompanies(input: { year: number; names: string[] }) 
   return { created, skipped };
 }
 
+/**
+ * 해당 연도의 기업을 등록 순서대로 조회한다.
+ */
 export async function listCompanies(options: { year: number; includeInactive?: boolean }) {
   return prisma.company.findMany({
     where: { year: options.year, ...(options.includeInactive ? {} : { isActive: true }) },
@@ -60,6 +69,9 @@ export async function listCompanies(options: { year: number; includeInactive?: b
   });
 }
 
+/**
+ * 기업이 등록된 평가연도를 최신순으로 조회한다.
+ */
 export async function listYears() {
   const rows = await prisma.company.findMany({
     distinct: ["year"],
@@ -69,6 +81,9 @@ export async function listYears() {
   return rows.map((row) => row.year);
 }
 
+/**
+ * 기업 정보를 수정한다. 같은 연도 안에서 이름이 겹치면 거부한다.
+ */
 export async function updateCompany(
   id: number,
   patch: Partial<CompanyInput> & { isActive?: boolean },
@@ -106,6 +121,10 @@ export async function updateCompany(
   return { ok: true, company };
 }
 
+/**
+ * 기업을 분석 대상에서 제외한다.
+ * 행을 지우지 않는다. AnalysisRun 이 참조하므로 삭제하면 이력이 끊긴다.
+ */
 export async function deactivateCompany(id: number) {
   return updateCompany(id, { isActive: false });
 }

@@ -74,6 +74,10 @@ function readBatchexecuteUrl(body: string) {
   return typeof url === "string" && !url.includes(GOOGLE_HOST) ? url : null;
 }
 
+/**
+ * 구글 뉴스 링크를 원문 언론사 URL 로 복원한다.
+ * 2024년 이후 토큰은 base64 가 아니라 batchexecute 호출이 필요하다.
+ */
 export async function resolveGoogleNewsUrl(link: string, deps: FetchDeps = {}) {
   const token = googleToken(link);
   if (!token) return link;
@@ -108,7 +112,7 @@ export async function resolveGoogleNewsUrl(link: string, deps: FetchDeps = {}) {
       }
     }
   } catch {
-    // 구글이 막히면 구형 토큰 폴백으로 넘어간다.
+    return decodeLegacyToken(token) ?? link;
   }
 
   return decodeLegacyToken(token) ?? link;
@@ -122,6 +126,10 @@ function decodeHtml(buffer: Buffer, contentType: string | null) {
   return iconv.decode(buffer, encoding);
 }
 
+/**
+ * 기사 본문을 크롤링해 정제된 텍스트로 돌려준다.
+ * 실패하면 예외 대신 빈 문자열을 준다. 본문 없음은 수집 실패가 아니다.
+ */
 export async function fetchArticleBody(url: string, deps: FetchDeps = {}) {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const resolved = await resolveGoogleNewsUrl(url, deps);
@@ -150,6 +158,10 @@ export async function fetchArticleBody(url: string, deps: FetchDeps = {}) {
   }
 }
 
+/**
+ * 뉴스 목록의 본문을 병렬로 채운다.
+ * 크롤링에 실패한 항목은 원래 요약을 유지한다.
+ */
 export async function enrichWithBodies(
   items: NewsItem[],
   deps: FetchDeps & { concurrency?: number } = {},

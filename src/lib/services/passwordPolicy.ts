@@ -3,6 +3,10 @@ export type PasswordCheck = { ok: true } | { ok: false; message: string };
 const MIN_LENGTH = 8;
 const MAX_LENGTH = 128;
 
+/**
+ * 레거시 운영 기준으로 비밀번호 강도를 판정한다.
+ * 8~128자, 영문·숫자·특수문자 중 2가지 조합. 기준이 바뀌면 계정 발급 기준이 흔들린다.
+ */
 export function checkPasswordStrength(password: string): PasswordCheck {
   if (!password) return { ok: false, message: "비밀번호를 입력해주세요." };
   if (password.length < MIN_LENGTH) {

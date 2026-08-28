@@ -9,6 +9,10 @@ export type CreateAdminResult =
   | { ok: true; id: number; email: string }
   | { ok: false; message: string };
 
+/**
+ * 운영자가 발급하는 관리자 계정을 만든다.
+ * 공개 회원가입이 없는 제품이라 이 경로가 유일한 계정 생성 수단이다.
+ */
 export async function createAdminAccount(input: {
   email: string;
   password: string;

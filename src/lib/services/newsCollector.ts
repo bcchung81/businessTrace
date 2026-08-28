@@ -45,6 +45,10 @@ function stripHtml(value: string | undefined) {
     .trim();
 }
 
+/**
+ * 기사 링크의 도메인을 언론사 이름으로 바꾼다.
+ * 네이버 API 는 언론사명을 주지 않아 도메인으로 역산해야 한다.
+ */
 export function pressNameFromUrl(url: string) {
   try {
     const host = new URL(url).hostname.replace(/^www\./, "");
@@ -55,6 +59,10 @@ export function pressNameFromUrl(url: string) {
   }
 }
 
+/**
+ * 기사가 대상 기업을 다루는지 3등급으로 판정한다.
+ * 언급 1회는 대체로 스쳐 지나가는 언급이다. 버리지 않고 등급으로 남긴다.
+ */
 export function classifyRelevance(input: { title: string; content: string; name: string }) {
   const titleMatch = input.title.includes(input.name);
   const mentions = countOccurrences(input.content, input.name);
@@ -69,6 +77,9 @@ export function classifyRelevance(input: { title: string; content: string; name:
   return { titleMatch, mentions, relevance };
 }
 
+/**
+ * 제목이 사실상 같은 기사를 걸러낸다.
+ */
 export function removeDuplicates(items: NewsItem[], threshold: number) {
   if (threshold <= 0) return { items, removed: 0 };
 
@@ -169,6 +180,10 @@ async function fetchGoogle(query: string, fetchImpl: typeof fetch): Promise<News
 
 const RELEVANCE_RANK: Record<Relevance, number> = { primary: 0, mention: 1, unrelated: 2 };
 
+/**
+ * 네이버·구글에서 뉴스를 모아 본문까지 채운 목록을 낸다.
+ * sort=sim 을 쓴다. date 정렬은 회사명이 스친 무관한 기사로 상위가 채워진다.
+ */
 export async function collectNews(
   options: CollectOptions,
   deps: FetchDeps & { concurrency?: number } = {},

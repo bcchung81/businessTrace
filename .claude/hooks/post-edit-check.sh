@@ -35,8 +35,11 @@ fi
 
 case "$f" in
   */src/*.ts | */src/*.tsx)
-    if grep -qE '^[[:space:]]*(//|/\*)' "$f"; then
-      warn "$(basename "$f") 에 주석이 있다. 이 프로젝트는 신규 코드에 주석을 달지 않는다. 이름과 구조로 설명할 것. (플랜 규약)"
+    if grep -qE '^[[:space:]]*//[^/]' "$f"; then
+      warn "$(basename "$f") 에 줄 주석(//)이 있다. 함수 설명은 JSDoc(/** */) 3줄 이내로 쓰고, 그 밖의 설명은 이름과 구조로 대신할 것."
+    fi
+    if awk '/^[[:space:]]*\/\*\*/{n=0; inb=1; next} inb&&/\*\//{inb=0; if(n>3) found=1; next} inb{n++} END{exit !found}' "$f"; then
+      warn "$(basename "$f") 에 4줄 이상인 JSDoc 이 있다. 함수 설명은 본문 3줄 이내로 줄일 것."
     fi
     ;;
 esac

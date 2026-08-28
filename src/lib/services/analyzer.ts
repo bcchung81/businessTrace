@@ -129,6 +129,10 @@ function summarise(analyses: NewsAnalysis[]): AnalysisStats {
   };
 }
 
+/**
+ * 뉴스별 3분석과 종합의견을 만들며 진행 상황을 흘린다.
+ * 회사가 주제가 아닌 기사는 집계에서 빼되 결과에는 남긴다.
+ */
 export async function* analyzeCompany(
   companyName: string,
   news: NewsItem[],
