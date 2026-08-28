@@ -63,6 +63,43 @@ npx next typegen                                    # PageProps/RouteContext 재
 
 Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는 `scripts/`. **루트에 Python 파일을 두지 않는다.** 새 최상위 디렉터리를 만들면 `tsconfig` `exclude` 와 `eslint.config.mjs` `globalIgnores` 를 함께 갱신한다 — 경계가 샌 전례가 있다.
 
+## 외부 API
+
+### 사용 중 (구현 완료)
+
+| API | 용도 | 엔드포인트 | 구현 |
+|---|---|---|---|
+| 네이버 뉴스 검색 (API HUB) | 주 수집원 | `naverapihub.apigw.ntruss.com/search/v1/news` | `newsCollector.ts` |
+| 구글 뉴스 RSS | 보조 수집원 | `news.google.com/rss/search` | `newsCollector.ts` |
+| 구글 뉴스 batchexecute | RSS 링크 → 원문 URL 복원 | `news.google.com/_/DotsSplashUi/data/batchexecute` | `articleBody.ts` |
+| OpenDART 고유번호 | 기업명 → corp_code (20MB zip, 24h 캐시) | `opendart.fss.or.kr/api/corpCode.xml` | `dartCorpCode.ts` |
+| OpenDART 기업개황 | **사업자번호 확보**·대표·업종 | `opendart.fss.or.kr/api/company.json` | `dart.ts` |
+| OpenDART 재무 | 매출·영업이익·순이익·자산총계 | `opendart.fss.or.kr/api/fnlttSinglAcnt.json` | `dart.ts` |
+| 국세청 휴폐업 | 계속사업자·과세유형 | `api.odcloud.kr/api/nts-businessman/v1/status` | `nts.ts` |
+| 나라장터 조달업체 | 종업원수·조달업무구분·개업일 | `apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02` | `narajangteo.ts` |
+| Anthropic Messages | 분석·검증 judge·반증 | `api.anthropic.com/v1/messages` (SDK) | `llm.ts` |
+| Tavily | 딥리서치 검색 (Task 15) | `api.tavily.com/search` | 키만 보유, **미사용** |
+
+### 확장 예정 — 재무 결측 보완 (활용신청 완료·구현 대기)
+
+비상장·비외감 기업은 재무제표가 공개되지 않는다. **재무제표 대체가 아니라 대리지표로 메운다.**
+
+| API | 용도 | 신청 URL |
+|---|---|---|
+| 조달청_나라장터 **낙찰**정보 | 공공조달 매출 실적 — 재무 결측의 가장 직접적 대체 | https://www.data.go.kr/data/15129397/openapi.do |
+| 조달청_나라장터 **계약**정보 | 계약 규모·거래 지속성 | https://www.data.go.kr/data/15129427/openapi.do |
+| 국민연금공단_가입 사업장 내역 | 가입자수·고지금액·신규/상실 → 고용 규모와 추이 | https://www.data.go.kr/data/3046071/openapi.do |
+| 금융위원회_기업기본정보 | 설립일·업종·종업원수. DART 미등록 기업 커버리지 확인용 | https://www.data.go.kr/data/15043184/openapi.do |
+| 중소벤처기업부_벤처기업명단 | 벤처확인 여부·유효기간 — 투자·기술평가 요건 통과 신호 | https://www.data.go.kr/data/15084581/fileData.do |
+
+- **인증키는 계정당 하나다.** `NTS_SERVICE_KEY`(Decoding)를 그대로 쓰고 API 별 활용신청만 추가한다
+- 벤처기업명단은 파일데이터 자동변환 오픈API — `api.odcloud.kr` 계열이라 엔드포인트를 첫 호출로 확인해야 한다
+- **국민연금은 사업자등록번호 매칭 가능 여부가 도입을 가른다.** 지역·사업장명 기준이면 동명 이슈로 정확도가 떨어진다. 열리는 대로 응답 항목을 실측할 것
+- 금융위 **기업재무정보**(`15043459`)는 채택하지 않았다 — 원천이 전자공시라 DART 와 같은 결측이 난다
+
+신규 API 를 붙이면 `scripts/api_smoke_test.py` 에 검사 함수를 함께 추가한다.
+
+
 ## Next.js 16 함정
 
 설치본은 16.3.3 이다. **v15 기준 예제를 복사하면 깨진다.** 상세는 `node_modules/next/dist/docs/` 를 볼 것.
