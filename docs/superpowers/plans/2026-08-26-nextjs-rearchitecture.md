@@ -246,11 +246,13 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 
 ### Phase A: 데이터 연동·검증 (P0 대응)
 
-#### Task 4: 국세청 휴폐업 검증
+#### Task 4: 국세청 휴폐업 검증 — ✅ 완료 (2026-08-28)
 - **파일**: `src/lib/services/nts.ts`, `src/app/api/company/business-status/route.ts`, 테스트
 - **내용**: 사업자번호 10자리 검증 → 국세청 상태조회 API 호출 → 계속/휴폐업·과세유형 반환. 키 미설정·오류 시 에러 필드 처리. UI: 기업 상세에 적격성 배지(계속사업자/폐업/미확인) 표시
 - **검증**: 4케이스 mock 테스트 (계속/폐업/미등록/API 오류) + 라우트 통합 테스트
 - **커밋**: `feat: NTS business status verification`
+- **구현 결과** (2026-08-28): 테스트 11건. 실 API 확인 — 삼성전자·올림플래닛 모두 `계속사업자 / 부가가치세 일반과세자`, 미등록 번호와 형식 오류는 `checked=false`
+- **원칙**: 조회 실패는 **폐업이 아니라 미확인**이다. `isActive` 를 `boolean | null` 로 두어 "확인 결과 부적격"과 "확인 못 함"을 구분한다. 실패를 부적격으로 읽으면 선정에서 부당하게 탈락한다
 
 #### Task 5: DART 재무 수집 + corp code 캐시 + 사업자번호 자동조회 — ✅ 완료 (2026-08-28)
 - **파일**: `src/lib/services/dart.ts`, `src/lib/cache/corpCode.ts`, `src/app/api/company/financial/route.ts`, `src/app/api/company/business-no/route.ts`, 테스트
@@ -266,7 +268,7 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 - **구현 결과** (2026-08-28): 테스트 21건 추가(전체 234건). 실 API 로 확인 — corp code **118,804건** 캐시(10.8초), 삼성전자 사업자번호 1248100998·매출 300.9조, 올림플래닛 사업자번호 1208824298·재무는 `013 조회된 데이타가 없습니다`(비상장 정상), 크립토랩·넷록스는 DART 미등록
 - **실측 함정**: DART `corpCode.xml` 은 **ZIP** 이다. `node:zlib` 의 `unzipSync` 는 gzip/deflate 전용이라 `incorrect header check` 로 죽는다 — `fflate` 로 풀어야 한다. **mock 이 이 결함을 가렸다**: `unzip` 을 주입 가능하게 만들어 놓고 테스트에서 항상 대체해 실제 경로가 한 번도 실행되지 않았다. 실제 zip 을 만들어 통과시키는 테스트를 추가해 고정했다
 
-#### Task 5b: 나라장터 조달업체 프로파일 (조달청)
+#### Task 5b: 나라장터 조달업체 프로파일 (조달청) — ✅ 완료 (2026-08-28)
 - **파일**: `src/lib/services/narajangteo.ts`, `src/app/api/company/procurement/route.ts`, 테스트
 - **내용**:
   - 공공데이터포털 [조달청_나라장터 사용자정보 서비스](https://www.data.go.kr/data/15129466/openapi.do) 연동 (무료, 개발계정 10,000/일)
@@ -278,6 +280,23 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
   - 참고 구현: `opendata-kr/narajangteo-corpinfo-mcp` (MIT — 오퍼레이션·파라미터 참고 가능)
 - **검증**: 번호 기반 조회/미등록/Encoding 키 오류 처리 mock 테스트
 - **커밋**: `feat: narajangteo procurement profile lookup`
+- **구현 결과** (2026-08-28): 테스트 8건. 실 API 확인 — 삼성전자 종업원 121,927명, 올림플래닛 75명·물품/일반용역/용역
+- **DART 에 재무가 없어도 여기선 잡힌다.** 올림플래닛은 `fnlttSinglAcnt` 가 013 이지만 조달청에는 종업원수·조달업무구분이 있다. Task 12 벤치마킹의 결측 보완 지표로 쓸 수 있다
+- 에러 코드 구분을 코드로 고정했다 — `NO_OPENAPI_SERVICE_ERROR` 는 경로 불일치, `SERVICE_KEY_IS_NOT_REGISTERED_ERROR` 가 미구독
+
+#### 통합 라우트 `POST /api/companies/[id]/dart`
+
+기업명 하나로 DART → (사업자번호) → 국세청·나라장터를 잇는다. 실측 결과:
+
+```
+DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
+재무    : found=False  013 조회된 데이타가 없습니다  (비상장 정상)
+국세청  : checked=True active=True 계속사업자 / 부가가치세 일반과세자
+나라장터: found=True 종업원=75 물품,일반용역,용역
+저장됨  : businessNo=1208824298 industry=58222
+```
+
+사업자번호는 `Company.businessNo` 에 저장되므로 기업 표의 "미확인" 경고가 해소된다.
 
 #### Task 6: dartlab 재무 정규화·비율 (사이드카)
 - **파일**: `sidecar/app/routers/finance.py`, `src/lib/services/financeNormalized.ts`, 테스트
