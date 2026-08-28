@@ -84,17 +84,19 @@ Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는
 
 비상장·비외감 기업은 재무제표가 공개되지 않는다. **재무제표 대체가 아니라 대리지표로 메운다.**
 
-| API | 용도 | 신청 URL |
-|---|---|---|
-| 조달청_나라장터 **낙찰**정보 | 공공조달 매출 실적 — 재무 결측의 가장 직접적 대체 | https://www.data.go.kr/data/15129397/openapi.do |
-| 조달청_나라장터 **계약**정보 | 계약 규모·거래 지속성 | https://www.data.go.kr/data/15129427/openapi.do |
-| 국민연금공단_가입 사업장 내역 | 가입자수·고지금액·신규/상실 → 고용 규모와 추이 | https://www.data.go.kr/data/3046071/openapi.do |
-| 금융위원회_기업기본정보 | 설립일·업종·종업원수. DART 미등록 기업 커버리지 확인용 | https://www.data.go.kr/data/15043184/openapi.do |
-| 중소벤처기업부_벤처기업명단 | 벤처확인 여부·유효기간 — 투자·기술평가 요건 통과 신호 | https://www.data.go.kr/data/15084581/fileData.do |
+| API | 용도 | 상태 | 엔드포인트 / 신청 URL |
+|---|---|---|---|
+| 조달청_나라장터 **낙찰**정보 | 공공조달 매출 실적 | ✅ 개통 | `apis.data.go.kr/1230000/**as**/ScsbidInfoService/getScsbidListSttusThngPPSSrch` (용역은 `...ServcPPSSrch`) |
+| 조달청_나라장터 **계약**정보 | 계약 규모·거래 지속성 | ✅ 개통 | `apis.data.go.kr/1230000/**ao**/CntrctInfoService/getCntrctInfoListThngPPSSrch` |
+| 금융위원회_기업기본정보 | **DART 미등록 기업의 사업자번호**·설립일·종업원수 | ✅ 개통 | `apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getCorpOutline_V2` |
+| 중소벤처기업부_벤처기업명단 | 벤처확인 여부·유형·유효기간 | ✅ 개통 | `api.odcloud.kr/api/15084581/v1/uddi:47b202c9-f0bb-43b4-949c-ebe9ef56ef02` |
+| 국민연금공단_가입 사업장 내역 | 고용 규모·추이 | ⬜ 미개통 | https://www.data.go.kr/data/3046071/openapi.do |
 
 - **인증키는 계정당 하나다.** `NTS_SERVICE_KEY`(Decoding)를 그대로 쓰고 API 별 활용신청만 추가한다
-- 벤처기업명단은 파일데이터 자동변환 오픈API — `api.odcloud.kr` 계열이라 엔드포인트를 첫 호출로 확인해야 한다
+- **나라장터는 서비스마다 경로 접두사가 다르다** — 낙찰은 `as/`, 계약은 `ao/`, 조달업체는 `ao/`. 틀리면 `NO_OPENAPI_SERVICE_ERROR`(12)
+- 나라장터 낙찰·계약은 **업체 단위 조회 파라미터가 없다.** 기간으로 전수 스캔한 뒤 `bidwinnrBizno`·`bidwinnrNm` 으로 걸러야 한다 — 배치 수집 전제
 - **국민연금은 사업자등록번호 매칭 가능 여부가 도입을 가른다.** 지역·사업장명 기준이면 동명 이슈로 정확도가 떨어진다. 열리는 대로 응답 항목을 실측할 것
+- 수집 스크립트는 `scripts/collect-financial-signals.ts` — 결과는 `data/`(gitignore). 실측 결과는 `docs/2026-08-28-financial-signals.md`
 - 금융위 **기업재무정보**(`15043459`)는 채택하지 않았다 — 원천이 전자공시라 DART 와 같은 결측이 난다
 
 신규 API 를 붙이면 `scripts/api_smoke_test.py` 에 검사 함수를 함께 추가한다.
