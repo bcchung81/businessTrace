@@ -5,6 +5,8 @@ import { getCompanyProfile, getFinancialSummary } from "@/lib/services/dart";
 import { refreshCorpCodes } from "@/lib/services/dartCorpCode";
 import { checkBusinessStatus } from "@/lib/services/nts";
 import { getProcurementProfile } from "@/lib/services/narajangteo";
+import { lookupCorpOutline } from "@/lib/services/fscCorpOutline";
+import { findCertification } from "@/lib/services/ventureCertification";
 
 export async function POST(_request: Request, context: RouteContext<"/api/companies/[id]/dart">) {
   if (!(await auth())?.user) return Response.json({ message: "unauthorized" }, { status: 401 });
@@ -16,30 +18,38 @@ export async function POST(_request: Request, context: RouteContext<"/api/compan
   await refreshCorpCodes();
 
   const profile = await getCompanyProfile(company.name);
-  if (!profile.found) {
-    return Response.json({ matched: false, reason: profile.reason, candidates: profile.candidates });
+  const outline = profile.businessNo ? null : await lookupCorpOutline(company.name);
+  const businessNo = profile.businessNo ?? outline?.businessNo ?? null;
+
+  if (!profile.found && !businessNo) {
+    return Response.json({
+      matched: false,
+      reason: profile.reason,
+      candidates: profile.candidates,
+      certification: await findCertification(company.name, new Date()),
+    });
   }
 
   const updated = await updateCompany(company.id, {
-    businessNo: profile.businessNo ?? null,
+    businessNo,
     industry: company.industry ?? profile.industryCode ?? null,
   });
-  const [financial, businessStatus, procurement] = await Promise.all([
+  const [financial, businessStatus, procurement, certification] = await Promise.all([
     getFinancialSummary(company.name, company.year),
-    profile.businessNo
-      ? checkBusinessStatus(profile.businessNo)
-      : Promise.resolve(null),
-    profile.businessNo
-      ? getProcurementProfile(profile.businessNo)
-      : Promise.resolve(null),
+    businessNo ? checkBusinessStatus(businessNo) : Promise.resolve(null),
+    businessNo ? getProcurementProfile(businessNo) : Promise.resolve(null),
+    findCertification(company.name, new Date()),
   ]);
 
   return Response.json({
     matched: true,
+    businessNoSource: profile.businessNo ? "dart" : outline?.businessNo ? "fsc" : null,
     company: updated.ok ? updated.company : null,
     profile,
+    outline,
     financial,
     businessStatus,
     procurement,
+    certification,
   });
 }

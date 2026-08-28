@@ -92,3 +92,17 @@ model DartCorpCode {
 
   @@index([corpName])
 }
+
+model VentureCertification {
+  id             Int      @id @default(autoincrement())
+  companyName    String
+  normalisedName String
+  type           String
+  validFrom      String
+  validUntil     String
+  industry       String?
+  authority      String?
+  fetchedAt      DateTime @default(now())
+
+  @@index([normalisedName])
+}
