@@ -82,3 +82,13 @@ model Archive {
   analysisPeriod   String?
   createdAt        DateTime @default(now())
 }
+
+model DartCorpCode {
+  corpCode   String   @id
+  corpName   String
+  stockCode  String?
+  modifyDate String
+  fetchedAt  DateTime @default(now())
+
+  @@index([corpName])
+}

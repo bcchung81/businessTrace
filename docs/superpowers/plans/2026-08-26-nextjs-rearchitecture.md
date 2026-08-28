@@ -252,7 +252,7 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 - **검증**: 4케이스 mock 테스트 (계속/폐업/미등록/API 오류) + 라우트 통합 테스트
 - **커밋**: `feat: NTS business status verification`
 
-#### Task 5: DART 재무 수집 + corp code 캐시 + 사업자번호 자동조회
+#### Task 5: DART 재무 수집 + corp code 캐시 + 사업자번호 자동조회 — ✅ 완료 (2026-08-28)
 - **파일**: `src/lib/services/dart.ts`, `src/lib/cache/corpCode.ts`, `src/app/api/company/financial/route.ts`, `src/app/api/company/business-no/route.ts`, 테스트
 - **내용**:
   - OpenDART REST 직접 호출 (고유번호 파일 1회 다운로드 → 로컬 캐시 24h TTL — finsight 패턴 차용)
@@ -263,6 +263,8 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
   - API smoke 검증 결과 반영: 대상 5개사 중 3개사는 DART 미등록(정상), 재무제표 전무 — "미제공" 폴백 필수
 - **검증**: 캐시 TTL 동작/정상 조회/기업 없음/키 없음/동명 후보 반환/사업자번호 조회 mock 테스트
 - **커밋**: `feat: DART financial service with corp code cache and business number lookup`
+- **구현 결과** (2026-08-28): 테스트 21건 추가(전체 234건). 실 API 로 확인 — corp code **118,804건** 캐시(10.8초), 삼성전자 사업자번호 1248100998·매출 300.9조, 올림플래닛 사업자번호 1208824298·재무는 `013 조회된 데이타가 없습니다`(비상장 정상), 크립토랩·넷록스는 DART 미등록
+- **실측 함정**: DART `corpCode.xml` 은 **ZIP** 이다. `node:zlib` 의 `unzipSync` 는 gzip/deflate 전용이라 `incorrect header check` 로 죽는다 — `fflate` 로 풀어야 한다. **mock 이 이 결함을 가렸다**: `unzip` 을 주입 가능하게 만들어 놓고 테스트에서 항상 대체해 실제 경로가 한 번도 실행되지 않았다. 실제 zip 을 만들어 통과시키는 테스트를 추가해 고정했다
 
 #### Task 5b: 나라장터 조달업체 프로파일 (조달청)
 - **파일**: `src/lib/services/narajangteo.ts`, `src/app/api/company/procurement/route.ts`, 테스트
