@@ -45,7 +45,7 @@ function jsonLength(raw: string) {
  */
 export async function listLatestVerifications(year: number): Promise<VerificationRow[]> {
   const runs = await prisma.analysisRun.findMany({
-    where: { status: "completed", company: { year }, verification: { isNot: null } },
+    where: { status: "completed", company: { year, isActive: true }, verification: { isNot: null } },
     orderBy: { createdAt: "desc" },
     include: { verification: true },
   });

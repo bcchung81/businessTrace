@@ -154,6 +154,19 @@ describe("listLatestVerifications", () => {
     expect(rows[0].status).toBe("verified");
   });
 
+  it("leaves out a soft-deleted company even with a completed verified run", async () => {
+    const company = await prisma.company.create({ data: { name: "폐업기업", year: 2025, isActive: false } });
+    const user = await prisma.user.create({
+      data: { email: `v-${company.id}@example.com`, passwordHash: "scrypt:32768:8:1$s$h" },
+    });
+    await seedRun({
+      companyId: company.id, userId: user.id, status: "completed",
+      createdAt: new Date("2026-08-01"), verification: { status: "verified" },
+    });
+
+    expect(await listLatestVerifications(2025)).toEqual([]);
+  });
+
   it("leaves out a completed run that has no verification and other years", async () => {
     const a = await seedCompanyWithUser("아크릴", 2025);
     await seedRun({ companyId: a.company.id, userId: a.user.id, status: "completed", createdAt: new Date("2026-08-01") });
