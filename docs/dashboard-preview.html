@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>성과돋보기 — 데이터 대조 현황</title>
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+:root{
+  --background:#ffffff; --foreground:#171719; --surface:#f7f7f8; --hairline:#eaebec;
+  --border:#e1e2e4; --muted-foreground:#5a5c63; --faint:#8b8e95;
+  --primary:#0066ff; --accent:#eaf2fe; --accent-foreground:#0054d1;
+  --verified:#009632; --verified-surface:#f2fff6;
+  --review:#b36600; --review-surface:#fff6e8;
+  --risk:#d92b2b; --risk-surface:#fff0f0;
+  --void:#9aa0a8;
+  --radius:8px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --background:#1b1c1e; --foreground:#f7f7f8; --surface:#141415; --hairline:#2e2f33;
+    --border:#ffffff1f; --muted-foreground:#989ba2; --faint:#7c7f86;
+    --primary:#3385ff; --accent:#002966; --accent-foreground:#9ec5ff;
+    --verified:#49e57d; --verified-surface:#00240c;
+    --review:#ffb454; --review-surface:#2b1a00;
+    --risk:#ff8080; --risk-surface:#2e0d0d;
+    --void:#5e626a;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--background); color:var(--foreground);
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  font-feature-settings:"ss01","tnum";
+  font-size:14px; line-height:1.55; padding:40px 24px 96px;
+}
+.page{max-width:1320px;margin:0 auto}
+h1,h2,h3{letter-spacing:-.025em;font-weight:800}
+table{font-variant-numeric:tabular-nums}
+
+.masthead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:24px;justify-content:space-between;
+  padding-bottom:20px;border-bottom:2px solid var(--foreground)}
+.brand{font-size:12px;font-weight:700;letter-spacing:.18em;color:var(--primary)}
+h1{font-size:34px;line-height:1.15;margin-top:6px}
+h1 em{font-style:normal;color:var(--muted-foreground);font-weight:400}
+.meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;color:var(--muted-foreground)}
+.meta b{display:block;font-size:15px;font-weight:700;color:var(--foreground);letter-spacing:-.01em}
+.meta b.up{color:var(--verified)}
+.lede{margin-top:18px;max-width:74ch;color:var(--muted-foreground);font-size:14px}
+.lede strong{color:var(--foreground);font-weight:700}
+
+section{margin-top:52px}
+.sec-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+h2{font-size:19px}
+.sec-tag{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  border:1px solid var(--border);border-radius:999px;padding:2px 9px}
+.sec-tag.new{color:var(--verified);border-color:color-mix(in srgb,var(--verified) 40%,transparent);
+  background:var(--verified-surface)}
+.sec-note{font-size:13px;color:var(--muted-foreground);margin-bottom:16px;max-width:80ch}
+
+.scroll{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--background)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--hairline);vertical-align:top}
+thead th{background:var(--surface);font-size:11.5px;font-weight:700;color:var(--muted-foreground);
+  letter-spacing:.02em;white-space:nowrap;border-bottom:1px solid var(--border)}
+tbody tr:last-child td{border-bottom:0}
+td.num{text-align:right;white-space:nowrap}
+.co{font-weight:700;white-space:nowrap}
+.sub{display:block;font-size:11.5px;color:var(--faint);font-weight:400;margin-top:1px}
+
+.grid-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius)}
+table.grid{min-width:1120px}
+table.grid th.src{width:116px;padding:9px 10px 11px}
+table.grid th.src .name{display:block;font-size:12px;color:var(--foreground);font-weight:700;
+  white-space:normal;line-height:1.3;letter-spacing:-.01em}
+table.grid th.src .org{display:block;font-size:10.5px;color:var(--faint);font-weight:500;margin-top:1px}
+table.grid th.src.fresh{background:var(--verified-surface)}
+table.grid th.src.fresh .name{color:var(--verified)}
+table.grid td:first-child,table.grid th:first-child{position:sticky;left:0;background:var(--background);z-index:1;
+  border-right:1px solid var(--border);min-width:128px}
+table.grid thead th:first-child{background:var(--surface)}
+table.grid td{padding:9px 10px}
+
+.gauge{display:flex;gap:2px;margin-top:7px}
+.gauge i{flex:1;height:5px;border-radius:1px;background:var(--void);opacity:.28}
+.gauge i.ok{background:var(--verified);opacity:1}
+.gauge i.warn{background:var(--review);opacity:1}
+.gauge i.gap{background:transparent;box-shadow:inset 0 0 0 1px var(--void);opacity:.55}
+.gauge-n{font-size:10.5px;color:var(--faint);font-weight:600;margin-top:4px;display:block}
+
+.cell{border-radius:6px;padding:6px 8px;min-height:44px;display:flex;flex-direction:column;gap:2px;
+  font-size:12px;line-height:1.35}
+.cell .v{font-weight:700;letter-spacing:-.01em}
+.cell .why{font-size:11px;color:var(--faint)}
+.cell.ok{background:var(--verified-surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--verified) 30%,transparent)}
+.cell.ok .v{color:var(--verified)}
+.cell.conflict{background:var(--risk-surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--risk) 34%,transparent)}
+.cell.conflict .v{color:var(--risk)}
+.cell.absent{background:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,var(--void) 22%,transparent) 5px 6px);
+  box-shadow:inset 0 0 0 1px var(--hairline)}
+.cell.absent .v{color:var(--muted-foreground)}
+.cell.na{box-shadow:inset 0 0 0 1px var(--void);background:transparent;opacity:.85}
+.cell.na .v{color:var(--muted-foreground)}
+.cell.idle{background:transparent;box-shadow:inset 0 0 0 1px var(--hairline)}
+.cell.idle .v{color:var(--faint);font-weight:600}
+
+.spark{display:block;margin:2px 0 1px}
+.spark polyline{fill:none;stroke:var(--verified);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.spark.down polyline{stroke:var(--risk)}
+.spark.flat polyline{stroke:var(--void)}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.legend div{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted-foreground);
+  border:1px solid var(--border);border-radius:999px;padding:5px 11px 5px 7px}
+.legend .swatch{width:16px;height:16px;border-radius:4px;flex:none}
+.legend .s-ok{background:var(--verified-surface);box-shadow:inset 0 0 0 1px var(--verified)}
+.legend .s-absent{background:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,var(--void) 30%,transparent) 5px 6px);box-shadow:inset 0 0 0 1px var(--border)}
+.legend .s-na{box-shadow:inset 0 0 0 1px var(--void)}
+.legend .s-idle{box-shadow:inset 0 0 0 1px var(--hairline);background:var(--surface)}
+.legend .s-conflict{background:var(--risk-surface);box-shadow:inset 0 0 0 1px var(--risk)}
+.legend b{color:var(--foreground);font-weight:700}
+
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;
+  border:1px solid var(--border);color:var(--muted-foreground);white-space:nowrap}
+.badge.dart{color:var(--accent-foreground);background:var(--accent);border-color:transparent}
+.badge.fsc{color:var(--review);background:var(--review-surface);border-color:transparent}
+.badge.bid,.badge.done,.badge.nps{color:var(--verified);background:var(--verified-surface);border-color:transparent}
+.badge.todo{color:var(--muted-foreground);background:var(--surface);border-color:transparent}
+.badge.warn{color:var(--risk);background:var(--risk-surface);border-color:transparent}
+
+.mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;font-size:12.5px;letter-spacing:-.02em}
+.delta{font-weight:700}
+.delta.up{color:var(--verified)}
+.delta.down{color:var(--risk)}
+.delta.flat{color:var(--muted-foreground)}
+
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:12px;margin-top:16px}
+.rule{border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius);
+  padding:13px 15px;background:var(--surface)}
+.rule h3{font-size:13px;margin-bottom:5px}
+.rule p{font-size:12.5px;color:var(--muted-foreground)}
+.rule.risk{border-left-color:var(--risk)}
+.rule.good{border-left-color:var(--verified)}
+
+.verdict{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:5px}
+.verdict.solved{color:var(--verified);background:var(--verified-surface)}
+.verdict.partial{color:var(--review);background:var(--review-surface)}
+.verdict.never{color:var(--muted-foreground);background:var(--surface);
+  box-shadow:inset 0 0 0 1px var(--border)}
+
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--faint);display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between}
+
+@media (max-width:640px){
+  body{padding:28px 14px 72px}
+  h1{font-size:26px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="masthead">
+  <div>
+    <div class="brand">성과돋보기 · 우수기업 선정 근거</div>
+    <h1>데이터 대조 현황 <em>— 지금 무엇을 대조할 수 있나</em></h1>
+  </div>
+  <div class="meta">
+    <div>기준일<b>2026-08-28</b></div>
+    <div>실측 표본<b>6개사 / 목표 50</b></div>
+    <div>연결 원천<b class="up">8종 전부 개통</b></div>
+    <div>격자 충족<b class="up">13 → 19칸</b></div>
+  </div>
+</header>
+
+<p class="lede">뉴스 분석은 기사만 있으면 돌아간다. 이 대시보드가 재는 것은 그 결과를 <strong>공식 출처와 대조할 수 있느냐</strong>다.
+빈칸은 한 종류가 아니다 — 원천에 기업이 없어서 빈 칸, 조달에 참여하지 않아 잴 것이 없는 칸, 아직 조회하지 않은 칸을 나눠서 표시했다.
+<strong>없는 데이터를 0으로 읽으면 오판이다.</strong><br />
+<strong style="color:var(--verified)">2026-08-28 갱신 —</strong> 미개통으로 알고 있던 국민연금 API가 기존 인증키로 그대로 호출됐다. 표본 6개사 전부 매칭됐고, 그 결과 사업자번호 충돌 2건이 풀렸다.</p>
+
+<!-- ① 대조 격자 -->
+<section>
+  <div class="sec-head">
+    <h2>기업 × 원천 대조 격자</h2>
+    <span class="sec-tag">실측</span>
+    <span class="sec-tag new">국민연금 열 추가</span>
+  </div>
+  <p class="sec-note">열 머리의 여섯 칸은 그 원천이 표본 6개사에서 실제로 무엇을 돌려줬는지를 그대로 채운 것이다.</p>
+
+  <div class="grid-wrap">
+  <table class="grid">
+    <thead>
+      <tr>
+        <th class="src" style="min-width:128px"><span class="name">기업</span><span class="org">표본 6개사</span></th>
+        <th class="src"><span class="name">DART 기업개황</span><span class="org">금융감독원</span>
+          <div class="gauge"><i class="ok"></i><i class="gap"></i><i class="gap"></i><i class="gap"></i><i class="gap"></i><i class="gap"></i></div>
+          <span class="gauge-n">확인 1/6</span></th>
+        <th class="src"><span class="name">DART 재무제표</span><span class="org">금융감독원</span>
+          <div class="gauge"><i class="gap"></i><i class="gap"></i><i class="gap"></i><i class="gap"></i><i class="gap"></i><i class="gap"></i></div>
+          <span class="gauge-n">확인 0/6</span></th>
+        <th class="src"><span class="name">기업기본정보</span><span class="org">금융위원회</span>
+          <div class="gauge"><i class="ok"></i><i class="ok"></i><i class="warn"></i><i class="warn"></i><i class="gap"></i><i class="gap"></i></div>
+          <span class="gauge-n">확인 2 · 오답 2</span></th>
+        <th class="src fresh"><span class="name">가입 사업장</span><span class="org">국민연금공단</span>
+          <div class="gauge"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i></div>
+          <span class="gauge-n">확인 6/6</span></th>
+        <th class="src"><span class="name">휴폐업 조회</span><span class="org">국세청</span>
+          <div class="gauge"><i class="ok"></i><i></i><i></i><i></i><i class="gap"></i><i class="gap"></i></div>
+          <span class="gauge-n">확인 1 · 대기 3</span></th>
+        <th class="src"><span class="name">조달업체 정보</span><span class="org">나라장터</span>
+          <div class="gauge"><i class="ok"></i><i></i><i></i><i></i><i class="gap"></i><i class="gap"></i></div>
+          <span class="gauge-n">확인 1 · 대기 3</span></th>
+        <th class="src"><span class="name">낙찰 실적 <span style="font-weight:500">(3개월)</span></span><span class="org">나라장터</span>
+          <div class="gauge"><i class="ok"></i><i class="ok"></i><i></i><i></i><i></i><i></i></div>
+          <span class="gauge-n">확인 2 · 미참여 4</span></th>
+        <th class="src"><span class="name">벤처확인 명단</span><span class="org">중소벤처기업부</span>
+          <div class="gauge"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i></div>
+          <span class="gauge-n">확인 6/6</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="co">크립토랩</span><span class="sub">서울 관악 · 시스템SW</span></td>
+        <td><div class="cell absent"><span class="v">미등록</span><span class="why">DART에 기업 없음</span></div></td>
+        <td><div class="cell absent"><span class="v">미공시</span><span class="why">비외감</span></div></td>
+        <td><div class="cell ok"><span class="v mono">6258700800</span><span class="why">설립 2017-12-15 · 종업원 55</span></div></td>
+        <td><div class="cell ok">
+          <svg class="spark" width="88" height="26" viewBox="0 0 88 26" aria-hidden="true"><polyline points="3.0,14.1 10.5,16.3 17.9,14.1 25.4,18.6 32.8,18.6 40.3,18.6 47.7,18.6 55.2,23.0 62.6,23.0 70.1,23.0 77.5,18.6 85.0,3.0"/></svg>
+          <span class="v">가입자 61명 <span class="delta up">+9%</span></span><span class="why">625870**** · 12개월</span></div></td>
+        <td><div class="cell ok"><span class="v">계속사업자</span><span class="why">부가가치세 일반과세자</span></div></td>
+        <td><div class="cell ok"><span class="v">등록업체</span><span class="why">종업원 46</span></div></td>
+        <td><div class="cell na"><span class="v">0건</span><span class="why">공공조달 미참여</span></div></td>
+        <td><div class="cell ok"><span class="v">벤처투자형</span><span class="why">~2028-02-08 · D-529</span></div></td>
+      </tr>
+      <tr>
+        <td><span class="co">올림플래닛</span><span class="sub">서울 강남 · 응용SW</span></td>
+        <td><div class="cell ok"><span class="v">등록</span><span class="why">기업개황 조회 가능</span></div></td>
+        <td><div class="cell absent"><span class="v">미공시</span><span class="why">비외감</span></div></td>
+        <td><div class="cell ok"><span class="v mono">1208824298</span><span class="why">설립 2015-01-13 · 종업원 결측</span></div></td>
+        <td><div class="cell ok">
+          <svg class="spark down" width="88" height="26" viewBox="0 0 88 26" aria-hidden="true"><polyline points="3.0,3.0 10.5,3.6 17.9,7.4 25.4,16.9 32.8,17.4 40.3,19.1 47.7,20.2 55.2,20.8 62.6,22.4 70.1,23.0 77.5,21.9 85.0,23.0"/></svg>
+          <span class="v">가입자 32명 <span class="delta down">−53%</span></span><span class="why">120882**** · 12개월</span></div></td>
+        <td><div class="cell idle"><span class="v">미실행</span><span class="why">사업자번호 확보 · 조회 가능</span></div></td>
+        <td><div class="cell idle"><span class="v">미실행</span><span class="why">사업자번호 확보 · 조회 가능</span></div></td>
+        <td><div class="cell ok"><span class="v mono">66,000,000원</span><span class="why">1건 · 2026-07-02 용역</span></div></td>
+        <td><div class="cell ok"><span class="v">벤처투자형</span><span class="why">~2027-06-15</span></div></td>
+      </tr>
+      <tr>
+        <td><span class="co">옥타코</span><span class="sub">경기 성남 · 응용SW</span></td>
+        <td><div class="cell idle"><span class="v">미실행</span><span class="why">표본 수집에서 미조회</span></div></td>
+        <td><div class="cell absent"><span class="v">미확보</span><span class="why">재무 0/6</span></div></td>
+        <td><div class="cell conflict"><span class="v">오답</span><span class="why">옥타코리아 2208886707 — 동명 타사</span></div></td>
+        <td><div class="cell ok">
+          <svg class="spark down" width="88" height="26" viewBox="0 0 88 26" aria-hidden="true"><polyline points="3.0,3.0 10.5,4.4 17.9,7.3 25.4,7.3 32.8,7.3 40.3,10.1 47.7,10.1 55.2,14.4 62.6,18.7 70.1,21.6 77.5,23.0 85.0,23.0"/></svg>
+          <span class="v">가입자 13명 <span class="delta down">−52%</span></span><span class="why">269810**** · 낙찰기록과 일치</span></div></td>
+        <td><div class="cell idle"><span class="v">실행 가능</span><span class="why">번호 확정됨 2698100419</span></div></td>
+        <td><div class="cell idle"><span class="v">실행 가능</span><span class="why">번호 확정됨 2698100419</span></div></td>
+        <td><div class="cell ok"><span class="v mono">49,500,000원</span><span class="why">1건 · 상용SW 제3자단가계약</span></div></td>
+        <td><div class="cell ok"><span class="v">연구개발형</span><span class="why">~2028-05-24</span></div></td>
+      </tr>
+      <tr>
+        <td><span class="co">페어리</span><span class="sub">서울 강남 · 응용SW</span></td>
+        <td><div class="cell absent"><span class="v">미등록</span><span class="why">DART에 기업 없음</span></div></td>
+        <td><div class="cell absent"><span class="v">미공시</span><span class="why">비외감</span></div></td>
+        <td><div class="cell conflict"><span class="v">오답</span><span class="why">페어리테일즈 1208688658 — 동명 타사</span></div></td>
+        <td><div class="cell ok">
+          <svg class="spark" width="88" height="26" viewBox="0 0 88 26" aria-hidden="true"><polyline points="3.0,13.0 10.5,23.0 17.9,3.0 25.4,3.0 32.8,3.0 40.3,13.0 47.7,3.0 55.2,3.0 62.6,3.0 70.1,3.0 77.5,3.0 85.0,3.0"/></svg>
+          <span class="v">가입자 8명 <span class="delta up">+14%</span></span><span class="why">115870**** 페어리테크 · 강남 역삼로</span></div></td>
+        <td><div class="cell absent"><span class="v">조회 불가</span><span class="why">10자리 미확보 (앞 6자리만)</span></div></td>
+        <td><div class="cell absent"><span class="v">조회 불가</span><span class="why">10자리 미확보 (앞 6자리만)</span></div></td>
+        <td><div class="cell na"><span class="v">0건</span><span class="why">공공조달 미참여</span></div></td>
+        <td><div class="cell ok"><span class="v">벤처투자형</span><span class="why">~2028-09-13 · 상호 페어리테크</span></div></td>
+      </tr>
+      <tr>
+        <td><span class="co">넷록스</span><span class="sub">서울 서초 · 시스템SW</span></td>
+        <td><div class="cell absent"><span class="v">미등록</span><span class="why">DART에 기업 없음</span></div></td>
+        <td><div class="cell absent"><span class="v">미공시</span><span class="why">비외감</span></div></td>
+        <td><div class="cell absent"><span class="v">0건</span><span class="why">금융위 명단에 없음</span></div></td>
+        <td><div class="cell ok">
+          <svg class="spark flat" width="88" height="26" viewBox="0 0 88 26" aria-hidden="true"><polyline points="3.0,13.0 10.5,13.0 17.9,13.0 25.4,13.0 32.8,13.0 40.3,13.0 47.7,13.0 55.2,13.0 62.6,13.0 70.1,13.0 77.5,13.0 85.0,13.0"/></svg>
+          <span class="v">가입자 4명 <span class="delta flat">0%</span></span><span class="why">205880**** · 12개월 무변동</span></div></td>
+        <td><div class="cell absent"><span class="v">조회 불가</span><span class="why">10자리 미확보 (앞 6자리만)</span></div></td>
+        <td><div class="cell absent"><span class="v">조회 불가</span><span class="why">10자리 미확보 (앞 6자리만)</span></div></td>
+        <td><div class="cell na"><span class="v">0건</span><span class="why">공공조달 미참여</span></div></td>
+        <td><div class="cell ok"><span class="v">벤처투자형</span><span class="why">~2028-12-16</span></div></td>
+      </tr>
+      <tr>
+        <td><span class="co">논스랩</span><span class="sub">서울 마포 · 응용SW</span></td>
+        <td><div class="cell absent"><span class="v">미등록</span><span class="why">DART에 기업 없음</span></div></td>
+        <td><div class="cell absent"><span class="v">미공시</span><span class="why">비외감</span></div></td>
+        <td><div class="cell absent"><span class="v">0건</span><span class="why">금융위 명단에 없음</span></div></td>
+        <td><div class="cell ok">
+          <svg class="spark down" width="88" height="26" viewBox="0 0 88 26" aria-hidden="true"><polyline points="3.0,9.7 10.5,3.0 17.9,9.7 25.4,9.7 32.8,9.7 40.3,13.0 47.7,19.7 55.2,19.7 62.6,19.7 70.1,23.0 77.5,23.0 85.0,23.0"/></svg>
+          <span class="v">가입자 7명 <span class="delta down">−36%</span></span><span class="why">568880**** · 강서→마포 이전 합산</span></div></td>
+        <td><div class="cell absent"><span class="v">조회 불가</span><span class="why">10자리 미확보 (앞 6자리만)</span></div></td>
+        <td><div class="cell absent"><span class="v">조회 불가</span><span class="why">10자리 미확보 (앞 6자리만)</span></div></td>
+        <td><div class="cell na"><span class="v">0건</span><span class="why">공공조달 미참여</span></div></td>
+        <td><div class="cell ok"><span class="v">벤처투자형</span><span class="why">~2028-05-14</span></div></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="legend">
+    <div><span class="swatch s-ok"></span><b>확인</b> 값이 있다</div>
+    <div><span class="swatch s-absent"></span><b>결측</b> 원천에 이 기업이 없다</div>
+    <div><span class="swatch s-na"></span><b>측정 불가</b> 조회는 됐고 잴 활동이 없다</div>
+    <div><span class="swatch s-idle"></span><b>미실행</b> 경로는 열려 있다</div>
+    <div><span class="swatch s-conflict"></span><b>오답</b> 다른 기업을 물어왔다</div>
+  </div>
+
+  <div class="rules">
+    <div class="rule good">
+      <h3>국민연금이 이름 충돌을 끊었다</h3>
+      <p>옥타코 <span class="mono">269810****</span> · 성남 수정구 창업로 · 등록 2016-04-04 — 낙찰기록의 2698100419와 세 항목이 맞는다. 금융위가 최상단으로 준 옥타코리아(2208886707)는 별개 법인으로 확정. 페어리도 벤처명단의 &ldquo;페어리테크·강남&rdquo;과 국민연금 <span class="mono">115870****</span>·강남 역삼로가 교차 일치한다.</p>
+    </div>
+    <div class="rule risk">
+      <h3>연금 사업장은 사업자번호를 앞 6자리만 준다</h3>
+      <p><span class="mono">625870****</span> 형태로 마스킹된다. 상호·주소·업종·등록일 4중 대조로 <b>기업 식별</b>은 되지만, 10자리를 요구하는 국세청·나라장터는 열리지 않는다. 넷록스·논스랩이 여기서 막힌다.</p>
+    </div>
+    <div class="rule">
+      <h3>사업장 단위 데이터다 — 법인 단위로 묶어야 한다</h3>
+      <p>논스랩은 강서 마곡(~2025-09)과 마포(2025-10~)가 별도 사업장으로 잡힌다. 합치지 않으면 이전을 &ldquo;인원 급감&rdquo;으로 오독한다. 같은 <span class="mono">568880****</span> 로 묶어 합산했다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ② 국민연금 규모 신호 -->
+<section>
+  <div class="sec-head">
+    <h2>국민연금 12개월 규모 신호</h2>
+    <span class="sec-tag new">신규 실측</span>
+  </div>
+  <p class="sec-note">당월고지금액 ÷ 9%(보험료율) = 사업장 기준소득월액 총액. 재무제표 없이 얻는 <strong>유일한 금액 데이터</strong>이자, 대략적인 연간 인건비 규모다.
+  기준소득월액에는 상·하한이 있어 고임금 기업일수록 과소추정되므로 <strong>하한 추정치</strong>로 읽는다.</p>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>기업</th><th>사업장명 (연금)</th><th class="num">가입자<br>2026-07</th><th class="num">12개월 전</th><th class="num">증감</th><th class="num">당월고지금액</th><th class="num">추정 평균<br>기준소득월액</th><th class="num">추정 연 인건비</th><th>읽는 법</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="co">크립토랩</td><td>주식회사크립토랩<span class="sub">등록 2018-06-01 · 응용SW</span></td><td class="num">61</td><td class="num">56</td><td class="num delta up">+5 (+9%)</td><td class="num">27,000,180원</td><td class="num">4,918,000원</td><td class="num">약 36.0억</td><td>2026-07 한 달에 7명 입사 — 채용 재개 신호</td></tr>
+      <tr><td class="co">올림플래닛</td><td>주식회사 올림플래닛<span class="sub">등록 2015-02-06 · 업종 미분류</span></td><td class="num">32</td><td class="num">68</td><td class="num delta down">−36 (−53%)</td><td class="num">13,756,720원</td><td class="num">4,776,000원</td><td class="num">약 18.3억</td><td><b style="color:var(--risk)">2025-10 한 달 17명 퇴사.</b> 뉴스로는 안 잡히는 신호</td></tr>
+      <tr><td class="co">옥타코</td><td>옥타코주식회사<span class="sub">등록 2016-04-04 · 응용SW</span></td><td class="num">13</td><td class="num">27</td><td class="num delta down">−14 (−52%)</td><td class="num">5,449,640원</td><td class="num">4,658,000원</td><td class="num">약 7.3억</td><td><b style="color:var(--risk)">12개월 연속 감소, 입사 0명.</b> 낙찰 실적과 상반</td></tr>
+      <tr><td class="co">페어리</td><td>주식회사 페어리테크<span class="sub">강남 역삼로 · 응용SW</span></td><td class="num">8</td><td class="num">7</td><td class="num delta up">+1 (+14%)</td><td class="num">4,072,780원</td><td class="num">5,657,000원</td><td class="num">약 5.4억</td><td>소규모 안정. 1인 단가는 표본 최고</td></tr>
+      <tr><td class="co">넷록스</td><td>넷록스 주식회사<span class="sub">등록 2020-07-01 · 시스템SW</span></td><td class="num">4</td><td class="num">4</td><td class="num delta flat">0</td><td class="num">1,989,360원</td><td class="num">5,526,000원</td><td class="num">약 2.7억</td><td>12개월 입·퇴사 전무. 실질 4인 조직</td></tr>
+      <tr><td class="co">논스랩</td><td>논스랩<span class="sub">등록 2019-10-01 · 강서→마포 이전</span></td><td class="num">7</td><td class="num">11</td><td class="num delta down">−4 (−36%)</td><td class="num">1,971,740원</td><td class="num">3,130,000원</td><td class="num">약 2.6억</td><td>이전 후 축소. 1인 단가도 표본 최저</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="rules">
+    <div class="rule risk">
+      <h3>이 표가 선정 결과를 바꾼다</h3>
+      <p>올림플래닛과 옥타코는 뉴스·수상·낙찰 지표에서는 멀쩡하다. 인원이 1년 새 반토막 난 사실은 <b>국민연금에만 있다.</b> 우수기업 50개사 선정에서 이건 검토 사유다 — 다만 <b>감점이 아니라 확인 사유</b>다. 구조조정인지, 분사인지, 사업장 분할인지는 데이터가 말해주지 않는다.</p>
+    </div>
+    <div class="rule">
+      <h3>데이터는 1년치만 남는다</h3>
+      <p>국민연금은 제공 시점 기준 12개월치만 유지하고 매년 삭제한다(2018-07-02~). 연 단위 추이가 필요하면 <b>매월 15일 이후 스냅샷을 우리 DB에 적재</b>해 직접 쌓는 수밖에 없다. 지금 시작하면 1년 뒤 2년치가 된다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ③ 빈칸 해소 가능성 -->
+<section>
+  <div class="sec-head">
+    <h2>빈칸은 어디까지 메워지나</h2>
+    <span class="sec-tag new">해소 분석</span>
+  </div>
+  <p class="sec-note">미구현 API를 전부 붙이면 격자가 다 차는가 — 아니다. 빈칸의 절반은 <strong>API로 해소되지 않는 종류</strong>다. 종류별로 처방이 다르다.</p>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>빈칸</th><th class="num">칸수</th><th>원인</th><th>API로 해소되나</th><th>실제 처방</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="co">DART 재무제표</td><td class="num">6</td>
+        <td>비외감·비상장이라 공시 의무가 없다</td>
+        <td><span class="verdict never">불가 — 영구 결측</span></td>
+        <td>대리지표로 대체한다. 국민연금 고지금액이 <b>금액 축</b>을 처음으로 채웠다</td>
+      </tr>
+      <tr>
+        <td class="co">DART 기업개황</td><td class="num">4</td>
+        <td>4개사는 DART에 등록 자체가 없다</td>
+        <td><span class="verdict never">불가 — 영구 결측</span></td>
+        <td>금융위·국민연금 폴백으로 이미 대체됨. 옥타코 1칸은 조회만 하면 판명</td>
+      </tr>
+      <tr>
+        <td class="co">금융위 오답 2 · 결측 2</td><td class="num">4</td>
+        <td>상호 검색이라 동명 타사를 준다 / 명단 자체에 없다</td>
+        <td><span class="verdict solved">해소됨</span></td>
+        <td><b>국민연금 교차대조로 4칸 전부 처리했다.</b> 금융위 단독 판정은 앞으로 쓰지 않는다</td>
+      </tr>
+      <tr>
+        <td class="co">국세청 · 나라장터 미실행</td><td class="num">4</td>
+        <td>사업자번호는 있는데 아직 안 돌렸다</td>
+        <td><span class="verdict solved">즉시 해소</span></td>
+        <td>올림플래닛·옥타코 — 코드는 이미 있다. 실행만 하면 4칸이 찬다</td>
+      </tr>
+      <tr>
+        <td class="co">국세청 · 나라장터 조회 불가</td><td class="num">6</td>
+        <td>10자리 사업자번호가 없다. 연금은 앞 6자리만 준다</td>
+        <td><span class="verdict partial">API로는 불가</span></td>
+        <td><b>접수 단계에서 사업자등록번호를 입력받는다.</b> 관리자 도구이므로 이게 가장 싸고 확실하다</td>
+      </tr>
+      <tr>
+        <td class="co">낙찰 0건</td><td class="num">4</td>
+        <td>공공조달에 참여하지 않았다</td>
+        <td><span class="verdict never">해소 대상 아님</span></td>
+        <td>배치 수집을 해도 0은 0이다. <b>가점 전용</b> — 미참여를 감점하면 4개사가 부당 탈락한다</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="rules">
+    <div class="rule good">
+      <h3>결측 · 미확정 · 측정 불가 — 처방이 다르다</h3>
+      <p><b>결측</b>(원천에 없다)은 대체 원천으로 푼다 — 국민연금이 그 답이었다. <b>미확정</b>(식별 실패)은 데이터가 아니라 입력으로 푼다 — 사람이 번호를 넣으면 끝난다. <b>측정 불가</b>(활동이 없다)는 풀 대상이 아니다 — 판정 규칙에서 빼는 것이 답이다.</p>
+    </div>
+    <div class="rule">
+      <h3>결론 — 확인 13칸 → 19칸, 실행하면 23칸</h3>
+      <p>국민연금 열이 6칸을 즉시 채웠고(전체 42→48칸 중 19), 이미 있는 코드를 돌리면 국세청·나라장터 4칸이 더 찬다(23칸 · 48%). 남는 25칸 중 <b>20칸은 API로 열리지 않는 종류</b>다. 나머지 5칸(넷록스·논스랩 등)은 사업자등록번호 입력란 하나로 열린다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ④ 기업 식별 -->
+<section>
+  <div class="sec-head">
+    <h2>기업 식별 정보</h2>
+    <span class="sec-tag">원천 병기</span>
+  </div>
+  <p class="sec-note">종업원수는 원천마다 다르다 — 집계 시점과 기준이 다르기 때문이다. 하나로 합치지 않고 나란히 둔다. 국민연금이 가장 최신(당월 고지 기준)이다.</p>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>기업</th><th>사업자번호</th><th>확정 근거</th><th class="num">금융위</th><th class="num">나라장터</th><th class="num">국민연금</th><th>업종 (연금 기준)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="co">크립토랩</td><td class="mono">625-87-00800</td><td><span class="badge fsc">금융위</span> <span class="badge nps">연금 6자리 일치</span></td><td class="num">55</td><td class="num">46</td><td class="num">61</td><td>응용 소프트웨어 개발·공급업</td></tr>
+      <tr><td class="co">올림플래닛</td><td class="mono">120-88-24298</td><td><span class="badge dart">DART</span> <span class="badge nps">연금 6자리 일치</span></td><td class="num">결측</td><td class="num">미실행</td><td class="num">32</td><td>미분류 (999999)</td></tr>
+      <tr><td class="co">옥타코</td><td class="mono">269-81-00419</td><td><span class="badge bid">낙찰기록</span> <span class="badge nps">연금 주소·등록일 일치</span></td><td class="num badge warn" style="display:table-cell">오답</td><td class="num">미실행</td><td class="num">13</td><td>응용 소프트웨어 개발·공급업</td></tr>
+      <tr><td class="co">페어리</td><td class="mono">115-87-0****</td><td><span class="badge nps">연금</span> <span class="badge">벤처명단 상호·지역 일치</span> <span class="badge warn">뒤 4자리 미상</span></td><td class="num badge warn" style="display:table-cell">오답</td><td class="num">—</td><td class="num">8</td><td>응용 소프트웨어 개발·공급업</td></tr>
+      <tr><td class="co">넷록스</td><td class="mono">205-88-0****</td><td><span class="badge nps">연금</span> <span class="badge">벤처명단 상호·지역 일치</span> <span class="badge warn">뒤 4자리 미상</span></td><td class="num">—</td><td class="num">—</td><td class="num">4</td><td>시스템 소프트웨어 개발·공급업</td></tr>
+      <tr><td class="co">논스랩</td><td class="mono">568-88-0****</td><td><span class="badge nps">연금</span> <span class="badge">벤처명단 상호·지역 일치</span> <span class="badge warn">뒤 4자리 미상</span></td><td class="num">—</td><td class="num">—</td><td class="num">7</td><td>응용 소프트웨어 개발·공급업</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ⑤ 재무 신호 4층 -->
+<section>
+  <div class="sec-head">
+    <h2>재무 신호 4층</h2>
+    <span class="sec-tag">설계 + 커버리지</span>
+  </div>
+  <p class="sec-note">재무제표는 6개사 중 0개사다. 회계법인의 질문(망하지 않는가 / 버는가 / 굴리는가 / 커지는가)은 유지하고 원천만 공공데이터로 바꿨다.</p>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>층</th><th>회계 관점</th><th>원래 지표</th><th>대체 원천</th><th class="num">커버리지</th><th>판정에서의 쓰임</th><th>상태</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="co">① 존속성</td><td>안정성</td><td>부채비율 · 유동비율</td><td>국세청 계속사업자 <b>+ 연금 가입상태</b></td><td class="num">6/6<span class="sub">연금 기준</span></td><td>폐업이면 이하 무의미 — 선행 게이트</td><td><span class="badge done">구현</span></td></tr>
+      <tr><td class="co">② 자격</td><td>안정성 · 수익성</td><td>ROE · 감사의견</td><td>벤처확인 유형 · 유효기간</td><td class="num">6/6</td><td>재무 요건 통과의 제3자 증명. 만료 임박은 검토 사유</td><td><span class="badge done">구현</span></td></tr>
+      <tr><td class="co">③ 실적</td><td>수익성 · 활동성</td><td>매출 · 자산회전율</td><td>나라장터 낙찰 금액·건수</td><td class="num">2/6</td><td>매출 하한. <b>가점 전용</b> — 0건은 감점하지 않는다</td><td><span class="badge todo">배치 수집 대기</span></td></tr>
+      <tr><td class="co">④ 규모</td><td>성장성</td><td>매출증가율 · 인건비</td><td><b>국민연금 가입자 추이 · 고지금액</b></td><td class="num">6/6</td><td>12개월 추이가 성장·축소 신호. 금액 축을 처음 확보</td><td><span class="badge nps">실측 완료 · 미구현</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="rules">
+    <div class="rule risk">
+      <h3>결측과 0을 구분한다</h3>
+      <p>크립토랩은 61명인데 낙찰 0건이다. 이걸 0점으로 읽으면 명백한 오판이다. 각 층은 <span class="mono">value | null</span> 과 <span class="mono">covered</span> 를 함께 낸다.</p>
+    </div>
+    <div class="rule">
+      <h3>리포트에는 못 본 것을 쓴다</h3>
+      <p>&ldquo;재무 정보 없음&rdquo;이 아니라 — 재무제표 미공시(비외감) · 공공조달 실적 미확인 · 벤처확인 유효(투자형, 2028-12-16까지) · 국민연금 가입자 4명 12개월 무변동.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ⑥ 파이프라인 -->
+<section>
+  <div class="sec-head">
+    <h2>파이프라인이 만드는 필드</h2>
+    <span class="sec-tag">수집 → 분석 → 검증 → 리포트</span>
+  </div>
+  <p class="sec-note">핵심 루프는 완료됐다. 아래는 기업 한 곳을 돌렸을 때 실제로 저장되는 값이다.</p>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>단계</th><th>산출 필드</th><th>판정 기준</th><th>저장 위치</th><th>상태</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="co">수집<span class="sub">네이버 · 구글 RSS</span></td>
+        <td>제목 · 본문 · 언론사 · 발행일 · 링크 · 제공처 · 제목일치 · 언급횟수 · 관련도</td>
+        <td>관련도 3등급 — 제목 일치 또는 3회 이상 언급이면 <b>primary</b>, 1~2회는 mention, 그 외 unrelated. 중복은 Dice 유사도로 제거</td>
+        <td class="mono">AnalysisRun.newsJson</td>
+        <td><span class="badge done">구현</span></td>
+      </tr>
+      <tr>
+        <td class="co">분석<span class="sub">Claude · 기사당 3회</span></td>
+        <td>동향요약 · 감정점수(−10~10) · 감정라벨 · 수상여부/명/사유 · 투자여부/명/사유 · 종합의견</td>
+        <td>기사 주제가 회사가 아니면(<span class="mono">is_about_company=N</span>) 집계에서 제외. 통계 8종 — 수집·집계·제외·평균감성·긍정/중립/부정·수상·투자</td>
+        <td class="mono">AnalysisRun.resultJson</td>
+        <td><span class="badge done">구현</span></td>
+      </tr>
+      <tr>
+        <td class="co">검증<span class="sub">환각 4층</span></td>
+        <td>faithfulness · sourceCoverage · evidenceMatch · 미근거 주장 목록 · 반증 목록</td>
+        <td>세 게이트의 <b>논리곱</b> — 0.85 / 0.50 / 0.40 을 모두 넘어야 <b>검증 완료</b>. judge가 실패하면 점수가 없으므로 무조건 <b>검토 필요</b></td>
+        <td class="mono">VerificationResult</td>
+        <td><span class="badge done">구현</span></td>
+      </tr>
+      <tr>
+        <td class="co">리포트<span class="sub">엑셀</span></td>
+        <td>기사별 16열 + 종합의견 + 통계 + 검증 판정</td>
+        <td>집계 제외 기사도 지우지 않고 &ldquo;제외&rdquo;로 표기해 남긴다 — 무엇을 뺐는지 보여야 심사가 된다</td>
+        <td class="mono">GET /api/reports/[runId]</td>
+        <td><span class="badge done">구현</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ⑦ 남은 것 -->
+<section>
+  <div class="sec-head">
+    <h2>다음 순서</h2>
+    <span class="sec-tag">이 격자를 채우는 순서</span>
+  </div>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th style="width:52px">순위</th><th>할 일</th><th>격자에서 바뀌는 것</th><th>막고 있는 것</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="num co">1</td><td><b>국민연금 서비스 구현</b> — <span class="mono">nps.ts</span> · 3개 오퍼레이션 · 상호+주소+업종 4중 매칭</td><td>④ 규모 층이 6/6으로 채워지고 인원 급감 리스크가 자동으로 잡힌다</td><td>없음 — 인증키·응답 구조 실측 완료</td></tr>
+      <tr><td class="num co">2</td><td>기업 등록 폼에 <b>사업자등록번호 입력란</b> 추가</td><td>넷록스·논스랩·페어리의 국세청·나라장터 6칸이 열린다</td><td>없음 — 관리자 도구라 접수 단계에서 받으면 된다</td></tr>
+      <tr><td class="num co">3</td><td>월별 연금 스냅샷 적재 (매월 15일 이후)</td><td>12개월 한계를 넘어 <b>연 단위 추이</b>가 쌓인다</td><td>없음. 다만 지금 시작해야 1년 뒤에 쓴다</td></tr>
+      <tr><td class="num co">4</td><td>분석 실행 UI (수집 → 분석 → 검증 진행률)</td><td>기업당 뉴스·감성·검증 열이 생긴다</td><td>없음 — 백엔드는 완료</td></tr>
+      <tr><td class="num co">5</td><td>나라장터 낙찰 연 단위 배치 수집</td><td>③ 실적 층이 단년 값에서 <b>추이</b>로 바뀐다</td><td>업체 단위 조회 파라미터가 없어 기간 전수 스캔 필요 (3개월 39,375건)</td></tr>
+      <tr><td class="num co">6</td><td>표본 확대 6 → 50개사</td><td>커버리지 비율이 통계로 의미를 갖는다</td><td>현재 수치는 6개사 실측이라 추세로만 읽어야 한다</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<footer>
+  <div>출처 — <span class="mono">data/nps-timeseries.json</span> · <span class="mono">data/venture-certified.json</span> · <span class="mono">data/fsc-corp-outline.json</span> · <span class="mono">data/procurement-wins.json</span></div>
+  <div>국민연금 <span class="mono">apis.data.go.kr/B552015/NpsBplcInfoInqireServiceV2</span> · 활용가이드 v2.0 (2025-05-07)</div>
+</footer>
+
+</div>
+</body>
+</html>

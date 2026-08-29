@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>성과돋보기 — 화면 구성 예시</title>
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+:root{
+  --background:#ffffff; --foreground:#171719; --surface:#f7f7f8; --hairline:#eaebec;
+  --border:#e1e2e4; --muted-foreground:#5a5c63; --faint:#8b8e95;
+  --primary:#0066ff; --accent:#eaf2fe; --accent-foreground:#0054d1;
+  --verified:#009632; --verified-surface:#f2fff6;
+  --review:#b36600; --review-surface:#fff6e8;
+  --risk:#d92b2b; --risk-surface:#fff0f0;
+  --series:#0066ff; --series-warm:#ff9200;
+  --radius:8px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --background:#1b1c1e; --foreground:#f7f7f8; --surface:#141415; --hairline:#2e2f33;
+    --border:#ffffff1f; --muted-foreground:#989ba2; --faint:#7c7f86;
+    --primary:#3385ff; --accent:#002966; --accent-foreground:#9ec5ff;
+    --verified:#49e57d; --verified-surface:#00240c;
+    --review:#ffb454; --review-surface:#2b1a00;
+    --risk:#ff8080; --risk-surface:#2e0d0d;
+    --series:#3385ff; --series-warm:#d97706;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--surface);color:var(--foreground);
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  font-feature-settings:"ss01","tnum";font-size:14px;line-height:1.55;padding:40px 24px 96px}
+.page{max-width:1200px;margin:0 auto}
+h1,h2,h3,h4{letter-spacing:-.025em;font-weight:800}
+table{font-variant-numeric:tabular-nums}
+
+.doc-head{padding-bottom:20px;border-bottom:2px solid var(--foreground)}
+.brand{font-size:12px;font-weight:700;letter-spacing:.18em;color:var(--primary)}
+h1{font-size:32px;margin-top:6px}
+.lede{margin-top:14px;max-width:76ch;color:var(--muted-foreground)}
+.lede strong{color:var(--foreground)}
+
+.keylegend{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.keylegend span{font-size:12px;color:var(--muted-foreground);border:1px solid var(--border);
+  border-radius:999px;padding:4px 11px;background:var(--background)}
+.keylegend b{color:var(--foreground)}
+
+/* 요소 표기 칩 — 원천과 상태를 한 쌍으로 붙인다 */
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;
+  padding:1px 7px;border-radius:5px;white-space:nowrap;vertical-align:middle;letter-spacing:0}
+.tag.real{color:var(--verified);background:var(--verified-surface)}
+.tag.sample{color:var(--muted-foreground);background:transparent;border:1px dashed var(--border)}
+.tag.todo{color:var(--review);background:var(--review-surface)}
+.pin{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+  border-radius:50%;background:var(--foreground);color:var(--background);
+  font-size:10px;font-weight:800;margin-right:6px;vertical-align:middle}
+
+/* 화면 프레임 */
+.screen{margin-top:40px;border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  background:var(--background);box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.screen-cap{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--surface);
+  border-bottom:1px solid var(--border);font-size:12px;color:var(--muted-foreground)}
+.dots{display:flex;gap:5px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--border)}
+.url{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--background);
+  border:1px solid var(--border);border-radius:5px;padding:2px 9px}
+
+.app{display:grid;grid-template-columns:184px 1fr;min-height:520px}
+.nav{border-right:1px solid var(--border);background:var(--surface);padding:16px 12px}
+.nav .logo{font-size:13px;font-weight:800;padding:0 8px 14px;letter-spacing:-.02em}
+.nav a{display:block;padding:7px 9px;border-radius:6px;font-size:13px;color:var(--muted-foreground);text-decoration:none}
+.nav a.on{background:var(--accent);color:var(--accent-foreground);font-weight:700}
+.nav .grp{font-size:10.5px;font-weight:700;color:var(--faint);letter-spacing:.08em;padding:14px 9px 5px}
+.main{padding:20px 22px 28px;min-width:0}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding-bottom:14px;border-bottom:1px solid var(--hairline);margin-bottom:18px}
+.topbar h2{font-size:20px}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap}
+.ctl{font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 10px;
+  background:var(--background);color:var(--muted-foreground)}
+.ctl.primary{background:var(--primary);color:#fff;border-color:transparent;font-weight:700}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px}
+.tile{border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;background:var(--background)}
+.tile .lbl{font-size:11.5px;color:var(--muted-foreground);display:flex;align-items:center;gap:5px}
+.tile .big{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-top:3px}
+.tile .foot{font-size:11px;color:var(--faint);margin-top:1px}
+.tile.ok .big{color:var(--verified)} .tile.warn .big{color:var(--review)} .tile.bad .big{color:var(--risk)}
+.dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+.dot.ok{background:var(--verified)} .dot.warn{background:var(--review)} .dot.bad{background:var(--risk)}
+.dot.mute{background:var(--faint)}
+
+.block{margin-top:22px}
+.block-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:4px}
+.block-head h3{font-size:14px}
+.block-note{font-size:11.5px;color:var(--faint);margin-bottom:10px}
+.panel{border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;background:var(--background)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:900px){.cols{grid-template-columns:1fr}.app{grid-template-columns:1fr}.nav{display:none}}
+
+svg.chart{width:100%;height:auto;display:block}
+.chart .grid{stroke:var(--hairline);stroke-width:1}
+.chart .axis{fill:var(--faint);font-size:9.5px;font-family:inherit}
+.chart .value{fill:var(--muted-foreground);font-size:10px;font-weight:700;font-family:inherit}
+.chart .bar{fill:var(--series);opacity:.55}
+.chart .bar-latest{opacity:1}
+.chart .up{fill:var(--series)}
+.chart .down{fill:var(--series-warm)}
+.chart path:hover{opacity:1}
+.clegend{display:flex;gap:14px;font-size:11.5px;color:var(--muted-foreground);margin-top:8px}
+.clegend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.clegend .i-up{background:var(--series)} .clegend .i-dn{background:var(--series-warm)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--hairline);vertical-align:top}
+thead th{background:var(--surface);font-size:11px;font-weight:700;color:var(--muted-foreground);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.num{text-align:right;white-space:nowrap}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:-.02em}
+.st{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;white-space:nowrap}
+.st.ok{color:var(--verified);background:var(--verified-surface)}
+.st.warn{color:var(--review);background:var(--review-surface)}
+.st.mute{color:var(--muted-foreground);background:var(--surface)}
+.st.bad{color:var(--risk);background:var(--risk-surface)}
+.up{color:var(--verified);font-weight:700} .dn{color:var(--risk);font-weight:700} .fl{color:var(--muted-foreground)}
+
+/* 게이트 막대 — 임계값을 눈금으로 세운다 */
+.gate{margin-bottom:11px}
+.gate .row{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px}
+.gate .row b{font-weight:700}
+.track{position:relative;height:7px;border-radius:4px;background:var(--surface);
+  box-shadow:inset 0 0 0 1px var(--hairline)}
+.track .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--verified)}
+.track .fill.miss{background:var(--review)}
+.track .mark{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--foreground);opacity:.55}
+
+.srcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px}
+.srccard{border:1px solid var(--border);border-radius:7px;padding:9px 11px}
+.srccard .n{font-size:11px;color:var(--faint)}
+.srccard .v{font-size:13px;font-weight:700;margin-top:2px}
+.srccard.absent{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--hairline) 5px 6px)}
+.srccard.absent .v{color:var(--muted-foreground)}
+
+.notice{border-left:3px solid var(--review);background:var(--review-surface);
+  border-radius:6px;padding:11px 13px;font-size:12.5px}
+.notice b{display:block;margin-bottom:3px}
+
+.map{margin-top:18px}
+.map h4{font-size:13px;margin-bottom:8px}
+.map .hint{font-size:11.5px;color:var(--faint);margin-top:3px}
+/* 진행 스테퍼 */
+.stepper{display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap}
+.step{flex:1;min-width:120px;padding:10px 12px;border:1px solid var(--border);border-right:0;position:relative}
+.step:first-child{border-radius:var(--radius) 0 0 var(--radius)}
+.step:last-child{border-right:1px solid var(--border);border-radius:0 var(--radius) var(--radius) 0}
+.step .k{font-size:10.5px;color:var(--faint);font-weight:700;letter-spacing:.06em}
+.step .t{font-size:13px;font-weight:700;margin-top:2px}
+.step .s{font-size:11px;color:var(--muted-foreground);margin-top:1px}
+.step.done{background:var(--verified-surface)} .step.done .t{color:var(--verified)}
+.step.now{background:var(--accent)} .step.now .t{color:var(--accent-foreground)}
+.step.wait{opacity:.55}
+
+.bar{height:6px;border-radius:3px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--hairline);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--primary);border-radius:3px}
+.bar i.ok{background:var(--verified)}
+
+.log{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.85;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:11px 13px;max-height:190px;overflow:auto}
+.log div{color:var(--muted-foreground);white-space:nowrap}
+.log .ts{color:var(--faint);margin-right:8px}
+.log .ok{color:var(--verified)} .log .warn{color:var(--review)} .log .bad{color:var(--risk)}
+
+/* 폼 */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}
+.field .hint{font-size:11.5px;color:var(--faint);margin-top:4px}
+.input{border:1px solid var(--border);border-radius:6px;padding:8px 11px;font-size:13px;
+  background:var(--background);color:var(--foreground);width:100%;font-family:inherit}
+.input.mono{font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}
+.input.focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 18%,transparent)}
+.input.ghost{color:var(--faint)}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.check{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted-foreground)}
+.check i{width:14px;height:14px;border-radius:3px;border:1px solid var(--border);display:inline-block}
+.check i.on{background:var(--primary);border-color:transparent;position:relative}
+.check i.on::after{content:"";position:absolute;left:4px;top:1px;width:4px;height:8px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+
+/* 후보 선택 */
+.modal{border:1px solid var(--border);border-radius:10px;background:var(--background);
+  box-shadow:0 8px 28px rgba(0,0,0,.14);max-width:760px;margin:0 auto}
+.modal-head{padding:16px 20px 12px;border-bottom:1px solid var(--hairline)}
+.modal-head h3{font-size:16px}
+.modal-head p{font-size:12.5px;color:var(--muted-foreground);margin-top:4px}
+.modal-body{padding:16px 20px}
+.modal-foot{padding:12px 20px 16px;border-top:1px solid var(--hairline);display:flex;justify-content:flex-end;gap:8px}
+.cand{border:1px solid var(--border);border-radius:8px;padding:13px 15px;margin-bottom:10px;display:flex;gap:12px}
+.cand.pick{border-color:var(--primary);background:var(--accent)}
+.radio{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex:none;margin-top:2px}
+.cand.pick .radio{border-color:var(--primary);border-width:5px}
+.cand .name{font-size:13.5px;font-weight:700}
+.cand .no{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--muted-foreground);margin-top:1px}
+.cand .facts{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted-foreground);margin-top:7px}
+.match{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.match span{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:5px;
+  background:var(--verified-surface);color:var(--verified)}
+.match span.no{background:var(--surface);color:var(--faint)}
+.cross{font-size:11px;font-weight:700;color:var(--verified);white-space:nowrap;align-self:center}
+.cross.weak{color:var(--review)}
+
+.map .scroll{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--background)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="doc-head">
+  <div class="brand">성과돋보기 · 화면 구성 예시</div>
+  <h1>분석 대시보드와 기업 상세, 무엇을 보여줄 수 있나</h1>
+  <p class="lede">지금까지 구현한 데이터로 <strong>실제로 화면에 올릴 수 있는 요소</strong>만 배치했다.
+  블록마다 <strong>원천과 상태를 함께 표기</strong>했다 — 어디까지가 실측이고 어디부터가 예시인지 구분되지 않으면 이 화면은 근거자료가 아니다.</p>
+  <div class="keylegend">
+    <span><b>실측</b> — 공공 API 로 확인한 값</span>
+    <span><b>예시</b> — 구성 확인용 값. 아직 돌리지 않았다</span>
+    <span><b>미구현</b> — 데이터는 있으나 화면·API 가 없다</span>
+    <span>①②③ — 아래 요소 표에 대응</span>
+  </div>
+  <p class="lede" style="margin-top:14px">
+    <strong>메뉴는 둘뿐이다.</strong> 이 도구가 하는 일은 기업명을 받아 공공 데이터를 붙이고 보여주는 것이다.
+    분석 실행·리포트 내려받기는 <strong>화면 안의 동작</strong>이지 별도 메뉴가 아니다.
+  </div>
+</header>
+
+<!-- ═══ 화면 A ═══ -->
+<div class="screen">
+  <div class="screen-cap"><div class="dots"><i></i><i></i><i></i></div>
+    <span class="url">/dashboard?year=2026</span><span>화면 A — 분석 대시보드</span></div>
+  <div class="app">
+    <nav class="nav">
+      <div class="logo">성과돋보기</div>
+      <a href="#" class="on">분석 자료</a>
+      <a href="#">기업 등록</a>
+    </nav>
+    <div class="main">
+      <div class="topbar">
+        <h2>2026년 우수기업 선정 · 분석 현황</h2>
+        <div class="toolbar">
+          <span class="ctl">연도 2026 ▾</span><span class="ctl">검증 상태 ▾</span>
+          <span class="ctl">대조 가능성 ▾</span><span class="ctl primary">분석 실행</span>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3><span class="pin">1</span>선정 진행 상황</h3><span class="tag sample">예시</span></div>
+        <div class="tiles">
+          <div class="tile"><div class="lbl">대상 기업</div><div class="big">50</div><div class="foot">2026년 후보</div></div>
+          <div class="tile ok"><div class="lbl"><span class="dot ok"></span>검증 완료</div><div class="big">28</div><div class="foot">세 게이트 통과</div></div>
+          <div class="tile warn"><div class="lbl"><span class="dot warn"></span>검토 필요</div><div class="big">14</div><div class="foot">담당자 확인 대기</div></div>
+          <div class="tile"><div class="lbl"><span class="dot mute"></span>미분석</div><div class="big">8</div><div class="foot">뉴스 수집 전</div></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3><span class="pin">2</span>대조 가능성</h3><span class="tag real">실측</span>
+          <span class="block-note" style="margin:0">사업자번호가 없으면 뉴스 외 근거가 없다</span></div>
+        <div class="tiles">
+          <div class="tile ok"><div class="lbl">10자리 확보</div><div class="big">3</div><div class="foot">국세청·나라장터 조회 가능</div></div>
+          <div class="tile warn"><div class="lbl">앞 6자리만</div><div class="big">3</div><div class="foot">연금 매칭 · 10자리 입력 필요</div></div>
+          <div class="tile"><div class="lbl">벤처확인 보유</div><div class="big">6</div><div class="foot">전수 커버</div></div>
+          <div class="tile"><div class="lbl">재무제표 공시</div><div class="big">0</div><div class="foot">전원 비외감</div></div>
+        </div>
+      </div>
+
+      <div class="cols block">
+        <div>
+          <div class="block-head"><h3><span class="pin">3</span>평균 감성 점수 분포</h3><span class="tag sample">예시</span></div>
+          <div class="block-note">기업당 기사 감성 점수(−10~10)의 평균. 집계 제외 기사는 빠진다</div>
+          <div class="panel"><svg class="chart" viewBox="0 0 520 124" role="img" aria-label="기업별 평균 감성 점수 분포"><line class="grid" x1="36" x2="512" y1="104" y2="104"/><text class="axis" x="30" y="107.5" text-anchor="end">0</text><line class="grid" x1="36" x2="512" y1="57" y2="57"/><text class="axis" x="30" y="60.5" text-anchor="end">10</text><line class="grid" x1="36" x2="512" y1="10" y2="10"/><text class="axis" x="30" y="13.5" text-anchor="end">20</text><g><path class="bar" d=""><title>−10~−7점 0개사</title></path><text class="axis" x="70.0" y="118" text-anchor="middle">−10~−7</text></g><g><path class="bar" d="M111 104 L111 103.3 Q111 99.3 115 99.3 L161 99.3 Q165 99.3 165 103.3 L165 104 Z"><title>−6~−4점 1개사</title></path><text class="value" x="138.0" y="93.3" text-anchor="middle">1</text><text class="axis" x="138.0" y="118" text-anchor="middle">−6~−4</text></g><g><path class="bar" d="M179 104 L179 93.9 Q179 89.9 183 89.9 L229 89.9 Q233 89.9 233 93.9 L233 104 Z"><title>−3~−1점 3개사</title></path><text class="value" x="206.0" y="83.9" text-anchor="middle">3</text><text class="axis" x="206.0" y="118" text-anchor="middle">−3~−1</text></g><g><path class="bar" d="M247 104 L247 70.4 Q247 66.4 251 66.4 L297 66.4 Q301 66.4 301 70.4 L301 104 Z"><title>0~2점 8개사</title></path><text class="value" x="274.0" y="60.4" text-anchor="middle">8</text><text class="axis" x="274.0" y="118" text-anchor="middle">0~2</text></g><g><path class="bar" d="M315 104 L315 18.7 Q315 14.7 319 14.7 L365 14.7 Q369 14.7 369 18.7 L369 104 Z"><title>3~5점 19개사</title></path><text class="value" x="342.0" y="8.7" text-anchor="middle">19</text><text class="axis" x="342.0" y="118" text-anchor="middle">3~5</text></g><g><path class="bar" d="M383 104 L383 37.5 Q383 33.5 387 33.5 L433 33.5 Q437 33.5 437 37.5 L437 104 Z"><title>6~8점 15개사</title></path><text class="value" x="410.0" y="27.5" text-anchor="middle">15</text><text class="axis" x="410.0" y="118" text-anchor="middle">6~8</text></g><g><path class="bar" d="M451 104 L451 89.2 Q451 85.2 455 85.2 L501 85.2 Q505 85.2 505 89.2 L505 104 Z"><title>9~10점 4개사</title></path><text class="value" x="478.0" y="79.2" text-anchor="middle">4</text><text class="axis" x="478.0" y="118" text-anchor="middle">9~10</text></g></svg></div>
+        </div>
+        <div>
+          <div class="block-head"><h3><span class="pin">4</span>인원 증감 하위</h3><span class="tag real">실측</span></div>
+          <div class="block-note">국민연금 12개월. 뉴스로는 잡히지 않는 유일한 축소 신호다</div>
+          <div class="panel" style="padding:0">
+            <table>
+              <thead><tr><th>기업</th><th class="num">현재</th><th class="num">12개월 전</th><th class="num">증감</th><th>판단</th></tr></thead>
+              <tbody>
+                <tr><td>올림플래닛</td><td class="num">32</td><td class="num">68</td><td class="num dn">−53%</td><td><span class="st bad">확인 사유</span></td></tr>
+                <tr><td>옥타코</td><td class="num">13</td><td class="num">27</td><td class="num dn">−52%</td><td><span class="st bad">확인 사유</span></td></tr>
+                <tr><td>논스랩</td><td class="num">7</td><td class="num">11</td><td class="num dn">−36%</td><td><span class="st warn">사업장 이전</span></td></tr>
+                <tr><td>넷록스</td><td class="num">4</td><td class="num">4</td><td class="num fl">0%</td><td><span class="st mute">변동 없음</span></td></tr>
+                <tr><td>크립토랩</td><td class="num">61</td><td class="num">56</td><td class="num up">+9%</td><td><span class="st ok">확대</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3><span class="pin">5</span>기업 목록</h3><span class="tag real">사업자번호·증감 실측</span><span class="tag sample">뉴스·감성·검증 예시</span></div>
+        <div class="panel" style="padding:0">
+          <table>
+            <thead><tr><th>기업</th><th>사업자번호</th><th>출처</th><th class="num">기사</th><th class="num">평균 감성</th>
+              <th class="num">수상</th><th class="num">투자</th><th>검증</th><th class="num">인원 증감</th><th>대조 가능성</th></tr></thead>
+            <tbody>
+              <tr><td><b>크립토랩</b></td><td class="mono">625-87-00800</td><td><span class="st mute">금융위</span></td><td class="num">18</td><td class="num">7.4</td><td class="num">1</td><td class="num">1</td><td><span class="st ok">검증 완료</span></td><td class="num up">+9%</td><td><span class="st ok">대조 가능</span></td></tr>
+              <tr><td><b>올림플래닛</b></td><td class="mono">120-88-24298</td><td><span class="st mute">DART</span></td><td class="num">24</td><td class="num">5.1</td><td class="num">0</td><td class="num">0</td><td><span class="st warn">검토 필요</span></td><td class="num dn">−53%</td><td><span class="st ok">대조 가능</span></td></tr>
+              <tr><td><b>옥타코</b></td><td class="mono">269-81-00419</td><td><span class="st mute">낙찰기록</span></td><td class="num">11</td><td class="num">6.2</td><td class="num">1</td><td class="num">0</td><td><span class="st ok">검증 완료</span></td><td class="num dn">−52%</td><td><span class="st ok">대조 가능</span></td></tr>
+              <tr><td><b>페어리</b></td><td class="mono">115-87-0****</td><td><span class="st mute">국민연금</span></td><td class="num">6</td><td class="num">6.8</td><td class="num">0</td><td class="num">1</td><td><span class="st warn">검토 필요</span></td><td class="num up">+14%</td><td><span class="st warn">부분 대조</span></td></tr>
+              <tr><td><b>넷록스</b></td><td class="mono">205-88-0****</td><td><span class="st mute">국민연금</span></td><td class="num">4</td><td class="num">5.9</td><td class="num">0</td><td class="num">0</td><td><span class="st mute">미분석</span></td><td class="num fl">0%</td><td><span class="st warn">부분 대조</span></td></tr>
+              <tr><td><b>논스랩</b></td><td class="mono">568-88-0****</td><td><span class="st mute">국민연금</span></td><td class="num">9</td><td class="num">4.3</td><td class="num">0</td><td class="num">0</td><td><span class="st mute">미분석</span></td><td class="num dn">−36%</td><td><span class="st warn">부분 대조</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="map">
+  <h4>화면 A — 요소별 표시 내용과 원천</h4>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:40px">번호</th><th>요소</th><th>표시하는 것</th><th>원천</th><th>상태</th></tr></thead>
+    <tbody>
+<tr><td class="num">1</td><td><b>선정 진행 상황 타일</b></td><td>대상·검증 완료·검토 필요·미분석 건수</td><td>VerificationResult.status 집계</td><td>미구현 — 집계 API 필요</td></tr>
+<tr><td class="num">2</td><td><b>대조 가능성 타일</b></td><td>사업자번호 10자리/6자리·벤처확인·재무제표 보유 수</td><td>Company.businessNo · 벤처확인 · DART</td><td>실측 — 집계 UI 미구현</td></tr>
+<tr><td class="num">3</td><td><b>평균 감성 분포</b></td><td>기업별 평균 감성 점수 히스토그램</td><td>AnalysisRun.resultJson · stats.averageSentiment</td><td>분석 실행 후 가능</td></tr>
+<tr><td class="num">4</td><td><b>인원 증감 하위</b></td><td>12개월 가입자 증감 상·하위</td><td>국민연금 getDetailInfoSearchV2</td><td>실측 — 서비스 구현 완료</td></tr>
+<tr><td class="num">5</td><td><b>기업 목록</b></td><td>기업별 전 지표 한 줄 요약 + 정렬·필터</td><td>전 원천 조인</td><td>일부 실측</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ═══ 화면 B ═══ -->
+<div class="screen">
+  <div class="screen-cap"><div class="dots"><i></i><i></i><i></i></div>
+    <span class="url">/companies/1?year=2026</span><span>화면 B — 기업 상세</span></div>
+  <div class="app">
+    <nav class="nav">
+      <div class="logo">성과돋보기</div>
+      <a href="#" class="on">분석 자료</a>
+      <a href="#">기업 등록</a>
+    </nav>
+    <div class="main">
+      <div class="topbar">
+        <div>
+          <h2>크립토랩 <span class="st ok" style="vertical-align:middle">검증 완료</span></h2>
+          <div style="font-size:12.5px;color:var(--muted-foreground);margin-top:3px">
+            <span class="mono">625-87-00800</span> <span class="st mute">금융위 폴백</span>
+            · 시스템SW 개발·공급 · 서울 관악구 · 분석 2026-08-28
+          </div>
+        </div>
+        <div class="toolbar"><span class="ctl">원천 새로고침</span><span class="ctl">재분석</span><span class="ctl primary">엑셀 리포트</span></div>
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3><span class="pin">6</span>식별과 존속</h3><span class="tag real">실측</span></div>
+        <div class="block-note">네 원천을 나란히 둔다. 값이 다르면 합치지 않고 병기한다 — 집계 시점이 다르기 때문이다</div>
+        <div class="srcgrid">
+          <div class="srccard"><div class="n">국세청 휴폐업</div><div class="v" style="color:var(--verified)">계속사업자</div><div class="n">부가가치세 일반과세자</div></div>
+          <div class="srccard absent"><div class="n">DART 기업개황</div><div class="v">미등록</div><div class="n">원천에 기업 없음</div></div>
+          <div class="srccard"><div class="n">금융위 종업원</div><div class="v">55명</div><div class="n">설립 2017-12-15</div></div>
+          <div class="srccard"><div class="n">나라장터 종업원</div><div class="v">46명</div><div class="n">조달업체 등록</div></div>
+          <div class="srccard"><div class="n">국민연금 가입자</div><div class="v">61명</div><div class="n">2026-07 · 가장 최신</div></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3><span class="pin">7</span>고용 규모 12개월</h3><span class="tag real">실측</span></div>
+        <div class="block-note">국민연금 가입자수. 사업장이 여럿이면 사업자번호 앞 6자리로 합산한다</div>
+        <div class="panel">
+          <svg class="chart" viewBox="0 0 520 132" role="img" aria-label="국민연금 가입자수 12개월 추이"><line class="grid" x1="36" x2="512" y1="112" y2="112"/><text class="axis" x="30" y="115.5" text-anchor="end">0</text><line class="grid" x1="36" x2="512" y1="82.3" y2="82.3"/><text class="axis" x="30" y="85.8" text-anchor="end">20</text><line class="grid" x1="36" x2="512" y1="52.6" y2="52.6"/><text class="axis" x="30" y="56.1" text-anchor="end">40</text><line class="grid" x1="36" x2="512" y1="22.9" y2="22.9"/><text class="axis" x="30" y="26.4" text-anchor="end">60</text><g><path class="bar" d="M40.8 112 L40.8 32.8 Q40.8 28.8 44.8 28.8 L66.8 28.8 Q70.8 28.8 70.8 32.8 L70.8 112 Z"><title>25.08 가입자 56명</title></path><text class="value" x="55.8" y="22.8" text-anchor="middle">56</text></g><g><path class="bar" d="M80.5 112 L80.5 34.3 Q80.5 30.3 84.5 30.3 L106.5 30.3 Q110.5 30.3 110.5 34.3 L110.5 112 Z"><title>25.09 가입자 55명</title></path></g><g><path class="bar" d="M120.2 112 L120.2 32.8 Q120.2 28.8 124.2 28.8 L146.2 28.8 Q150.2 28.8 150.2 32.8 L150.2 112 Z"><title>25.10 가입자 56명</title></path></g><g><path class="bar" d="M159.8 112 L159.8 35.8 Q159.8 31.8 163.8 31.8 L185.8 31.8 Q189.8 31.8 189.8 35.8 L189.8 112 Z"><title>25.11 가입자 54명</title></path></g><g><path class="bar" d="M199.5 112 L199.5 35.8 Q199.5 31.8 203.5 31.8 L225.5 31.8 Q229.5 31.8 229.5 35.8 L229.5 112 Z"><title>25.12 가입자 54명</title></path></g><g><path class="bar" d="M239.2 112 L239.2 35.8 Q239.2 31.8 243.2 31.8 L265.2 31.8 Q269.2 31.8 269.2 35.8 L269.2 112 Z"><title>26.01 가입자 54명</title></path></g><g><path class="bar" d="M278.8 112 L278.8 35.8 Q278.8 31.8 282.8 31.8 L304.8 31.8 Q308.8 31.8 308.8 35.8 L308.8 112 Z"><title>26.02 가입자 54명</title></path></g><g><path class="bar" d="M318.5 112 L318.5 38.7 Q318.5 34.7 322.5 34.7 L344.5 34.7 Q348.5 34.7 348.5 38.7 L348.5 112 Z"><title>26.03 가입자 52명</title></path></g><g><path class="bar" d="M358.2 112 L358.2 38.7 Q358.2 34.7 362.2 34.7 L384.2 34.7 Q388.2 34.7 388.2 38.7 L388.2 112 Z"><title>26.04 가입자 52명</title></path></g><g><path class="bar" d="M397.8 112 L397.8 38.7 Q397.8 34.7 401.8 34.7 L423.8 34.7 Q427.8 34.7 427.8 38.7 L427.8 112 Z"><title>26.05 가입자 52명</title></path></g><g><path class="bar" d="M437.5 112 L437.5 35.8 Q437.5 31.8 441.5 31.8 L463.5 31.8 Q467.5 31.8 467.5 35.8 L467.5 112 Z"><title>26.06 가입자 54명</title></path></g><g><path class="bar bar-latest" d="M477.2 112 L477.2 25.4 Q477.2 21.4 481.2 21.4 L503.2 21.4 Q507.2 21.4 507.2 25.4 L507.2 112 Z"><title>26.07 가입자 61명</title></path><text class="value" x="492.2" y="15.4" text-anchor="middle">61</text></g><text class="axis" x="55.8" y="126" text-anchor="middle">25.08</text><text class="axis" x="95.5" y="126" text-anchor="middle">25.09</text><text class="axis" x="135.2" y="126" text-anchor="middle">25.10</text><text class="axis" x="174.8" y="126" text-anchor="middle">25.11</text><text class="axis" x="214.5" y="126" text-anchor="middle">25.12</text><text class="axis" x="254.2" y="126" text-anchor="middle">26.01</text><text class="axis" x="293.8" y="126" text-anchor="middle">26.02</text><text class="axis" x="333.5" y="126" text-anchor="middle">26.03</text><text class="axis" x="373.2" y="126" text-anchor="middle">26.04</text><text class="axis" x="412.8" y="126" text-anchor="middle">26.05</text><text class="axis" x="452.5" y="126" text-anchor="middle">26.06</text><text class="axis" x="492.2" y="126" text-anchor="middle">26.07</text></svg>
+          <div style="height:10px"></div>
+          <svg class="chart" viewBox="0 0 520 96" role="img" aria-label="월별 입사자와 퇴사자"><line class="grid" x1="36" x2="512" y1="48" y2="48"/><text class="axis" x="30" y="42" text-anchor="end">입사</text><text class="axis" x="30" y="61" text-anchor="end">퇴사</text><g><path class="up" d="M40.8 46 L40.8 40 Q40.8 36 44.8 36 L66.8 36 Q70.8 36 70.8 40 L70.8 46 Z"><title>25.08 입사 2명</title></path><text class="value" x="55.8" y="32.0" text-anchor="middle">2</text><path class="down" d="M40.8 50 L40.8 66 Q40.8 70 44.8 70 L66.8 70 Q70.8 70 70.8 66 L70.8 50 Z"><title>25.08 퇴사 4명</title></path><text class="value" x="55.8" y="81.0" text-anchor="middle">4</text></g><g><path class="up" d="M80.5 46 L80.5 35 Q80.5 31 84.5 31 L106.5 31 Q110.5 31 110.5 35 L110.5 46 Z"><title>25.09 입사 3명</title></path><text class="value" x="95.5" y="27.0" text-anchor="middle">3</text><path class="down" d="M80.5 50 L80.5 51 Q80.5 55 84.5 55 L106.5 55 Q110.5 55 110.5 51 L110.5 50 Z"><title>25.09 퇴사 1명</title></path><text class="value" x="95.5" y="66.0" text-anchor="middle">1</text></g><g><path class="up" d="M120.2 46 L120.2 40 Q120.2 36 124.2 36 L146.2 36 Q150.2 36 150.2 40 L150.2 46 Z"><title>25.10 입사 2명</title></path><text class="value" x="135.2" y="32.0" text-anchor="middle">2</text><path class="down" d="M120.2 50 L120.2 61 Q120.2 65 124.2 65 L146.2 65 Q150.2 65 150.2 61 L150.2 50 Z"><title>25.10 퇴사 3명</title></path><text class="value" x="135.2" y="76.0" text-anchor="middle">3</text></g><g><path class="up" d="M159.8 46 L159.8 45 Q159.8 41 163.8 41 L185.8 41 Q189.8 41 189.8 45 L189.8 46 Z"><title>25.11 입사 1명</title></path><text class="value" x="174.8" y="37.0" text-anchor="middle">1</text><path class="down" d="M159.8 50 L159.8 56 Q159.8 60 163.8 60 L185.8 60 Q189.8 60 189.8 56 L189.8 50 Z"><title>25.11 퇴사 2명</title></path><text class="value" x="174.8" y="71.0" text-anchor="middle">2</text></g><g><path class="up" d="M199.5 46 L199.5 40 Q199.5 36 203.5 36 L225.5 36 Q229.5 36 229.5 40 L229.5 46 Z"><title>25.12 입사 2명</title></path><text class="value" x="214.5" y="32.0" text-anchor="middle">2</text><path class="down" d="M199.5 50 L199.5 56 Q199.5 60 203.5 60 L225.5 60 Q229.5 60 229.5 56 L229.5 50 Z"><title>25.12 퇴사 2명</title></path><text class="value" x="214.5" y="71.0" text-anchor="middle">2</text></g><g><path class="up" d="M239.2 46 L239.2 40 Q239.2 36 243.2 36 L265.2 36 Q269.2 36 269.2 40 L269.2 46 Z"><title>26.01 입사 2명</title></path><text class="value" x="254.2" y="32.0" text-anchor="middle">2</text></g><g><path class="down" d="M278.8 50 L278.8 76 Q278.8 80 282.8 80 L304.8 80 Q308.8 80 308.8 76 L308.8 50 Z"><title>26.02 퇴사 6명</title></path><text class="value" x="293.8" y="91.0" text-anchor="middle">6</text></g><g><path class="up" d="M318.5 46 L318.5 30 Q318.5 26 322.5 26 L344.5 26 Q348.5 26 348.5 30 L348.5 46 Z"><title>26.03 입사 4명</title></path><text class="value" x="333.5" y="22.0" text-anchor="middle">4</text><path class="down" d="M318.5 50 L318.5 51 Q318.5 55 322.5 55 L344.5 55 Q348.5 55 348.5 51 L348.5 50 Z"><title>26.03 퇴사 1명</title></path><text class="value" x="333.5" y="66.0" text-anchor="middle">1</text></g><g><path class="up" d="M358.2 46 L358.2 45 Q358.2 41 362.2 41 L384.2 41 Q388.2 41 388.2 45 L388.2 46 Z"><title>26.04 입사 1명</title></path><text class="value" x="373.2" y="37.0" text-anchor="middle">1</text><path class="down" d="M358.2 50 L358.2 56 Q358.2 60 362.2 60 L384.2 60 Q388.2 60 388.2 56 L388.2 50 Z"><title>26.04 퇴사 2명</title></path><text class="value" x="373.2" y="71.0" text-anchor="middle">2</text></g><g><path class="up" d="M397.8 46 L397.8 40 Q397.8 36 401.8 36 L423.8 36 Q427.8 36 427.8 40 L427.8 46 Z"><title>26.05 입사 2명</title></path><text class="value" x="412.8" y="32.0" text-anchor="middle">2</text></g><g><path class="up" d="M437.5 46 L437.5 40 Q437.5 36 441.5 36 L463.5 36 Q467.5 36 467.5 40 L467.5 46 Z"><title>26.06 입사 2명</title></path><text class="value" x="452.5" y="32.0" text-anchor="middle">2</text></g><g><path class="up" d="M477.2 46 L477.2 15 Q477.2 11 481.2 11 L503.2 11 Q507.2 11 507.2 15 L507.2 46 Z"><title>26.07 입사 7명</title></path><text class="value" x="492.2" y="7.0" text-anchor="middle">7</text><path class="down" d="M477.2 50 L477.2 56 Q477.2 60 481.2 60 L503.2 60 Q507.2 60 507.2 56 L507.2 50 Z"><title>26.07 퇴사 2명</title></path><text class="value" x="492.2" y="71.0" text-anchor="middle">2</text></g></svg>
+          <div class="clegend"><span><i class="i-up"></i>입사</span><span><i class="i-dn"></i>퇴사</span>
+            <span style="margin-left:auto;color:var(--faint)">2026-07 기준 61명 · 12개월 +9%</span></div>
+        </div>
+      </div>
+
+      <div class="cols block">
+        <div>
+          <div class="block-head"><h3><span class="pin">8</span>뉴스 분석</h3><span class="tag sample">예시</span></div>
+          <div class="block-note">집계에서 뺀 기사도 지우지 않고 사유와 함께 남긴다</div>
+          <div class="panel" style="padding:0">
+            <table>
+              <thead><tr><th>제목</th><th>언론사</th><th>날짜</th><th class="num">감성</th><th>수상</th><th>투자</th><th>집계</th></tr></thead>
+              <tbody>
+                <tr><td>동형암호 상용화 앞둔 크립토랩, 글로벌 표준화 주도</td><td>전자신문</td><td class="mono">2026-07-14</td><td class="num up">+8</td><td>—</td><td>—</td><td><span class="st ok">반영</span></td></tr>
+                <tr><td>크립토랩, 시리즈B 200억 투자 유치</td><td>머니투데이</td><td class="mono">2026-06-28</td><td class="num up">+9</td><td>—</td><td>시리즈B 200억</td><td><span class="st ok">반영</span></td></tr>
+                <tr><td>서울대 산학협력 우수사례 선정</td><td>한국경제</td><td class="mono">2026-05-30</td><td class="num up">+7</td><td>산학협력 우수상</td><td>—</td><td><span class="st ok">반영</span></td></tr>
+                <tr><td>국내 보안업계 인력난 심화… 스타트업 이직 러시</td><td>디지털타임스</td><td class="mono">2026-05-02</td><td class="num dn">-2</td><td>—</td><td>—</td><td><span class="st mute">제외</span></td></tr>
+                <tr><td>동형암호 학회 KIISC 발표 세션 안내</td><td>보안뉴스</td><td class="mono">2026-04-11</td><td class="num fl">0</td><td>—</td><td>—</td><td><span class="st mute">제외</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="block-head" style="margin-top:16px"><h3><span class="pin">9</span>종합의견</h3><span class="tag sample">예시</span></div>
+          <div class="panel" style="font-size:12.5px;color:var(--muted-foreground)">
+            동형암호 원천기술을 보유한 연구기반 기업으로, 2026년 상반기 시리즈B 200억원 유치와 글로벌 표준화 참여가
+            확인된다. 국민연금 가입자는 12개월간 56명에서 61명으로 늘어 기술 인력 확충이 실제로 진행 중이다.
+            공공조달 실적은 확인되지 않으나 이는 미참여이지 실적 부진이 아니다.
+          </div>
+        </div>
+        <div>
+          <div class="block-head"><h3><span class="pin">10</span>환각 검증</h3><span class="tag sample">예시</span></div>
+          <div class="block-note">세 게이트를 모두 넘어야 검증 완료다. 세로선이 임계값</div>
+          <div class="panel">
+            <div class="gate"><div class="row"><span>근거충실도 <span style="color:var(--faint)">judge</span></span><b>0.92 / 0.85</b></div>
+              <div class="track"><div class="fill" style="width:92%"></div><div class="mark" style="left:85%"></div></div></div>
+            <div class="gate"><div class="row"><span>출처 인용률</span><b>1.00 / 0.50</b></div>
+              <div class="track"><div class="fill" style="width:100%"></div><div class="mark" style="left:50%"></div></div></div>
+            <div class="gate"><div class="row"><span>근거 일치도 <span style="color:var(--faint)">LLM 미사용</span></span><b>0.47 / 0.40</b></div>
+              <div class="track"><div class="fill" style="width:47%"></div><div class="mark" style="left:40%"></div></div></div>
+            <div style="font-size:12px;color:var(--muted-foreground);margin-top:10px;padding-top:10px;border-top:1px solid var(--hairline)">
+              <b style="color:var(--foreground)">미근거 주장</b> 없음<br>
+              <b style="color:var(--foreground)">반증 검토</b> 보안업계 인력난 기사는 회사가 주제가 아니어서 집계에서 제외
+            </div>
+          </div>
+
+          <div class="block-head" style="margin-top:16px"><h3><span class="pin">11</span>자격과 실적</h3><span class="tag real">실측</span></div>
+          <div class="panel">
+            <div class="srcgrid">
+              <div class="srccard"><div class="n">벤처확인</div><div class="v" style="color:var(--verified)">벤처투자형</div><div class="n">~2028-02-08 · D−529</div></div>
+              <div class="srccard"><div class="n">추정 연 인건비</div><div class="v">36.0억</div><div class="n">고지 27,000,180원 ÷ 9%</div></div>
+              <div class="srccard absent"><div class="n">공공조달 낙찰</div><div class="v">0건</div><div class="n">미참여 — 측정 불가</div></div>
+              <div class="srccard absent"><div class="n">재무제표</div><div class="v">미공시</div><div class="n">비외감</div></div>
+            </div>
+          </div>
+
+          <div class="block-head" style="margin-top:16px"><h3><span class="pin">12</span>대조 불가 고지</h3><span class="tag real">실측</span></div>
+          <div class="notice">
+            <b>이 기업에서 확인하지 못한 것</b>
+            재무제표 미공시(비외감) · DART 미등록 · 공공조달 실적 미확인(미참여).
+            대신 국세청 계속사업자, 벤처확인 유효(투자형, 2028-02-08까지), 국민연금 가입자 61명이 확인됐다.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="map">
+  <h4>화면 B — 요소별 표시 내용과 원천</h4>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:40px">번호</th><th>요소</th><th>표시하는 것</th><th>원천</th><th>상태</th></tr></thead>
+    <tbody>
+<tr><td class="num">6</td><td><b>식별과 존속</b></td><td>계속사업자 여부·과세유형·종업원수 원천별 병기</td><td>국세청 · DART · 금융위 · 나라장터 · 국민연금</td><td>실측 — 서비스 구현 완료</td></tr>
+<tr><td class="num">7</td><td><b>고용 규모 12개월</b></td><td>월별 가입자수 막대 + 입·퇴사</td><td>국민연금 3개 오퍼레이션</td><td>실측 — nps.ts 구현 완료</td></tr>
+<tr><td class="num">8</td><td><b>뉴스 분석 표</b></td><td>제목·언론사·날짜·감성점수·수상·투자·집계 반영 여부</td><td>newsCollector + analyzer</td><td>백엔드 완료 · 실행 UI 미구현</td></tr>
+<tr><td class="num">9</td><td><b>종합의견</b></td><td>기사 전체를 종합한 서술</td><td>Claude · opinionPrompt</td><td>백엔드 완료 · 실행 UI 미구현</td></tr>
+<tr><td class="num">10</td><td><b>환각 검증</b></td><td>세 게이트 점수와 임계값·미근거 주장·반증</td><td>VerificationResult</td><td>백엔드 완료 · 화면 미구현</td></tr>
+<tr><td class="num">11</td><td><b>자격과 실적</b></td><td>벤처확인 유형·유효기간·추정 인건비·낙찰 실적</td><td>벤처확인 명단 · 국민연금 · 나라장터 낙찰</td><td>실측 — 낙찰 배치 수집 대기</td></tr>
+<tr><td class="num">12</td><td><b>대조 불가 고지</b></td><td>무엇을 못 봤는지 문장으로</td><td>전 원천의 결측 사유 조합</td><td>미구현 — 문구 생성 로직 필요</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ═══ 화면 C ═══ -->
+<div class="screen">
+  <div class="screen-cap"><div class="dots"><i></i><i></i><i></i></div>
+    <span class="url">/analyze?year=2026</span><span>화면 C — 분석 실행 (진행 중)</span></div>
+  <div class="app">
+    <nav class="nav">
+      <div class="logo">성과돋보기</div>
+      <a href="#" class="on">분석 자료</a>
+      <a href="#">기업 등록</a>
+    </nav>
+    <div class="main">
+      <div class="topbar">
+        <div><h2>분석 실행</h2>
+          <div style="font-size:12.5px;color:var(--muted-foreground);margin-top:3px">4개사 · 2026-01-01 ~ 2026-08-28 · claude-sonnet-5</div></div>
+        <div class="toolbar"><span class="ctl">중지</span><span class="ctl primary">백그라운드로 보내기</span></div>
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3><span class="pin">13</span>실행 설정</h3><span class="tag todo">미구현</span></div>
+        <div class="panel">
+          <div class="cols" style="gap:18px">
+            <div>
+              <div class="field"><label>대상 기업</label>
+                <div class="inline"><span class="st mute">크립토랩 ×</span><span class="st mute">올림플래닛 ×</span>
+                  <span class="st mute">옥타코 ×</span><span class="st mute">페어리 ×</span>
+                  <span class="ctl">기업 추가</span></div>
+                <div class="hint">사업자번호가 없는 기업은 뉴스 외 근거가 붙지 않는다</div></div>
+              <div class="field"><label>분석 기간</label>
+                <div class="inline"><span class="input" style="width:auto">2026-01-01</span><span>~</span>
+                  <span class="input" style="width:auto">2026-08-28</span></div></div>
+            </div>
+            <div>
+              <div class="field"><label>수집원</label>
+                <div class="inline"><span class="check"><i class="on"></i>네이버 뉴스</span>
+                  <span class="check"><i class="on"></i>구글 뉴스 RSS</span>
+                  <span class="check"><i></i>본문 원문 복원</span></div>
+                <div class="hint">중복은 Dice 유사도 0.85 이상에서 제거한다</div></div>
+              <div class="field"><label>기업당 최대 기사</label>
+                <span class="input ghost" style="width:auto">30건</span>
+                <div class="hint">기사당 LLM 호출 3회 + 기업당 종합의견 1회</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3><span class="pin">14</span>진행률</h3><span class="tag todo">미구현 — SSE 화면</span></div>
+        <div class="block-note">서버는 이미 progress · news_done · complete · error 이벤트를 흘린다</div>
+        <div class="panel">
+          <div class="stepper">
+            <div class="step done"><div class="k">1 수집</div><div class="t">92건</div><div class="s">중복 14건 제거</div></div>
+            <div class="step now"><div class="k">2 분석</div><div class="t">동향 12 / 24</div><div class="s">올림플래닛 진행 중</div></div>
+            <div class="step wait"><div class="k">3 검증</div><div class="t">대기</div><div class="s">세 게이트 판정</div></div>
+            <div class="step wait"><div class="k">4 리포트</div><div class="t">대기</div><div class="s">엑셀 생성</div></div>
+          </div>
+          <div class="bar" style="margin-bottom:14px"><i style="width:42%"></i></div>
+          <table>
+            <thead><tr><th>기업</th><th class="num">수집</th><th>단계</th><th style="width:34%">진행</th><th>검증</th></tr></thead>
+            <tbody>
+              <tr><td><b>크립토랩</b></td><td class="num">18</td><td><span class="st ok">완료</span></td>
+                <td><div class="bar"><i class="ok" style="width:100%"></i></div></td><td><span class="st ok">검증 완료</span></td></tr>
+              <tr><td><b>올림플래닛</b></td><td class="num">24</td><td><span class="st mute">동향분석</span></td>
+                <td><div class="bar"><i style="width:50%"></i></div></td><td><span class="st mute">—</span></td></tr>
+              <tr><td><b>옥타코</b></td><td class="num">11</td><td><span class="st warn">재시도 대기</span></td>
+                <td><div class="bar"><i style="width:8%"></i></div></td><td><span class="st mute">—</span></td></tr>
+              <tr><td><b>페어리</b></td><td class="num">—</td><td><span class="st mute">대기</span></td>
+                <td><div class="bar"><i style="width:0"></i></div></td><td><span class="st mute">—</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="cols block">
+        <div>
+          <div class="block-head"><h3><span class="pin">15</span>실행 로그</h3><span class="tag todo">미구현</span></div>
+          <div class="log">
+            <div><span class="ts">13:42:07</span>크립토랩 · 네이버 12건 · 구글 9건 수집</div>
+            <div><span class="ts">13:42:09</span>크립토랩 · 중복 3건 제거 → 18건</div>
+            <div><span class="ts">13:43:51</span><span class="ok">크립토랩 · 검증 완료 (0.92 / 1.00 / 0.47)</span></div>
+            <div><span class="ts">13:43:52</span>올림플래닛 · 24건 수집</div>
+            <div><span class="ts">13:44:30</span><span class="warn">옥타코 · 네이버 레이트리밋 · 60초 후 재시도</span></div>
+            <div><span class="ts">13:44:41</span>올림플래닛 · 동향분석 12 / 24</div>
+          </div>
+        </div>
+        <div>
+          <div class="block-head"><h3><span class="pin">16</span>도착하는 대로 쌓이는 결과</h3><span class="tag sample">예시</span></div>
+          <div class="block-note">news_done 이벤트마다 한 행씩 붙는다. 끝날 때까지 기다리지 않는다</div>
+          <div class="panel" style="padding:0">
+            <table>
+              <thead><tr><th>기사</th><th class="num">감성</th><th>집계</th></tr></thead>
+              <tbody>
+                <tr><td>올림플래닛, 메타버스 전시 플랫폼 고도화</td><td class="num up">+6</td><td><span class="st ok">반영</span></td></tr>
+                <tr><td>가상융합산업 진흥법 시행 첫해 성과는</td><td class="num fl">0</td><td><span class="st mute">제외</span></td></tr>
+                <tr><td>올림플래닛, 조직 개편 단행</td><td class="num dn">−3</td><td><span class="st ok">반영</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 화면 D ═══ -->
+<div class="screen">
+  <div class="screen-cap"><div class="dots"><i></i><i></i><i></i></div>
+    <span class="url">/companies/new</span><span>화면 D — 기업 등록 · 사업자번호 입력</span></div>
+  <div class="app">
+    <nav class="nav">
+      <div class="logo">성과돋보기</div>
+      <a href="#">분석 자료</a>
+      <a href="#" class="on">기업 등록</a>
+    </nav>
+    <div class="main">
+      <div class="topbar"><div><h2>기업 등록</h2>
+        <div style="font-size:12.5px;color:var(--muted-foreground);margin-top:3px">2026년 후보 · 관리자만 등록한다</div></div>
+        <div class="toolbar"><span class="ctl">취소</span><span class="ctl primary">저장하고 원천 조회</span></div></div>
+
+      <div class="cols block" style="align-items:start">
+        <div>
+          <div class="block-head"><h3><span class="pin">17</span>기본 정보</h3><span class="tag todo">사업자번호 입력란 미구현</span></div>
+          <div class="panel">
+            <div class="field"><label>기업명</label>
+              <div class="input">넷록스</div>
+              <div class="hint">뉴스 검색어이자 원천 매칭 키다. 정식 상호가 아니라 통용 명칭을 쓴다</div></div>
+            <div class="field"><label>사업자등록번호</label>
+              <div class="input mono focus">205-88-0<span style="color:var(--faint)">____</span></div>
+              <div class="hint" style="color:var(--review)">
+                국민연금이 앞 6자리 <b>205880</b> 을 확인했다. 나머지 4자리를 넣으면 국세청 휴폐업과 나라장터가 함께 열린다.</div></div>
+            <div class="inline" style="margin-bottom:14px">
+              <div class="field" style="flex:1;margin:0"><label>연도</label><div class="input">2026</div></div>
+              <div class="field" style="flex:1;margin:0"><label>표시 순서</label><div class="input ghost">자동</div></div>
+            </div>
+            <div class="field"><label>업종</label><div class="input ghost">원천에서 자동으로 채운다</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="block-head"><h3><span class="pin">18</span>입력 즉시 열리는 원천</h3><span class="tag real">실측 기준</span></div>
+          <div class="block-note">저장하기 전에 무엇이 열리고 무엇이 닫히는지 보여준다</div>
+          <div class="panel">
+            <div class="srcgrid">
+              <div class="srccard"><div class="n">국민연금</div><div class="v" style="color:var(--verified)">가입자 4명</div><div class="n">상호·지역 일치 · 즉시 조회됨</div></div>
+              <div class="srccard"><div class="n">벤처확인</div><div class="v" style="color:var(--verified)">벤처투자형</div><div class="n">~2028-12-16</div></div>
+              <div class="srccard absent"><div class="n">금융위</div><div class="v">0건</div><div class="n">명단에 없음</div></div>
+              <div class="srccard absent"><div class="n">DART</div><div class="v">미등록</div><div class="n">원천에 기업 없음</div></div>
+              <div class="srccard"><div class="n">국세청</div><div class="v" style="color:var(--review)">4자리 대기</div><div class="n">10자리를 넣으면 열린다</div></div>
+              <div class="srccard"><div class="n">나라장터</div><div class="v" style="color:var(--review)">4자리 대기</div><div class="n">10자리를 넣으면 열린다</div></div>
+            </div>
+            <div class="notice" style="margin-top:12px">
+              <b>비워두고 저장할 수 있다</b>
+              다만 이 기업은 뉴스 외 근거가 붙지 않는다. 목록과 리포트에 <span class="st warn">부분 대조</span> 로 표시된다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 화면 E ═══ -->
+<div class="screen">
+  <div class="screen-cap"><div class="dots"><i></i><i></i><i></i></div>
+    <span class="url">/companies/3 · 사업자번호 확정</span><span>화면 E — 후보가 여럿일 때</span></div>
+  <div class="app" style="grid-template-columns:1fr;background:var(--surface)">
+    <div class="main" style="padding:28px 22px">
+      <div class="modal">
+        <div class="modal-head">
+          <h3><span class="pin">19</span>옥타코 — 사업자번호를 고르세요</h3>
+          <p>상호 검색만으로는 동명 법인을 가를 수 없다. <b>두 개 이상의 원천이 같은 값을 가리키는 쪽</b>을 고른다.</p>
+        </div>
+        <div class="modal-body">
+          <div class="cand">
+            <div class="radio"></div>
+            <div style="flex:1">
+              <div class="name">옥타코리아</div>
+              <div class="no">220-88-86707</div>
+              <div class="facts"><span>설립 2014-08-26</span><span>대표 최재용</span><span>종업원 11</span><span>서울 강남</span></div>
+              <div class="match"><span>금융위 상호검색 1순위</span><span class="no">낙찰기록 불일치</span>
+                <span class="no">국민연금 불일치</span><span class="no">벤처명단 지역 불일치</span></div>
+            </div>
+            <div class="cross weak">원천 1</div>
+          </div>
+          <div class="cand pick">
+            <div class="radio"></div>
+            <div style="flex:1">
+              <div class="name">옥타코주식회사 <span class="st ok">권장</span></div>
+              <div class="no">269-81-00419</div>
+              <div class="facts"><span>설립 2016-04-04</span><span>대표 유미영 / 이재형</span><span>가입자 13</span><span>경기 성남 수정구 창업로</span></div>
+              <div class="match"><span>금융위</span><span>나라장터 낙찰 사업자번호 일치</span>
+                <span>국민연금 주소·등록일 일치</span><span>벤처명단 지역 일치</span></div>
+              <div class="hint" style="margin-top:7px;font-size:11.5px;color:var(--faint)">
+                대표자명이 원천마다 다르다 — 금융위 유미영, 낙찰기록 이재형. 변경 이력일 수 있어 합치지 않고 병기한다.</div>
+            </div>
+            <div class="cross">원천 4</div>
+          </div>
+          <div class="notice">
+            <b>고르지 않고 넘어가도 된다</b>
+            확정하지 않으면 국세청·나라장터를 조회하지 않고, 리포트에 <span class="st warn">사업자번호 미확정</span> 으로 남는다.
+            틀린 번호로 조회하는 것보다 낫다.
+          </div>
+        </div>
+        <div class="modal-foot"><span class="ctl">나중에</span><span class="ctl primary">269-81-00419 로 확정</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 화면 F ═══ -->
+<div class="screen">
+  <div class="screen-cap"><div class="dots"><i></i><i></i><i></i></div>
+    <span class="url">/reports?year=2026</span><span>화면 F — 리포트와 실행 이력</span></div>
+  <div class="app">
+    <nav class="nav">
+      <div class="logo">성과돋보기</div>
+      <a href="#" class="on">분석 자료</a>
+      <a href="#">기업 등록</a>
+    </nav>
+    <div class="main">
+      <div class="topbar"><div><h2>리포트</h2>
+        <div style="font-size:12.5px;color:var(--muted-foreground);margin-top:3px">분석 실행 1건이 리포트 1건이다. 같은 기업을 다시 돌리면 새 이력이 쌓인다</div></div>
+        <div class="toolbar"><span class="ctl">기간 ▾</span><span class="ctl">검증 상태 ▾</span><span class="ctl primary">선택 항목 일괄 내려받기</span></div></div>
+
+      <div class="block">
+        <div class="block-head"><h3><span class="pin">20</span>분석 실행 이력</h3><span class="tag todo">목록 화면 미구현</span>
+          <span class="block-note" style="margin:0">엑셀 생성 API 는 완료</span></div>
+        <div class="panel" style="padding:0">
+          <table>
+            <thead><tr><th>실행일시</th><th>기업</th><th>분석 기간</th><th class="num">기사</th><th class="num">집계</th>
+              <th>검증</th><th class="num">토큰</th><th>리포트</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">2026-08-28 13:43</td><td><b>크립토랩</b></td><td class="mono">01-01 ~ 08-28</td>
+                <td class="num">18</td><td class="num">14</td><td><span class="st ok">검증 완료</span></td>
+                <td class="num">142k</td><td><span class="ctl">xlsx</span></td></tr>
+              <tr><td class="mono">2026-08-28 13:47</td><td><b>올림플래닛</b></td><td class="mono">01-01 ~ 08-28</td>
+                <td class="num">24</td><td class="num">17</td><td><span class="st warn">검토 필요</span></td>
+                <td class="num">198k</td><td><span class="ctl">xlsx</span></td></tr>
+              <tr><td class="mono">2026-08-27 16:02</td><td><b>옥타코</b></td><td class="mono">01-01 ~ 08-27</td>
+                <td class="num">11</td><td class="num">9</td><td><span class="st ok">검증 완료</span></td>
+                <td class="num">96k</td><td><span class="ctl">xlsx</span></td></tr>
+              <tr><td class="mono">2026-08-27 15:58</td><td><b>옥타코</b> <span class="st mute">이전 실행</span></td><td class="mono">01-01 ~ 08-27</td>
+                <td class="num">11</td><td class="num">9</td><td><span class="st bad">실패</span></td>
+                <td class="num">12k</td><td><span class="ctl">사유 보기</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h3><span class="pin">21</span>제출 자료 보관함</h3><span class="tag todo">미구현</span></div>
+        <div class="block-note">평가위원회에 낸 파일을 원본 그대로 남긴다. 나중에 무엇을 근거로 냈는지 되짚을 수 있어야 한다</div>
+        <div class="panel" style="padding:0">
+          <table>
+            <thead><tr><th>파일명</th><th>기업</th><th>분석자</th><th>분석 기간</th><th class="num">크기</th><th>업로드</th></tr></thead>
+            <tbody>
+              <tr><td>2026_크립토랩_분석자료.xlsx</td><td>크립토랩</td><td>관리자</td><td class="mono">2026 상반기</td>
+                <td class="num">248 KB</td><td class="mono">2026-08-28</td></tr>
+              <tr><td>2026_선정위원회_1차_종합.xlsx</td><td>전체</td><td>관리자</td><td class="mono">2026 상반기</td>
+                <td class="num">1.2 MB</td><td class="mono">2026-08-26</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="map">
+  <h4>화면 C · D · E · F — 요소별 표시 내용과 원천</h4>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:40px">번호</th><th>요소</th><th>표시하는 것</th><th>원천</th><th>상태</th></tr></thead>
+    <tbody>
+<tr><td class="num">13</td><td><b>실행 설정</b></td><td>대상 기업·기간·수집원·기사 상한</td><td>CollectOptions</td><td>미구현 — 폼</td></tr>
+<tr><td class="num">14</td><td><b>진행률 스테퍼</b></td><td>수집·분석·검증·리포트 4단계와 기업별 진행</td><td>POST /api/analyze SSE</td><td>서버 완료 · 화면 미구현</td></tr>
+<tr><td class="num">15</td><td><b>실행 로그</b></td><td>수집 건수·중복 제거·레이트리밋 재시도·검증 점수</td><td>AnalyzeEvent · NewsRateLimitError</td><td>서버 완료 · 화면 미구현</td></tr>
+<tr><td class="num">16</td><td><b>스트리밍 결과표</b></td><td>news_done 이벤트마다 한 행씩</td><td>analyzer NewsAnalysis</td><td>서버 완료 · 화면 미구현</td></tr>
+<tr><td class="num">17</td><td><b>사업자번호 입력란</b></td><td>10자리 입력 · 연금이 확인한 앞 6자리 자동 채움</td><td>사람 입력 + 국민연금</td><td>미구현 — 우선순위 2</td></tr>
+<tr><td class="num">18</td><td><b>열리는 원천 미리보기</b></td><td>저장 전에 어떤 원천이 열리고 닫히는지</td><td>전 원천 조회 결과</td><td>실측 — 화면 미구현</td></tr>
+<tr><td class="num">19</td><td><b>사업자번호 후보 선택</b></td><td>후보별 일치 원천 수와 불일치 항목</td><td>금융위 · 낙찰기록 · 국민연금 · 벤처명단</td><td>미구현 — 옥타코·페어리에 필요</td></tr>
+<tr><td class="num">20</td><td><b>분석 실행 이력</b></td><td>실행일시·기사수·검증 판정·토큰 사용량·엑셀</td><td>AnalysisRun · VerificationResult</td><td>엑셀 API 완료 · 목록 미구현</td></tr>
+<tr><td class="num">21</td><td><b>제출 자료 보관함</b></td><td>평가위원회 제출 파일 원본 보관</td><td>Archive 모델</td><td>모델만 존재 · 화면 미구현</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<div class="map">
+  <h4>화면을 띄우려면 남은 것</h4>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:40px">순위</th><th>할 일</th><th>열리는 화면 요소</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><b>분석 실행 화면</b> — SSE 진행률 · 로그 · 스트리밍 결과<div class="hint">서버는 완료. 이벤트를 받아 그리는 화면만 없다</div></td><td>③ ⑧ ⑨ ⑩ ⑬ ⑭ ⑮ ⑯ — 아홉 요소가 한 번에 열린다</td></tr>
+      <tr><td class="num">2</td><td><b>사업자번호 입력란과 후보 선택</b><div class="hint">API 로는 못 푸는 빈칸을 사람이 채운다</div></td><td>⑥ ⑰ ⑱ ⑲ — 넷록스·논스랩·페어리의 국세청·나라장터가 열린다</td></tr>
+      <tr><td class="num">3</td><td>대시보드 집계 API — 검증 상태·대조 가능성 카운트</td><td>① ②</td></tr>
+      <tr><td class="num">4</td><td>리포트 목록과 보관함 화면</td><td>⑳ ㉑ — 엑셀 생성 API 는 이미 있다</td></tr>
+      <tr><td class="num">5</td><td>국민연금 월별 스냅샷 적재</td><td>⑦ 이 12개월 한계를 넘어 연 단위가 된다</td></tr>
+      <tr><td class="num">6</td><td>결측 사유 문구 생성</td><td>⑫ — "무엇을 못 봤는지" 문장</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+</div>
+</body>
+</html>

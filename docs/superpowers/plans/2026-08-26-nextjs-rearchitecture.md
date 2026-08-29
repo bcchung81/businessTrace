@@ -365,11 +365,15 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 - **검증**: 정규화/순위/결측 처리/산업별 루브릭 적용 테스트
 - **커밋**: `feat: industry-weighted benchmarking ranking`
 
-#### Task 13: XAI 기여도 리포트
-- **파일**: `src/lib/services/explainer.ts`, `src/app/api/company/explain/route.ts`, UI(Recharts), 테스트
-- **내용**: 벤치마킹 총점을 지표별 기여도로 분해(규칙 기반, LLM 호출 없음), 근거 요약(뉴스 헤드라인 3건·DART 수치·검증상태) 조립. UI: 기여도 수평 막대 차트. 엑셀에 기여도 행 추가
-- **검증**: 기여도 합계 100%/결측 처리/근거 조립 테스트
-- **커밋**: `feat: explainable score breakdown with charts`
+#### Task 13: XAI 기여도 리포트 & AlphaSense형 인터랙티브 인용 UI
+- **파일**: `src/lib/services/explainer.ts`, `src/app/api/company/explain/route.ts`, UI(Recharts, `src/components/analysis/EvidenceHighlight.tsx`), 테스트
+- **내용**:
+  - 벤치마킹 총점을 지표별 기여도로 분해(규칙 기반, LLM 호출 없음), 근거 요약(뉴스 헤드라인 3건·DART 수치·검증상태) 조립. UI: 기여도 수평 막대 차트. 엑셀에 기여도 행 추가
+  - **AlphaSense/Hebbia 벤치마킹 (인터랙티브 인용 UI)**:
+    - 화면상 AI 종합의견·주장 문장에 마우스 오버 시 일치하는 원문 기사 본문 단락(Snippet)을 실시간 하이라이트/팝오버로 표시
+    - 검증 상태 배지(`verified` / `needs_review`) 클릭 시 Layer 1~4 검증 근거(출처 링크, 근거 충실도 점수, 반증 사유)를 사이드 패널로 즉시 펼쳐 확인하는 UI 구현
+- **검증**: 기여도 합계 100%/결측 처리/근거 조립/인용 하이라이트 매핑 테스트
+- **커밋**: `feat: explainable score breakdown and interactive citation ui`
 
 #### Task 14: 연도별 이력 트래킹·시상
 - **파일**: `src/lib/services/history.ts`, SelectionRecord, `src/app/api/companies/{history,awards}/route.ts`, UI(라인 차트·수상 목록), 테스트
@@ -377,18 +381,31 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 - **검증**: 이력 저장/추이/카테고리 산출 테스트
 - **커밋**: `feat: selection history tracking and award categories`
 
-### Phase C: 딥리서치 연동
+### Phase C: 딥리서치 및 검증 엔진 고도화
 
-#### Task 15: gpt-researcher 기업 심층조사
+#### Task 15: STORM 아키텍처 기반 기업 딥리서치 (사이드카)
 - **파일**: `sidecar/app/routers/research.py`, `src/lib/services/deepResearch.ts`, `src/app/api/company/deep-research/route.ts`, UI 컴포넌트, 테스트
 - **내용**:
-  - 사이드카에 gpt-researcher 래핑: Next.js 가 발급한 잡 ID + 기업명 + 조사범위 입력 → 재귀 탐색(정책·시장·경쟁·해외동향) → 완료 시 Next.js 콜백 엔드포인트로 리포트 POST (사이드카 무상태)
+  - **Stanford STORM 벤치마킹 (다관점 질의 분할 및 인용 트리)**:
+    - 단일 쿼리 검색 대신 4대 평가 관점(① 정책·기금 부합성, ② 기술력·특허·제품 경쟁력, ③ 시장·조달실적·매출지표, ④ 리스크·제재·소송·부정 이슈)으로 하위 에이전트 질의 자동 분할
+    - Tavily 검색 결과를 기반으로 인용 트리(Citation Tree) 구축 후 구조화된 심층 리포트 합성
+  - 사이드카 gpt-researcher/STORM 엔진 래핑: 잡 ID + 기업명 + 관점별 범위 입력 → 재귀 탐색 → 완료 시 Next.js 콜백 POST (사이드카 무상태 유지)
   - Next.js: `ResearchJob` 생성/상태 조회 API + SSE 진행률, 완료 시 리포트를 Archive 저장 + 엑셀 "심층조사" 시트 통합
   - 비용 제어: 모드 선택(경량 report / 심층 deep), 50개사 일괄 시 경량 모드 기본
-  - 검색 백엔드 Tavily(무료 티어), LLM 은 gpt-researcher 의 `SMART_LLM`/`FAST_LLM` 을 `anthropic:` 프로바이더로 설정. **임베딩은 gpt-researcher 가 OpenAI 기본**이므로 착수 시 로컬 임베딩(`EMBEDDING=huggingface:...`) 가용성을 먼저 확인하고, 불가하면 이 태스크 범위에서 임베딩 없는 report 모드만 지원
+  - 검색 백엔드 Tavily(무료 티어), LLM 은 `anthropic:` 프로바이더 설정. 로컬 임베딩(`EMBEDDING=huggingface:...`) 가용성 점검 후 적용
   - 리포트에 인용 URL이 포함되므로 Task 9의 1층 출처 검사를 재적용해 신뢰성 연결
-- **검증**: 잡 생성/폴링/완료/타임아웃/사이드카 다운 시 처리 mock 테스트
-- **커밋**: `feat: deep research via gpt-researcher sidecar`
+- **검증**: 잡 생성/폴링/완료/다관점 분할/타임아웃/사이드카 다운 시 처리 mock 테스트
+- **커밋**: `feat: storm-style multi-perspective deep research sidecar`
+
+#### Task 15b: RAGAS / Patronus Lynx 기반 검증 벤치마킹 및 임계값 최적화
+- **파일**: `scripts/benchmark-verification.ts`, `src/lib/services/verificationBenchmark.ts`, `data/golden-dataset.json`, 테스트
+- **내용**:
+  - **RAGAS / Patronus Lynx 벤치마킹 (정량적 환각 검증 최적화)**:
+    - 과거 실제 기사 50건 + 레이블링된 정답(Golden Dataset) 기반으로 Faithfulness, Context Precision, Counter-evidence Recall 정량 측정 스위트 구축
+    - 현재의 경험적 임계값(`faithfulness ≥ 0.85`, `sourceCoverage ≥ 0.5`, `evidenceMatch ≥ 0.4`)을 벤치마크 데이터셋에 대해 민감도/특이도 그리드 서치로 튜닝
+    - '검토 필요(needs_review)' 오탐률을 줄이면서 실제 환각(Hallucination) 방어율 100%를 달성하는 최적 파라미터 도출 및 설정 분리
+- **검증**: 벤치마크 실행 스크립트 동작 및 메트릭 산출 테스트
+- **커밋**: `feat: verification benchmarking and threshold tuning`
 
 #### Task 16: 배포 패키징
 - **파일**: `deploy/Dockerfile.web`(next-app, multi-stage), `sidecar/Dockerfile`, `deploy/docker-compose.prod.yml`, 배포 문서
@@ -407,8 +424,8 @@ Task 1 → 2a → 2b → 2c                       (Phase 0 기반, 사이드카 
       → Task 7 → Task 8 → Task 9 → Task 10  (핵심 루프: 수집→분석→검증→리포트)
 Task 10 이후 병렬:
   ├─ Task 4 (국세청) · Task 5 → 5b (DART·나라장터)   외부 데이터 보강
-  ├─ Task 3 (사이드카 스캐폴딩) → Task 6 → Task 15   선택 계층
-  └─ Task 11 · Task 12 → 13 · Task 14                Phase B
+  ├─ Task 3 (사이드카 스캐폴딩) → Task 6 → Task 15 → 15b (STORM 딥리서치·RAGAS 튜닝)
+  └─ Task 11 · Task 12 → 13 (AlphaSense 인용 UI) · Task 14   Phase B
 Task 16 (배포) — 전부 완료 후
 ```
 

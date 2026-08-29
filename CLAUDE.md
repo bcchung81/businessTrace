@@ -78,6 +78,8 @@ Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는
 | 국세청 휴폐업 | 계속사업자·과세유형 | `api.odcloud.kr/api/nts-businessman/v1/status` | `nts.ts` |
 | 나라장터 조달업체 | 종업원수·조달업무구분·개업일 | `apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02` | `narajangteo.ts` |
 | Anthropic Messages | 분석·검증 judge·반증 | `api.anthropic.com/v1/messages` (SDK) | `llm.ts` |
+| SGIS 행정구역 | 시도·시군구 이름표 (지역 표기 정규화) | `sgisapi.mods.go.kr/OpenAPI3/boundary/hadmarea.geojson` | `scripts/fetch-regions.ts` |
+| 네이버 Maps | 주소 → 좌표(지오코딩) · 지도 표시 | `maps.apigw.ntruss.com/map-geocode/v2/geocode` · `oapi.map.naver.com/openapi/v3/maps.js` | `naverGeocode.ts` · `naver-map.tsx` |
 | Tavily | 딥리서치 검색 (Task 15) | `api.tavily.com/search` | 키만 보유, **미사용** |
 
 ### 확장 예정 — 재무 결측 보완 (활용신청 완료·구현 대기)
@@ -90,13 +92,22 @@ Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는
 | 조달청_나라장터 **계약**정보 | 계약 규모·거래 지속성 | ✅ 개통 | `apis.data.go.kr/1230000/**ao**/CntrctInfoService/getCntrctInfoListThngPPSSrch` |
 | 금융위원회_기업기본정보 | **DART 미등록 기업의 사업자번호**·설립일·종업원수 | ✅ 개통 | `apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getCorpOutline_V2` |
 | 중소벤처기업부_벤처기업명단 | 벤처확인 여부·유형·유효기간 | ✅ 개통 | `api.odcloud.kr/api/15084581/v1/uddi:47b202c9-f0bb-43b4-949c-ebe9ef56ef02` |
-| 국민연금공단_가입 사업장 내역 | 고용 규모·추이 | ⬜ 미개통 | https://www.data.go.kr/data/3046071/openapi.do |
+| 국민연금공단_가입 사업장 내역 | 고용 규모·추이·인건비 | ✅ 개통 | `apis.data.go.kr/B552015/NpsBplcInfoInqireServiceV2` (V2, 2025-05-07~) |
 
+- **네이버 지도는 계정 키가 아니라 Application 키다.** 뉴스용 `NCP_APIGW_API_KEY*` 로 Maps 를 부르면 `errorCode 210 Permission Denied` 다 — 콘솔에서 Maps Application 을 따로 만들어 `NEXT_PUBLIC_NCP_MAP_CLIENT_ID`/`NCP_MAP_CLIENT_SECRET` 를 받아야 하고, Web 서비스 URL 등록이 없으면 스크립트가 인증에서 막힌다
+- 지도 v3 스크립트 파라미터는 `ncpKeyId` 다 — 블로그에 널린 `ncpClientId` 예제는 인증에서 실패한다
+- **핀 정밀도를 색·선으로 구분한다.** 국민연금 주소는 번지가 없어 도로 대표점(50개사 중 46)이다. 건물 단위와 같은 점으로 그리면 없는 정밀도를 믿게 된다
+- **SGIS 는 통계청에서 국가데이터처로 옮겼다** — `sgisapi.kostat.go.kr` 은 `sgisapi.mods.go.kr` 로 302 된다. 인증키도 별도다(`SGIS_CONSUMER_KEY`/`SECRET`, `consumer_key`→`accessToken` 2단계)
+- **지역 지도는 지형이 아니라 타일 그리드다.** 50개사 중 21개가 서울이라 지형 지도에서는 수도권이 한 점으로 뭉친다. 면적을 버리고 시도 17칸을 고르게 두면 값끼리 비교가 된다 — `region-grid.tsx`
+- **시도 표기는 SGIS 이름표에 맞춰 옮긴다.** 원천은 `전북특별자치도`·`전남광주통합특별시` 로 오고 SGIS 2023 은 `전라북도`·`광주광역시`+`전라남도` 다. 통합 시도는 시군구로 갈라내고(`북구`→광주, `나주시`→전남), 옮길 수 없으면 추측하지 않고 미대응으로 남긴다
 - **인증키는 계정당 하나다.** `NTS_SERVICE_KEY`(Decoding)를 그대로 쓰고 API 별 활용신청만 추가한다
 - **나라장터는 서비스마다 경로 접두사가 다르다** — 낙찰은 `as/`, 계약은 `ao/`, 조달업체는 `ao/`. 틀리면 `NO_OPENAPI_SERVICE_ERROR`(12)
 - 나라장터 낙찰·계약은 **업체 단위 조회 파라미터가 없다.** 기간으로 전수 스캔한 뒤 `bidwinnrBizno`·`bidwinnrNm` 으로 걸러야 한다 — 배치 수집 전제
-- **국민연금은 사업자등록번호 매칭 가능 여부가 도입을 가른다.** 지역·사업장명 기준이면 동명 이슈로 정확도가 떨어진다. 열리는 대로 응답 항목을 실측할 것
-- 수집 스크립트는 `scripts/collect-financial-signals.ts` — 결과는 `data/`(gitignore). 실측 결과는 `docs/2026-08-28-financial-signals.md`
+- **국민연금은 사업자등록번호를 앞 6자리만 준다**(`625870****`). 기업 식별은 상호·주소·업종·사업장등록일 4중 대조로 하고, 10자리를 요구하는 국세청·나라장터는 여기서 열리지 않는다
+- 국민연금은 **사업장 단위**다. 본사 이전·지점은 별개 행으로 잡히므로 사업자번호 앞 6자리로 법인 단위 합산해야 한다 — 합치지 않으면 이전을 인원 급감으로 오독한다
+- 국민연금은 **제공 시점 기준 12개월치만 유지**하고 매년 삭제한다. 연 단위 추이가 필요하면 매월 15일 이후 스냅샷을 DB 에 적재해 직접 쌓아야 한다
+- **동명 타사 오답은 금융위만의 문제가 아니다.** 상호 검색을 쓰는 원천은 전부 그렇다 — 확정은 항상 두 원천 이상의 교차 일치로 한다 (옥타코·페어리 사례)
+- 수집 스크립트는 `scripts/collect-financial-signals.ts` — 결과는 `data/`(gitignore). 실측 결과는 `docs/2026-08-28-financial-signals.md`, 커버리지 현황은 `docs/dashboard-preview.html`
 - 금융위 **기업재무정보**(`15043459`)는 채택하지 않았다 — 원천이 전자공시라 DART 와 같은 결측이 난다
 
 신규 API 를 붙이면 `scripts/api_smoke_test.py` 에 검사 함수를 함께 추가한다.
