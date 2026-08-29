@@ -16,6 +16,12 @@
   --color-review-surface: var(--review-surface);
   --color-risk: var(--risk);
   --color-risk-surface: var(--risk-surface);
+  --color-verified-fill: var(--verified-fill);
+  --color-review-fill: var(--review-fill);
+  --color-risk-fill: var(--risk-fill);
+  --color-pending: var(--pending);
+  --color-pending-surface: var(--pending-surface);
+  --color-pending-fill: var(--pending-fill);
   --color-surface: var(--surface);
   --color-hairline: var(--hairline);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -27,6 +33,10 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
+  --color-chart-up: var(--chart-up);
+  --color-chart-down: var(--chart-down);
+  --color-tick-up: var(--tick-up);
+  --color-tick-down: var(--tick-down);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
@@ -86,16 +96,32 @@
 
   --verified: #009632;
   --verified-surface: #f2fff6;
-  --review: #b36600;
+  --verified-fill: #009632;
+  --review: #b85c00;
   --review-surface: #fff6e8;
+  --review-fill: #ff9200;
   --risk: #d92b2b;
   --risk-surface: #fff0f0;
+  --risk-fill: #d92b2b;
+  --pending: #5a5c63;
+  --pending-surface: #f4f4f5;
+  --pending-fill: #c9cbd0;
 
   --chart-1: #0066ff;
   --chart-2: #00bf40;
   --chart-3: #ff9200;
   --chart-4: #70737c;
   --chart-5: #4f95ff;
+
+  --chart-up: #0066ff;
+  --chart-down: #ff9200;
+  --tick-up: #e03131;
+  --tick-down: #1c7ed6;
+
+  --cloud-0: #08234a;
+  --cloud-1: #0f3c7d;
+  --cloud-2: #1655a8;
+  --cloud-3: #1d6ecd;
 
   --sidebar: #f7f7f8;
   --sidebar-foreground: #171719;
@@ -135,16 +161,32 @@
 
   --verified: #49e57d;
   --verified-surface: #00240c;
+  --verified-fill: #2fd06a;
   --review: #ffb454;
   --review-surface: #2b1a00;
+  --review-fill: #ff9200;
   --risk: #ff8080;
   --risk-surface: #2e0d0d;
+  --risk-fill: #f05252;
+  --pending: #989ba2;
+  --pending-surface: #212225;
+  --pending-fill: #4a4c52;
 
   --chart-1: #3385ff;
   --chart-2: #49e57d;
   --chart-3: #ffb454;
   --chart-4: #989ba2;
   --chart-5: #9ec5ff;
+
+  --chart-up: #3385ff;
+  --chart-down: #d97706;
+  --tick-up: #f03e3e;
+  --tick-down: #3b9ae1;
+
+  --cloud-0: #cfe0ff;
+  --cloud-1: #a8c6ff;
+  --cloud-2: #84acf0;
+  --cloud-3: #6a93d8;
 
   --sidebar: #141415;
   --sidebar-foreground: #f7f7f8;
@@ -169,5 +211,16 @@
   }
   table :where(td, th) {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  /* 결측 - 값이 없는 것이 아니라 원천에 기업이 없다는 표시다 */
+  .hatch {
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--muted-foreground) 22%, transparent) 5px 6px
+    );
   }
 }
