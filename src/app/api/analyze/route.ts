@@ -1,13 +1,9 @@
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { completeRun, createRun, failRun } from "@/lib/repositories/analysisRun";
-import { analyzeCompany } from "@/lib/services/analyzer";
-import { defaultLlmClient, resolveModel } from "@/lib/services/llm";
+import { defaultPipelineDeps, runCompanyAnalysis } from "@/lib/services/analysisPipeline";
 import { NewsRateLimitError, collectNews } from "@/lib/services/newsCollector";
-import { saveVerification } from "@/lib/repositories/verificationResult";
 import { createSseSink } from "@/lib/services/sse";
-import { verifyAnalysis } from "@/lib/services/verification";
 
 const bodySchema = z.object({
   companyId: z.number().int(),
@@ -41,52 +37,22 @@ export async function POST(request: Request) {
     throw caught;
   }
 
-  const model = resolveModel();
-  const run = await createRun({
-    companyId: company.id,
-    userId: Number(session.user.id),
-    model,
-    news: collected.items,
-  });
-
+  const userId = Number(session.user.id);
   let sink: ReturnType<typeof createSseSink> | null = null;
   const stream = new ReadableStream({
     async start(controller) {
       const out = createSseSink(controller);
       sink = out;
-      const send = (event: unknown) => out.send(event);
-
-      send({ type: "collected", runId: run.id, ...collected, items: undefined });
-
       try {
-        for await (const event of analyzeCompany(company.name, collected.items, {
-          llm: defaultLlmClient(),
-          model,
-        })) {
-          if (!out.open) break;
-          if (event.type === "complete") {
-            await completeRun(run.id, event.result);
-            send({ ...event, runId: run.id });
-
-            send({ type: "verifying", runId: run.id });
-            try {
-              const verification = await verifyAnalysis(event.result, { llm: defaultLlmClient() });
-              await saveVerification(run.id, verification);
-              send({ type: "verified", runId: run.id, verification });
-            } catch (caught) {
-              const reason = caught instanceof Error ? caught.message : "알 수 없는 오류";
-              send({ type: "verification_failed", runId: run.id, message: reason });
-            }
-          } else {
-            send(event);
-          }
-        }
-
-        if (!out.open) await failRun(run.id, "클라이언트가 연결을 끊었습니다.");
-      } catch (caught) {
-        const message = caught instanceof Error ? caught.message : "알 수 없는 오류";
-        await failRun(run.id, message);
-        send({ type: "error", message: "분석 중 오류가 발생했습니다." });
+        const outcome = await runCompanyAnalysis(
+          { company, userId, news: collected.items },
+          {
+            ...defaultPipelineDeps(),
+            onEvent: (event) => out.send(event),
+            isOpen: () => out.open,
+          },
+        );
+        if (outcome.status === "failed") out.send({ type: "error", message: "분석 중 오류가 발생했습니다." });
       } finally {
         out.close();
       }
