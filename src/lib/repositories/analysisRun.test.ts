@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
+import { createCollectionRun } from "@/lib/repositories/analysisRun";
 
 async function seedCompanyAndUser() {
   const company = await prisma.company.create({ data: { name: "크립토랩", year: 2024 } });
@@ -79,5 +80,41 @@ describe("AnalysisRun schema", () => {
     await prisma.verificationResult.create({ data: payload });
 
     await expect(prisma.verificationResult.create({ data: payload })).rejects.toThrow();
+  });
+});
+
+describe("createCollectionRun", () => {
+  beforeEach(resetDatabase);
+
+  it("marks a collection-only run as collected, never as still running", async () => {
+    const { company, user } = await seedCompanyAndUser();
+
+    const run = await createCollectionRun({
+      companyId: company.id,
+      userId: user.id,
+      news: [{ title: "크립토랩 투자 유치", link: "https://n/1" }] as never,
+    });
+
+    expect(run.status).toBe("collected");
+  });
+
+  it("stores the collected articles so mention counting can read them", async () => {
+    const { company, user } = await seedCompanyAndUser();
+
+    const run = await createCollectionRun({
+      companyId: company.id,
+      userId: user.id,
+      news: [{ title: "크립토랩과 옥타코", link: "https://n/1" }] as never,
+    });
+
+    expect(JSON.parse(run.newsJson)).toEqual([{ title: "크립토랩과 옥타코", link: "https://n/1" }]);
+  });
+
+  it("does not pretend a collection run produced an analysis result", async () => {
+    const { company, user } = await seedCompanyAndUser();
+
+    const run = await createCollectionRun({ companyId: company.id, userId: user.id, news: [] as never });
+
+    expect(run.resultJson).toBeNull();
   });
 });

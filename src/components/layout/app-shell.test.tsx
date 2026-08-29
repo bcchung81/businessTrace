@@ -11,25 +11,18 @@ describe("AppShell", () => {
     ).toBeInTheDocument();
   });
 
-  test("links to every main section from the sidebar", () => {
+  test("shows only the two things this tool does — register companies and read the data", () => {
     render(<AppShell>본문</AppShell>);
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
 
-    expect(within(nav).getByRole("link", { name: "대시보드" })).toHaveAttribute(
+    expect(within(nav).getAllByRole("link")).toHaveLength(2);
+    expect(within(nav).getByRole("link", { name: "분석 자료" })).toHaveAttribute(
       "href",
-      "/",
+      "/dashboard",
     );
-    expect(within(nav).getByRole("link", { name: "기업 관리" })).toHaveAttribute(
+    expect(within(nav).getByRole("link", { name: "기업 등록" })).toHaveAttribute(
       "href",
       "/companies",
-    );
-    expect(within(nav).getByRole("link", { name: "분석" })).toHaveAttribute(
-      "href",
-      "/analysis",
-    );
-    expect(within(nav).getByRole("link", { name: "리포트" })).toHaveAttribute(
-      "href",
-      "/reports",
     );
   });
 

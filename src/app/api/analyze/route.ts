@@ -6,6 +6,7 @@ import { analyzeCompany } from "@/lib/services/analyzer";
 import { defaultLlmClient, resolveModel } from "@/lib/services/llm";
 import { NewsRateLimitError, collectNews } from "@/lib/services/newsCollector";
 import { saveVerification } from "@/lib/repositories/verificationResult";
+import { createSseSink } from "@/lib/services/sse";
 import { verifyAnalysis } from "@/lib/services/verification";
 
 const bodySchema = z.object({
@@ -48,11 +49,12 @@ export async function POST(request: Request) {
     news: collected.items,
   });
 
-  const encoder = new TextEncoder();
+  let sink: ReturnType<typeof createSseSink> | null = null;
   const stream = new ReadableStream({
     async start(controller) {
-      const send = (event: unknown) =>
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+      const out = createSseSink(controller);
+      sink = out;
+      const send = (event: unknown) => out.send(event);
 
       send({ type: "collected", runId: run.id, ...collected, items: undefined });
 
@@ -61,6 +63,7 @@ export async function POST(request: Request) {
           llm: defaultLlmClient(),
           model,
         })) {
+          if (!out.open) break;
           if (event.type === "complete") {
             await completeRun(run.id, event.result);
             send({ ...event, runId: run.id });
@@ -78,13 +81,19 @@ export async function POST(request: Request) {
             send(event);
           }
         }
+
+        if (!out.open) await failRun(run.id, "클라이언트가 연결을 끊었습니다.");
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : "알 수 없는 오류";
         await failRun(run.id, message);
         send({ type: "error", message: "분석 중 오류가 발생했습니다." });
       } finally {
-        controller.close();
+        out.close();
       }
+    },
+    /** 화면을 떠나면 분석을 멈춘다. 놔두면 아무도 안 보는 LLM 호출이 끝까지 돌고 결과가 버퍼에 쌓인다. */
+    cancel() {
+      sink?.drop();
     },
   });
 
