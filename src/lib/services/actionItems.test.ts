@@ -58,6 +58,40 @@ describe("buildActionItems", () => {
     expect(item?.remedy).toBe("DART 가 다른 기업을 물어옴 — 두 원천 교차 일치로 확정");
   });
 
+  it("does not count a needs_review verify cell as a conflict", () => {
+    const items = buildActionItems({
+      companies: COMPANIES,
+      pipeline: [{ id: 2, name: "옥타코", businessNo: null, cells: { verify: { state: "conflict", value: "검토 필요", note: "" } } }],
+      news: news({}),
+      declining: [],
+      now: NOW,
+    });
+    const item = items.find((entry) => entry.key === "conflict");
+
+    expect(item?.count).toBe(0);
+  });
+
+  it("starts the remedy with a generic source name when there are no conflicts", () => {
+    const items = buildActionItems({ companies: COMPANIES, pipeline: [], news: news({}), declining: [], now: NOW });
+    const item = items.find((entry) => entry.key === "conflict");
+
+    expect(item?.remedy.startsWith("원천 가")).toBe(true);
+  });
+
+  it("names each conflicting stage once when one company hits two at once", () => {
+    const items = buildActionItems({
+      companies: COMPANIES,
+      pipeline: [pipeline(2, ["dart", "nps"])],
+      news: news({}),
+      declining: [],
+      now: NOW,
+    });
+    const item = items.find((entry) => entry.key === "conflict");
+
+    expect(item?.companies).toEqual([{ id: 2, name: "옥타코", detail: "DART·연금" }]);
+    expect(item?.remedy).toBe("DART·연금 가 다른 기업을 물어옴 — 두 원천 교차 일치로 확정");
+  });
+
   it("flags companies whose newest article is older than 30 days or missing", () => {
     const items = buildActionItems({
       companies: COMPANIES,

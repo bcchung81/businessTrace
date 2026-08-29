@@ -1,7 +1,7 @@
 import type { CompanyPipelineRow } from "@/lib/repositories/companyPipeline";
 import type { RankEntry } from "@/lib/services/dashboardSummary";
 import { isStale, type NewsCoverage } from "@/lib/services/newsCoverage";
-import { MATRIX_STAGES } from "@/lib/services/pipelineMatrix";
+import { conflictStages, MATRIX_STAGES } from "@/lib/services/pipelineMatrix";
 
 export type ActionKey = "businessNo" | "conflict" | "stale" | "decline";
 
@@ -18,12 +18,6 @@ export type ActionItem = {
 export const DECLINE_RATIO = -0.2;
 
 const STAGE_SHORT = new Map(MATRIX_STAGES.map((stage) => [stage.key, stage.short]));
-
-function conflictStages(row: CompanyPipelineRow) {
-  return Object.entries(row.cells)
-    .filter(([, cell]) => cell.state === "conflict")
-    .map(([stage]) => STAGE_SHORT.get(stage) ?? stage);
-}
 
 /**
  * 운영자가 오늘 손대야 할 네 가지를 건수·기업·처방으로 낸다.
@@ -43,11 +37,15 @@ export function buildActionItems(input: {
     .filter((company) => !company.businessNo)
     .map((company) => ({ id: company.id, name: company.name }));
 
-  const conflicts = input.pipeline
-    .map((row) => ({ id: row.id, name: row.name, stages: conflictStages(row) }))
-    .filter((row) => row.stages.length > 0)
-    .map((row) => ({ id: row.id, name: row.name, detail: row.stages.join("·") }));
-  const conflictSources = [...new Set(conflicts.flatMap((row) => row.detail.split("·")))];
+  const conflictRows = input.pipeline
+    .map((row) => ({ id: row.id, name: row.name, stages: conflictStages(row.cells) }))
+    .filter((row) => row.stages.length > 0);
+  const conflicts = conflictRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    detail: row.stages.map((stage) => STAGE_SHORT.get(stage) ?? stage).join("·"),
+  }));
+  const conflictSources = [...new Set(conflictRows.flatMap((row) => row.stages).map((stage) => STAGE_SHORT.get(stage) ?? stage))];
 
   const stale = input.news.byCompany
     .filter((row) => isStale(row.latest, now))

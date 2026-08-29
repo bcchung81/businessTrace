@@ -1,4 +1,5 @@
 import type { CompanyPipelineRow } from "@/lib/repositories/companyPipeline";
+import { conflictStages } from "@/lib/services/pipelineMatrix";
 import {
   EVIDENCE_MATCH_THRESHOLD,
   FAITHFULNESS_THRESHOLD,
@@ -45,13 +46,6 @@ export const COUNTER_EVIDENCE_RISK_THRESHOLD = 1;
 /** 봐야 할 순서 — 막힌 것이 먼저다. */
 export const VERDICT_ORDER: Verdict[] = ["risk", "review", "verified", "pending"];
 
-function conflictStages(row: CompanyPipelineRow | undefined) {
-  if (!row) return [];
-  return Object.entries(row.cells)
-    .filter(([, cell]) => cell.state === "conflict")
-    .map(([stage]) => stage);
-}
-
 function decideVerdict(row: VerificationRow | undefined, conflicts: string[]): Verdict {
   if (!row) return "pending";
   if (row.counterEvidence >= COUNTER_EVIDENCE_RISK_THRESHOLD || conflicts.length > 0) return "risk";
@@ -73,7 +67,7 @@ export function rollupVerdicts(input: {
 
   const companies = input.companies.map((company) => {
     const row = byCompany.get(company.id);
-    const conflicts = conflictStages(pipelineById.get(company.id));
+    const conflicts = conflictStages(pipelineById.get(company.id)?.cells ?? {});
     const verdict = decideVerdict(row, conflicts);
     counts[verdict] += 1;
     return {

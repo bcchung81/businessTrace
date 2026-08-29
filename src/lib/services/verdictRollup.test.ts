@@ -85,6 +85,47 @@ describe("rollupVerdicts", () => {
     expect(entry?.conflicts).toEqual(["dart"]);
   });
 
+  it("does not treat a needs_review verify cell as a source conflict", () => {
+    const summary = rollupVerdicts({
+      companies: COMPANIES,
+      verifications: [verification({ companyId: 1, status: "needs_review", faithfulness: 0.7 })],
+      pipeline: [
+        {
+          id: 1,
+          name: "크립토랩",
+          businessNo: null,
+          cells: { verify: { state: "conflict", value: "검토 필요", note: "" } },
+        },
+      ],
+    });
+    const entry = summary.companies.find((row) => row.companyId === 1);
+
+    expect(entry?.verdict).toBe("review");
+    expect(entry?.conflicts).toEqual([]);
+  });
+
+  it("collects every conflicting source stage at once", () => {
+    const summary = rollupVerdicts({
+      companies: COMPANIES,
+      verifications: [verification({ companyId: 2 })],
+      pipeline: [
+        {
+          id: 2,
+          name: "옥타코",
+          businessNo: null,
+          cells: {
+            dart: { state: "conflict", value: "", note: "" },
+            nps: { state: "conflict", value: "", note: "" },
+          },
+        },
+      ],
+    });
+    const entry = summary.companies.find((row) => row.companyId === 2);
+
+    expect(entry?.verdict).toBe("risk");
+    expect([...(entry?.conflicts ?? [])].sort()).toEqual(["dart", "nps"]);
+  });
+
   it("does not let a conflict alone promote a pending company", () => {
     const summary = rollupVerdicts({ companies: COMPANIES, verifications: [], pipeline: [pipeline(2, true)] });
 
