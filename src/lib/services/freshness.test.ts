@@ -30,27 +30,27 @@ describe("buildFreshnessItems", () => {
   it("leads with collection freshness in KST", () => {
     const items = buildFreshnessItems(base);
 
-    expect(items[0]).toBe("NEWS 08-29 09:12");
-    expect(items[1]).toBe("SOURCES 08-28 22:19 · 50/50");
-    expect(items[2]).toBe("NPS 2026-07 · NEXT 08-15");
+    expect(items[0]).toBe("뉴스 08-29 09:12");
+    expect(items[1]).toBe("원천 08-28 22:19 · 50/50");
+    expect(items[2]).toBe("연금 2026-07 · 다음 08-15");
   });
 
   it("shows running analyses only while something is running", () => {
-    expect(buildFreshnessItems(base)).not.toContain("RUNNING 0");
-    expect(buildFreshnessItems({ ...base, running: 3 })).toContain("RUNNING 3");
+    expect(buildFreshnessItems(base)).not.toContain("실행 중 0");
+    expect(buildFreshnessItems({ ...base, running: 3 })).toContain("실행 중 3");
   });
 
   it("ends with today's todo and stale counts", () => {
     const items = buildFreshnessItems(base);
 
-    expect(items.at(-2)).toBe("TODO 4");
-    expect(items.at(-1)).toBe("STALE 30");
+    expect(items.at(-2)).toBe("조치 4");
+    expect(items.at(-1)).toBe("낡은 근거 30");
   });
 
   it("dashes out collection times that never happened", () => {
     const items = buildFreshnessItems({ ...base, latestNewsAt: null, latestSourceAt: null, sourcesUpdatedToday: 0 });
 
-    expect(items[0]).toBe("NEWS —");
-    expect(items[1]).toBe("SOURCES — · 0/50");
+    expect(items[0]).toBe("뉴스 —");
+    expect(items[1]).toBe("원천 — · 0/50");
   });
 });

@@ -33,11 +33,11 @@ function monthLabel(ym: string | undefined) {
  */
 export function buildFreshnessItems(input: FreshnessInput): string[] {
   const items = [
-    `NEWS ${formatRunTime(input.latestNewsAt)}`,
-    `SOURCES ${formatRunTime(input.latestSourceAt)} · ${input.sourcesUpdatedToday}/${input.sourcesTotal}`,
-    `NPS ${monthLabel(input.pensionYm)} · NEXT ${nextPensionDate(input.pensionYm)}`,
+    `뉴스 ${formatRunTime(input.latestNewsAt)}`,
+    `원천 ${formatRunTime(input.latestSourceAt)} · ${input.sourcesUpdatedToday}/${input.sourcesTotal}`,
+    `연금 ${monthLabel(input.pensionYm)} · 다음 ${nextPensionDate(input.pensionYm)}`,
   ];
-  if (input.running > 0) items.push(`RUNNING ${input.running}`);
-  items.push(`TODO ${input.todo}`, `STALE ${input.stale}`);
+  if (input.running > 0) items.push(`실행 중 ${input.running}`);
+  items.push(`조치 ${input.todo}`, `낡은 근거 ${input.stale}`);
   return items;
 }

@@ -68,7 +68,7 @@ describe("skin tokens", () => {
       "--shadow-hard: var(--shadow-hard);",
       "--shadow-hard-lg: var(--shadow-hard-lg);",
       "--shadow-hard-primary: var(--shadow-hard-primary);",
-      "--font-display: var(--font-anton)",
+      '--font-display: var(--font-anton), var(--font-hangul-display), "Pretendard Variable"',
     ]) {
       expect(css).toContain(line);
     }
@@ -86,11 +86,17 @@ describe("skin tokens", () => {
 
 describe("root layout font", () => {
   const layout = readFileSync(resolve(process.cwd(), "src/app/layout.tsx"), "utf8");
+  const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 
   test("self-hosts Anton under --font-anton", () => {
     expect(layout).toContain('from "next/font/google"');
     expect(layout).toMatch(/Anton\(\{[^}]*variable:\s*"--font-anton"/);
     expect(layout).toContain("anton.variable");
+  });
+
+  test("pairs Anton with a Hangul display face so Korean ribbon text keeps the same weight", () => {
+    expect(layout).toContain("fonts.googleapis.com/css2?family=Black+Han+Sans");
+    expect(cssBlock(css, ":root")).toContain('--font-hangul-display: "Black Han Sans"');
   });
 });
 
