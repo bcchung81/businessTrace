@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ActionItem } from "@/lib/services/actionItems";
 
-const CHIP_LIMIT = 4;
+const CHIP_LIMIT = 3;
 
 const TONE_CLASS: Record<ActionItem["tone"], string> = {
   review: "text-review",
@@ -24,17 +24,17 @@ function Icon({ item }: { item: ActionItem }) {
 }
 
 /**
- * 조치 필요 항목을 건수·기업 칩·처방으로 세운다.
+ * 조치 필요 항목을 건수·기업 칩으로 세우고 처방은 툴팁에 둔다.
  * 0건도 행을 남긴다 — 항목이 사라지면 점검했는지 알 수 없다.
  */
 export function ActionList({ items }: { items: ActionItem[] }) {
   return (
-    <ul className="flex flex-col">
+    <ul className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       {items.map((item) => {
         const shown = item.companies.slice(0, CHIP_LIMIT);
         const rest = item.companies.length - shown.length;
         return (
-          <li key={item.key} aria-label={item.title} className="flex flex-col gap-2 border-b border-hairline px-4 py-3.5 last:border-0">
+          <li key={item.key} aria-label={item.title} title={item.remedy} className="flex flex-col gap-1.5 border-b border-hairline px-4 py-2.5 last:border-0">
             <div className="flex items-center justify-between gap-3">
               <span className={`flex items-center gap-1.5 text-[13px] font-semibold ${TONE_CLASS[item.tone]}`}>
                 <Icon item={item} />
@@ -59,7 +59,6 @@ export function ActionList({ items }: { items: ActionItem[] }) {
               )}
               {rest > 0 ? <span className="text-[11.5px] text-muted-foreground">외 {rest}</span> : null}
             </div>
-            <span className="text-[11.5px] text-muted-foreground">{item.remedy}</span>
           </li>
         );
       })}

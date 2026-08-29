@@ -18,7 +18,7 @@ describe("ActionList", () => {
 
     expect(within(row).getByText("1")).toBeInTheDocument();
     expect(within(row).getByRole("link", { name: "아크릴" })).toHaveAttribute("href", "/companies/3");
-    expect(within(row).getByText("수기 입력")).toBeInTheDocument();
+    expect(row).toHaveAttribute("title", "수기 입력");
   });
 
   test("keeps a zero item visible and says none", () => {
@@ -29,12 +29,12 @@ describe("ActionList", () => {
     expect(within(row).getByText("없음")).toBeInTheDocument();
   });
 
-  test("collapses more than four companies into a remainder", () => {
+  test("collapses more than three companies into a remainder", () => {
     const companies = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, name: `기업${i + 1}` }));
     render(<ActionList items={[item({ count: 7, companies })]} />);
 
-    expect(screen.getAllByRole("link")).toHaveLength(4);
-    expect(screen.getByText("외 3")).toBeInTheDocument();
+    expect(screen.getAllByRole("link")).toHaveLength(3);
+    expect(screen.getByText("외 4")).toBeInTheDocument();
   });
 
   test("appends the detail after the name", () => {

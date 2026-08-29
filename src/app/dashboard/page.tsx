@@ -2,7 +2,6 @@ import Link from "next/link";
 import { listCompanies, listYears } from "@/lib/repositories/companyRepository";
 import { listMentionArticles } from "@/lib/repositories/mentionArticles";
 import { listCompanyPipeline } from "@/lib/repositories/companyPipeline";
-import { summariseSourceCoverage } from "@/lib/repositories/sourceSnapshot";
 import { listLatestVerifications } from "@/lib/repositories/verificationResult";
 import { summariseRunActivity } from "@/lib/repositories/analysisRun";
 import { summariseSourceFreshness } from "@/lib/repositories/sourceSnapshot";
@@ -16,10 +15,8 @@ import { buildNewsCoverage } from "@/lib/services/newsCoverage";
 import { rollupVerdicts } from "@/lib/services/verdictRollup";
 import { ActionList } from "@/components/dashboard/action-list";
 import { CompanyPipelineGrid } from "@/components/dashboard/company-pipeline-grid";
-import { GateFunnel } from "@/components/dashboard/gate-funnel";
 import { Panel } from "@/components/dashboard/panel";
 import { RecentArticles } from "@/components/dashboard/recent-articles";
-import { SourceCoverageBars } from "@/components/dashboard/source-coverage-bars";
 import { VerdictBoard } from "@/components/dashboard/verdict-board";
 import { Ribbon } from "@/components/ui/ribbon";
 
@@ -41,7 +38,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const companies = await listCompanies({ year });
   const registry = companies.map((company) => ({ id: company.id, name: company.name, businessNo: company.businessNo ?? null }));
   const pipeline = await listCompanyPipeline(year);
-  const coverage = await summariseSourceCoverage(year);
   const summary = await getDashboardSummary(year);
   const verdicts = rollupVerdicts({ companies: registry, verifications: await listLatestVerifications(year), pipeline });
   const graph = buildCoMentions(await listMentionArticles(year), registry.map((company) => company.name));
@@ -70,7 +66,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   return (
     <div className="flex flex-col gap-9">
-      <header className="flex flex-wrap items-end justify-between gap-6 pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-6">
         <div className="flex flex-col gap-1.5">
           <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
             {year}년 평가 · ICT기금사업 우수기업
@@ -101,37 +97,27 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </div>
       </header>
 
-      <Ribbon items={ribbon} />
+      <Ribbon items={ribbon} className="-mt-5 -mb-4" />
 
-      <Panel index="01" title="판정 현황" tag="분석 산출" tone="fresh" note="환각 검증 3게이트를 통과한 기업만 선정 근거로 쓸 수 있다">
+      <Panel index="01" title="판정 현황" tag="분석 산출" tone="fresh">
         <VerdictBoard counts={verdicts.counts} averageCitations={verdicts.averageCitations} />
       </Panel>
 
-      <div className="grid items-stretch gap-5 lg:grid-cols-2">
-        <Panel index="02" title="검증 게이트 통과율" tag="분석 산출" tone="fresh">
-          <GateFunnel gates={verdicts.gates} dropouts={verdicts.gateDropouts} />
-        </Panel>
-        <Panel index="03" title="원천 커버리지" tag="실측">
-          <SourceCoverageBars coverage={coverage} />
-        </Panel>
-      </div>
-
       <Panel
-        index="04"
+        index="02"
         title="기업별 근거 매트릭스"
         tag="실측"
-        note="봐야 할 순서로 정렬 — 리스크 · 검토 · 통과 · 미분석"
         empty="등록된 기업이 없습니다."
       >
         {matrix.length === 0 ? null : <CompanyPipelineGrid rows={matrix} now={now} />}
       </Panel>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[372px_minmax(0,1fr)]">
-        <Panel index="05" title="조치 필요" tag="운영">
+      <div className="grid items-stretch gap-5 lg:grid-cols-[372px_minmax(0,1fr)]">
+        <Panel index="03" title="조치 필요" tag="운영" className="lg:h-[26rem]">
           <ActionList items={actions} />
         </Panel>
         <Panel
-          index="06"
+          index="04"
           title="최근 기사"
           tag="수집"
           className="lg:h-[26rem]"
