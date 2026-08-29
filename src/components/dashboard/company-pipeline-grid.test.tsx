@@ -143,4 +143,12 @@ describe("compactValue", () => {
   test("prints a dash for pending", () => {
     expect(compactValue("nts", { state: "pending", value: "", note: "" })).toBe("—");
   });
+
+  test("shortens a matched finance revenue value to 억", () => {
+    expect(compactValue("dartFinance", { state: "ok", value: "2025년 매출 13312020352", note: "" })).toBe("2025 매출 133억");
+  });
+
+  test("falls through to the raw value when the finance value does not match", () => {
+    expect(compactValue("dartFinance", { state: "ok", value: "비외감", note: "" })).toBe("비외감");
+  });
 });

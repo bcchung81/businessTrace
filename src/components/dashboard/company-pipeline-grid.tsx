@@ -61,6 +61,8 @@ const LEGEND: Array<{ label: string; swatch: string }> = [
   { label: "미조회", swatch: "border border-dashed border-pending-fill" },
 ];
 
+const FINANCE_REVENUE = /^(\d{4})년 매출 (\d+)$/;
+
 /**
  * 격자 칸에 들어갈 짧은 말로 줄인다.
  * 사유 문장은 길어서 열을 넘긴다 - 전체 문장은 title 과 기업 상세 화면에 그대로 남는다.
@@ -75,6 +77,12 @@ export function compactValue(stageKey: string, cell: PipelineCell) {
       return "미참여";
     case "conflict":
       return /후보\s*\d+건/.test(cell.note) ? cell.note : "충돌";
+    case "ok": {
+      const match = stageKey === "dartFinance" ? FINANCE_REVENUE.exec(cell.value) : null;
+      if (!match) return cell.value || "—";
+      const [, year, amount] = match;
+      return `${year} 매출 ${Math.round(Number(amount) / 1e8)}억`;
+    }
     default:
       return cell.value || "—";
   }
