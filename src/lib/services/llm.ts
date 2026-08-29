@@ -10,6 +10,8 @@ export type Usage = { inputTokens: number; outputTokens: number; cacheReadTokens
 
 export type LlmRequest<T> = {
   system: string;
+  /** 같은 재료로 여러 질문을 할 때 앞에 두는 공유 본문 — 캐시 접두로 잡힌다. */
+  context?: string;
   prompt: string;
   schema: z.ZodType<T>;
   effort?: Effort;
@@ -60,7 +62,13 @@ function extractJson(text: string) {
  */
 export function createLlmClient(sdk: StreamingMessages, model = resolveModel()): LlmClient {
   return {
-    async json<T>({ system, prompt, schema, effort = "medium" }: LlmRequest<T>) {
+    async json<T>({ system, context, prompt, schema, effort = "medium" }: LlmRequest<T>) {
+      const content = context
+        ? [
+            { type: "text", text: context, cache_control: { type: "ephemeral" } },
+            { type: "text", text: prompt },
+          ]
+        : prompt;
       const message = await sdk.messages
         .stream({
           model,
@@ -68,7 +76,7 @@ export function createLlmClient(sdk: StreamingMessages, model = resolveModel()):
           thinking: { type: "adaptive" },
           output_config: { effort },
           system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: "user", content }],
         })
         .finalMessage();
 

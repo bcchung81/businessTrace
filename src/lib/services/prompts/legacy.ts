@@ -12,6 +12,15 @@ export function newsText(item: NewsItem) {
 `;
 }
 
+/**
+ * 기사 본문을 캐시 가능한 공유 컨텍스트로 낸다.
+ * 동향·수상·투자 세 질문이 같은 본문을 앞에 두면 두 번째부터는 캐시에서 읽는다.
+ */
+export function newsContext(companyName: string, item: NewsItem) {
+  return `다음은 '${companyName}' 회사에 대한 뉴스입니다.
+${newsText(item)}`;
+}
+
 export function trendPrompt(companyName: string, item: NewsItem) {
   return `
 다음은 '${companyName}' 회사에 대한 뉴스입니다. 이 뉴스의 동향실적을 분석해주세요.
@@ -30,8 +39,7 @@ export function trendPrompt(companyName: string, item: NewsItem) {
 - -4~-7: 부정적 (실적 악화, 규제 압박, 경쟁 우위 상실 등)
 - -8~-10: 매우 부정적 (심각한 위기, 매출 급감, 경영 위기 등)
 
-뉴스 내용:
-${newsText(item)}
+뉴스 내용은 앞서 제공한 본문을 그대로 참고하세요.
 
 반드시!!! 다음 JSON 형식으로 응답해주세요. 다른형식으로 응답하면 처리를 할수 없습니다.:
 {
@@ -54,8 +62,7 @@ export function awardPrompt(companyName: string, item: NewsItem) {
 2. 수상을 받았으면 구체적인 수상명을 찾아주세요
 3. 수상을 받았다고 판단한 이유 설명
 
-뉴스 내용:
-${newsText(item)}
+뉴스 내용은 앞서 제공한 본문을 그대로 참고하세요.
 
 반드시!!! 다음 JSON 형식으로 응답해주세요. 다른형식으로 응답하면 처리를 할수 없습니다.:
 {
@@ -77,8 +84,7 @@ export function investmentPrompt(companyName: string, item: NewsItem) {
 2. 투자 관련이면 구체적인 투자명이나 투자 유형을 찾아주세요
 3. 투자 관련이면 이유 설명
 
-뉴스 내용:
-${newsText(item)}
+뉴스 내용은 앞서 제공한 본문을 그대로 참고하세요.
 
 반드시!!! 다음 JSON 형식으로 응답해주세요. 다른형식으로 응답하면 처리를 할수 없습니다.:
 {

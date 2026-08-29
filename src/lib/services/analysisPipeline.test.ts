@@ -130,3 +130,40 @@ describe("runCompanyAnalysis", () => {
     expect(outcome.status).toBe("aborted");
   });
 });
+
+describe("runCompanyAnalysis — relevance filter", () => {
+  beforeEach(resetDatabase);
+
+  const MIXED: NewsItem[] = [
+    NEWS[0],
+    { ...NEWS[0], link: "https://n/2", title: "아크릴 소재 시장", relevance: "mention" },
+    { ...NEWS[0], link: "https://n/3", title: "무관 기사", relevance: "unrelated" },
+  ];
+
+  it("analyses only primary articles", async () => {
+    const { company, user } = await seed();
+    let received: NewsItem[] = [];
+
+    await runCompanyAnalysis(
+      { company, userId: user.id, news: MIXED },
+      deps({ analyze: (_name, news) => { received = news; return completes(result()); } }),
+    );
+
+    expect(received.map((item) => item.link)).toEqual(["https://n/1"]);
+  });
+
+  it("closes the run as no_news without calling the model when nothing is primary", async () => {
+    const { company, user } = await seed();
+    let called = false;
+
+    const outcome = await runCompanyAnalysis(
+      { company, userId: user.id, news: MIXED.slice(1) },
+      deps({ analyze: () => { called = true; return completes(result()); } }),
+    );
+
+    const run = await prisma.analysisRun.findUniqueOrThrow({ where: { id: outcome.runId } });
+    expect(called).toBe(false);
+    expect(outcome.status).toBe("no_news");
+    expect(run.status).toBe("no_news");
+  });
+});

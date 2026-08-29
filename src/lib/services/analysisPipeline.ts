@@ -48,9 +48,20 @@ export function defaultPipelineDeps(model = resolveModel()): PipelineDeps {
   };
 }
 
+function emptyResult(companyName: string, model: string, total: number): AnalysisResult {
+  return {
+    companyName,
+    model,
+    analyses: [],
+    comprehensiveOpinion: "회사가 주제인 기사가 없어 분석하지 않았습니다.",
+    stats: { totalNews: total, scoredNews: 0, excludedNews: total, averageSentiment: 0, positiveCount: 0, negativeCount: 0, neutralCount: 0, awardCount: 0, investmentCount: 0 },
+    usage: NO_USAGE,
+  };
+}
+
 /**
- * 수집된 뉴스로 분석 → 검증 → 저장을 한 번에 돈다. SSE 라우트와 배치 스크립트가 같은 경로를 쓴다.
- * 검증 실패는 실행 실패가 아니다 — 분석은 남기고 판정만 비운다. 소비자가 떠나면 실행을 실패로 닫는다.
+ * 수집된 뉴스 중 회사가 주제인 기사만 분석 → 검증 → 저장한다. SSE 라우트와 배치 스크립트가 같은 경로를 쓴다.
+ * 스쳐 언급된 기사까지 LLM 에 넣으면 토큰만 태우고 동명 일반명사 기업의 판정을 흐린다.
  */
 export async function runCompanyAnalysis(
   input: { company: { id: number; name: string }; userId: number; news: NewsItem[] },
@@ -61,8 +72,16 @@ export async function runCompanyAnalysis(
   const open = () => deps.isOpen?.() ?? true;
   let usage = NO_USAGE;
 
+  const primary = input.news.filter((item) => item.relevance === "primary");
+  if (primary.length === 0) {
+    const result = emptyResult(input.company.name, deps.model, input.news.length);
+    await completeRun(run.id, result);
+    emit({ type: "complete", runId: run.id, result });
+    return { runId: run.id, status: "no_news", usage };
+  }
+
   try {
-    for await (const event of deps.analyze(input.company.name, input.news, { model: deps.model })) {
+    for await (const event of deps.analyze(input.company.name, primary, { model: deps.model })) {
       if (!open()) {
         await failRun(run.id, "클라이언트가 연결을 끊었습니다.");
         return { runId: run.id, status: "aborted", usage };

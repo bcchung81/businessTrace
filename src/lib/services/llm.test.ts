@@ -62,6 +62,32 @@ describe("createLlmClient", () => {
     ]);
   });
 
+  it("puts a shared context ahead of the task as its own cached block", async () => {
+    const { sdk, stream } = fakeSdk(textMessage('{"score":1}'));
+
+    await createLlmClient(sdk).json({ system: "s", context: "기사 본문", prompt: "판정해", schema });
+
+    const args = stream.mock.calls[0][0] as StreamArgs;
+    expect(args.messages).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "기사 본문", cache_control: { type: "ephemeral" } },
+          { type: "text", text: "판정해" },
+        ],
+      },
+    ]);
+  });
+
+  it("keeps a plain string message when there is no context", async () => {
+    const { sdk, stream } = fakeSdk(textMessage('{"score":1}'));
+
+    await createLlmClient(sdk).json({ system: "s", prompt: "p", schema });
+
+    const args = stream.mock.calls[0][0] as StreamArgs;
+    expect(args.messages).toEqual([{ role: "user", content: "p" }]);
+  });
+
   it("carries the requested effort through to the request", async () => {
     const { sdk, stream } = fakeSdk(textMessage('{"score":1}'));
 

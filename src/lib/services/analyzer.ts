@@ -6,6 +6,7 @@ import {
   SYSTEM_NEWS,
   awardPrompt,
   investmentPrompt,
+  newsContext,
   opinionPrompt,
   trendPrompt,
 } from "@/lib/services/prompts/legacy";
@@ -147,9 +148,9 @@ export async function* analyzeCompany(
   const analyses: NewsAnalysis[] = [];
   let usage: Usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
 
-  async function ask<T>(prompt: string, schema: z.ZodType<T>, fallback: T): Promise<T> {
+  async function ask<T>(prompt: string, schema: z.ZodType<T>, fallback: T, context?: string): Promise<T> {
     try {
-      const answer = await deps.llm.json({ system: SYSTEM_NEWS, prompt, schema });
+      const answer = await deps.llm.json({ system: SYSTEM_NEWS, context, prompt, schema });
       usage = addUsage(usage, answer.usage);
       return answer.data;
     } catch {
@@ -161,19 +162,24 @@ export async function* analyzeCompany(
     const position = index + 1;
 
     yield { type: "progress", step: "trend", current: position, total: news.length };
+    const context = newsContext(companyName, item);
     const trend = (
-      await ask(trendPrompt(companyName, item), trendSchema, { trend_analysis: NEUTRAL_TREND })
+      await ask(trendPrompt(companyName, item), trendSchema, { trend_analysis: NEUTRAL_TREND }, context)
     ).trend_analysis;
 
     yield { type: "progress", step: "award", current: position, total: news.length };
-    const award = (await ask(awardPrompt(companyName, item), awardSchema, { award_analysis: NO_AWARD }))
-      .award_analysis;
+    const award = (
+      await ask(awardPrompt(companyName, item), awardSchema, { award_analysis: NO_AWARD }, context)
+    ).award_analysis;
 
     yield { type: "progress", step: "investment", current: position, total: news.length };
     const investment = (
-      await ask(investmentPrompt(companyName, item), investmentSchema, {
-        investment_analysis: NO_INVESTMENT,
-      })
+      await ask(
+        investmentPrompt(companyName, item),
+        investmentSchema,
+        { investment_analysis: NO_INVESTMENT },
+        context,
+      )
     ).investment_analysis;
 
     const analysis: NewsAnalysis = {

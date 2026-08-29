@@ -25,9 +25,9 @@ type TrendOverride = { isAbout?: "Y" | "N"; score?: number; label?: string };
 function fakeLlm(trendFor: (prompt: string) => TrendOverride = () => ({})) {
   const usage = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0 };
   return {
-    json: vi.fn(async ({ prompt }: { prompt: string }) => {
+    json: vi.fn(async ({ prompt, context = "" }: { prompt: string; context?: string }) => {
       if (prompt.includes("동향실적을 분석해주세요")) {
-        const override = trendFor(prompt);
+        const override = trendFor(`${context}\n${prompt}`);
         return {
           data: {
             trend_analysis: {
@@ -163,5 +163,24 @@ describe("analyzeCompany", () => {
     const result = complete(events).result;
     expect(result.stats.averageSentiment).toBe(0);
     expect(result.comprehensiveOpinion).toBe("종합분석");
+  });
+});
+
+describe("analyzeCompany — prompt caching", () => {
+  it("sends the article as a shared context block and keeps the task prompt free of it", async () => {
+    const llm = fakeLlm();
+    const item = news({ content: "아주 긴 기사 본문 ".repeat(3) });
+
+    for await (const _ of analyzeCompany("크립토랩", [item], { llm, model: "m" })) {
+      void _;
+    }
+
+    const calls = (llm.json as ReturnType<typeof vi.fn>).mock.calls.map(
+      (call) => call[0] as { context?: string; prompt: string },
+    );
+    const perArticle = calls.slice(0, 3);
+    expect(perArticle.every((request) => request.context?.includes("아주 긴 기사 본문"))).toBe(true);
+    expect(perArticle.every((request) => !request.prompt.includes("아주 긴 기사 본문"))).toBe(true);
+    expect(new Set(perArticle.map((request) => request.context)).size).toBe(1);
   });
 });
