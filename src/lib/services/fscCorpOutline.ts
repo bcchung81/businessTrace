@@ -12,6 +12,7 @@ export type CorpOutline = {
   mainBusiness?: string;
   address?: string;
   isSmallBusiness?: boolean;
+  failed?: boolean;
   reason?: string;
 };
 
@@ -60,7 +61,7 @@ export async function lookupCorpOutline(
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!response.ok) {
-      return { found: false, employeeCount: null, reason: `금융위 응답 ${response.status}` };
+      return { found: false, employeeCount: null, failed: true, reason: `금융위 응답 ${response.status}` };
     }
 
     const match = pickBestMatch(readRows(await response.json()), companyName);
@@ -83,6 +84,6 @@ export async function lookupCorpOutline(
     };
   } catch (caught) {
     const reason = caught instanceof Error ? caught.message : "알 수 없는 오류";
-    return { found: false, employeeCount: null, reason: `금융위 조회 실패: ${reason}` };
+    return { found: false, employeeCount: null, failed: true, reason: `금융위 조회 실패: ${reason}` };
   }
 }

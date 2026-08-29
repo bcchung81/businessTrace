@@ -112,4 +112,28 @@ describe("getProcurementProfile", () => {
 
     expect(profile.employeeCount).toBeNull();
   });
+  it("flags a transport failure so it is never read as a company that did not bid", async () => {
+    const profile = await getProcurementProfile("1208824298", {
+      fetchImpl: vi.fn(async () => new Response("", { status: 500 })) as unknown as typeof fetch,
+    });
+
+    expect(profile.failed).toBe(true);
+  });
+
+  it("flags a service error code the same way", async () => {
+    const profile = await getProcurementProfile("1208824298", {
+      fetchImpl: apiFetch({
+        response: { header: { resultCode: "30", resultMsg: "SERVICE_KEY_IS_NOT_REGISTERED" }, body: {} },
+      }),
+    });
+
+    expect(profile.failed).toBe(true);
+  });
+
+  it("does not flag a supplier that is simply not registered", async () => {
+    const profile = await getProcurementProfile("1208824298", { fetchImpl: apiFetch(body([])) });
+
+    expect(profile.found).toBe(false);
+    expect(profile.failed).toBeUndefined();
+  });
 });

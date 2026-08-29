@@ -17,6 +17,7 @@ export type ProcurementProfile = {
   employeeCount: number | null;
   businessDivision?: string;
   manufacturingDivision?: string;
+  failed?: boolean;
   reason?: string;
 };
 
@@ -83,7 +84,7 @@ export async function getProcurementProfile(
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!response.ok) {
-      return { found: false, businessNo, employeeCount: null, reason: `조달청 응답 ${response.status}` };
+      return { found: false, businessNo, employeeCount: null, failed: true, reason: `조달청 응답 ${response.status}` };
     }
 
     const body = (await response.json()) as ApiBody;
@@ -93,6 +94,7 @@ export async function getProcurementProfile(
         found: false,
         businessNo,
         employeeCount: null,
+        failed: true,
         reason: explainResultCode(header.resultCode, header.resultMsg ?? ""),
       };
     }
@@ -122,6 +124,6 @@ export async function getProcurementProfile(
     };
   } catch (caught) {
     const reason = caught instanceof Error ? caught.message : "알 수 없는 오류";
-    return { found: false, businessNo, employeeCount: null, reason: `조달청 조회 실패: ${reason}` };
+    return { found: false, businessNo, employeeCount: null, failed: true, reason: `조달청 조회 실패: ${reason}` };
   }
 }

@@ -16,6 +16,7 @@ export type CompanyProfile = {
   ceoName?: string;
   industryCode?: string;
   candidates?: CorpCandidate[];
+  failed?: boolean;
   reason?: string;
 };
 
@@ -26,6 +27,7 @@ export type FinancialSummary = {
   operatingIncome: number | null;
   netIncome: number | null;
   totalAssets: number | null;
+  failed?: boolean;
   reason?: string;
 };
 
@@ -80,10 +82,17 @@ export async function getCompanyProfile(
     return { found: false, candidates, reason: "기업명이 정확히 일치하지 않습니다. 후보에서 선택하세요." };
   }
 
-  const body = await callDart(
-    buildUrl(COMPANY_URL, { corp_code: exact.corpCode }),
-    deps.fetchImpl ?? fetch,
-  );
+  let body: DartResponse;
+  try {
+    body = await callDart(buildUrl(COMPANY_URL, { corp_code: exact.corpCode }), deps.fetchImpl ?? fetch);
+  } catch (caught) {
+    return {
+      found: false,
+      failed: true,
+      corpCode: exact.corpCode,
+      reason: `DART 조회 실패: ${caught instanceof Error ? caught.message : "알 수 없는 오류"}`,
+    };
+  }
 
   if (body.status !== "000") {
     return {
@@ -124,14 +133,24 @@ export async function getFinancialSummary(
   const { exact } = await resolveCorp(companyName);
   if (!exact) return { found: false, ...empty, reason: "DART 에 등록되지 않은 기업입니다." };
 
-  const body = await callDart(
-    buildUrl(FINANCE_URL, {
-      corp_code: exact.corpCode,
-      bsns_year: String(fiscalYear),
-      reprt_code: ANNUAL_REPORT_CODE,
-    }),
-    deps.fetchImpl ?? fetch,
-  );
+  let body: DartResponse;
+  try {
+    body = await callDart(
+      buildUrl(FINANCE_URL, {
+        corp_code: exact.corpCode,
+        bsns_year: String(fiscalYear),
+        reprt_code: ANNUAL_REPORT_CODE,
+      }),
+      deps.fetchImpl ?? fetch,
+    );
+  } catch (caught) {
+    return {
+      found: false,
+      ...empty,
+      failed: true,
+      reason: `DART 조회 실패: ${caught instanceof Error ? caught.message : "알 수 없는 오류"}`,
+    };
+  }
 
   if (body.status !== "000") {
     return {

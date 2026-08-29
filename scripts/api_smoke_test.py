@@ -272,6 +272,115 @@ def test_anthropic():
         record("Anthropic", "-", False, f"호출 실패: {e}")
 
 
+def test_nps(company):
+    """국민연금 가입 사업장 — 상호로 사업장을 찾고 가입자수·고지금액까지 이어지는지 본다."""
+    key = os.environ.get("NTS_SERVICE_KEY", "")
+    if not key:
+        record("국민연금", company, None, "NTS_SERVICE_KEY 없음")
+        return
+    base = "https://apis.data.go.kr/B552015/NpsBplcInfoInqireServiceV2"
+    try:
+        r = requests.get(
+            f"{base}/getBassInfoSearchV2",
+            params={"serviceKey": key, "dataType": "json", "wkplNm": company, "numOfRows": 100},
+            timeout=20,
+        )
+        r.raise_for_status()
+        items = r.json().get("response", {}).get("body", {}).get("items", {}).get("item", [])
+        items = items if isinstance(items, list) else [items]
+        if not items:
+            record("국민연금", company, False, "가입 사업장 없음")
+            return
+
+        prefixes = {i.get("bzowrRgstNo", "")[:6] for i in items}
+        latest = max(items, key=lambda i: str(i.get("dataCrtYm", "")))
+        d = requests.get(
+            f"{base}/getDetailInfoSearchV2",
+            params={"serviceKey": key, "dataType": "json", "seq": latest["seq"]},
+            timeout=20,
+        )
+        d.raise_for_status()
+        detail = d.json().get("response", {}).get("body", {}).get("items", {}).get("item", [])
+        detail = (detail if isinstance(detail, list) else [detail])[0]
+        record(
+            "국민연금",
+            company,
+            True,
+            f"{latest['dataCrtYm']} 가입자 {detail.get('jnngpCnt')}명 · 고지 {detail.get('crrmmNtcAmt')}원 "
+            f"· 번호앞6 {sorted(prefixes)} · 후보 {len(prefixes)}",
+        )
+    except requests.HTTPError as e:
+        record("국민연금", company, False, f"HTTP {e.response.status_code}: {e.response.text[:100]}")
+    except Exception as e:
+        record("국민연금", company, False, f"호출 실패: {e}")
+
+
+def test_sgis():
+    """SGIS 행정구역 — 인증 토큰이 나오고 시도 이름표가 돌아오는지 본다."""
+    key = os.environ.get("SGIS_CONSUMER_KEY", "")
+    secret = os.environ.get("SGIS_CONSUMER_SECRET", "")
+    if not key or not secret:
+        record("SGIS 행정구역", "전국 시도", None, "SGIS_CONSUMER_KEY/SECRET 없음")
+        return
+    base = "https://sgisapi.mods.go.kr/OpenAPI3"
+    try:
+        a = requests.get(
+            f"{base}/auth/authentication.json",
+            params={"consumer_key": key, "consumer_secret": secret},
+            timeout=20,
+        )
+        a.raise_for_status()
+        token = a.json().get("result", {}).get("accessToken")
+        if not token:
+            record("SGIS 행정구역", "전국 시도", False, f"인증 실패: {a.text[:120]}")
+            return
+
+        b = requests.get(
+            f"{base}/boundary/hadmarea.geojson",
+            params={"accessToken": token, "year": "2023", "low_search": "1"},
+            timeout=60,
+        )
+        b.raise_for_status()
+        features = b.json().get("features", [])
+        if not features:
+            record("SGIS 행정구역", "전국 시도", False, f"경계 없음: {b.text[:120]}")
+            return
+        names = [f.get("properties", {}).get("adm_nm") for f in features[:3]]
+        record("SGIS 행정구역", "전국 시도", True, f"시도 {len(features)}개 · {names}")
+    except requests.HTTPError as e:
+        record("SGIS 행정구역", "전국 시도", False, f"HTTP {e.response.status_code}: {e.response.text[:100]}")
+    except Exception as e:
+        record("SGIS 행정구역", "전국 시도", False, f"호출 실패: {e}")
+
+
+def test_naver_maps():
+    """네이버 지도 Geocoding — Maps Application 키가 게이트웨이에 구독돼 있는지 본다."""
+    key_id = os.environ.get("NEXT_PUBLIC_NCP_MAP_CLIENT_ID", "")
+    secret = os.environ.get("NCP_MAP_CLIENT_SECRET", "")
+    if not key_id or not secret:
+        record("네이버 지도", "지오코딩", None, "NEXT_PUBLIC_NCP_MAP_CLIENT_ID/SECRET 없음")
+        return
+    try:
+        r = requests.get(
+            "https://maps.apigw.ntruss.com/map-geocode/v2/geocode",
+            params={"query": "서울특별시 관악구 관악로 1"},
+            headers={"X-NCP-APIGW-API-KEY-ID": key_id, "X-NCP-APIGW-API-KEY": secret},
+            timeout=20,
+        )
+        body = r.json()
+        if "error" in body:
+            record("네이버 지도", "지오코딩", False, f"{body['error'].get('errorCode')} {body['error'].get('message')}")
+            return
+        addresses = body.get("addresses", [])
+        if not addresses:
+            record("네이버 지도", "지오코딩", False, "매칭 없음")
+            return
+        a = addresses[0]
+        record("네이버 지도", "지오코딩", True, f"{a.get('roadAddress')} → {a.get('y')},{a.get('x')}")
+    except Exception as e:
+        record("네이버 지도", "지오코딩", False, f"호출 실패: {e}")
+
+
 if __name__ == "__main__":
     print("=" * 70)
     print("API Smoke 테스트 시작")
@@ -283,9 +392,12 @@ if __name__ == "__main__":
     test_naver_news()
     test_tavily()
     test_anthropic()
+    test_sgis()
+    test_naver_maps()
     test_dart_disclosure(REF_LISTED)
     test_dart_finstate(REF_LISTED)
     test_dart_business_no(REF_LISTED)
+    test_nps(REF_LISTED)
     print("-" * 70)
     print("검증 대상 5개사")
     print("-" * 70)
@@ -295,6 +407,7 @@ if __name__ == "__main__":
         bizno = test_dart_business_no(company)
         if bizno:
             test_narajangteo(company, bizno)
+        test_nps(company)
     print("=" * 70)
     passed = sum(1 for _, _, ok, _ in results if ok is True)
     warned = sum(1 for _, _, ok, _ in results if ok is None)

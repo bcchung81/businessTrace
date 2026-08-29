@@ -147,4 +147,21 @@ describe("getFinancialSummary", () => {
     expect(summary.found).toBe(false);
     expect(fetchImpl).not.toHaveBeenCalled();
   });
+  it("flags a transport failure so it is never read as a company DART does not have", async () => {
+    const profile = await getCompanyProfile("올림플래닛", {
+      fetchImpl: vi.fn(async () => {
+        throw new Error("network down");
+      }) as unknown as typeof fetch,
+    });
+
+    expect(profile.failed).toBe(true);
+  });
+
+  it("flags a failed financial lookup so it is not filed as an unpublished statement", async () => {
+    const summary = await getFinancialSummary("올림플래닛", 2024, {
+      fetchImpl: vi.fn(async () => new Response("", { status: 500 })) as unknown as typeof fetch,
+    });
+
+    expect(summary.failed).toBe(true);
+  });
 });

@@ -110,4 +110,17 @@ describe("lookupCorpOutline", () => {
     expect(outline).toMatchObject({ found: false });
     expect(outline.reason).toContain("500");
   });
+  it("flags a transport failure so a caller never reads it as an unregistered company", async () => {
+    const outline = await lookupCorpOutline("크립토랩", {
+      fetchImpl: vi.fn(async () => new Response("", { status: 500 })) as unknown as typeof fetch,
+    });
+
+    expect(outline.failed).toBe(true);
+  });
+
+  it("does not flag a genuinely empty registry result", async () => {
+    const outline = await lookupCorpOutline("넷록스", { fetchImpl: fscFetch([]) });
+
+    expect(outline.failed).toBeUndefined();
+  });
 });
