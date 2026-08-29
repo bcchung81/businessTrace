@@ -75,15 +75,26 @@ describe("CompanyPipelineGrid", () => {
     expect(within(verifiedRow).getAllByRole("cell")[0]).not.toHaveClass("shadow-[inset_3px_0_0_var(--risk-fill)]");
   });
 
-  test("sorts in triage order by default and re-sorts by name on request", () => {
-    render(<CompanyPipelineGrid rows={[row(1, { name: "나", verdict: "verified" }), row(2, { name: "가", verdict: "risk" })]} pageSize={10} now={NOW} />);
+  test("sorts in triage order by default and re-sorts by name, score and news on request", () => {
+    render(
+      <CompanyPipelineGrid
+        rows={[
+          row(1, { name: "나", verdict: "verified", faithfulness: 0.5, latestArticle: "2026-08-20T00:00:00.000Z" }),
+          row(2, { name: "가", verdict: "risk", faithfulness: 0.9, latestArticle: "2026-08-27T00:00:00.000Z" }),
+        ]}
+        pageSize={10}
+        now={NOW}
+      />,
+    );
     const names = () => screen.getAllByRole("rowheader").map((cell) => cell.textContent);
 
     expect(names()).toEqual(["가", "나"]);
     fireEvent.click(screen.getByRole("radio", { name: "기업명" }));
     expect(names()).toEqual(["가", "나"]);
     fireEvent.click(screen.getByRole("radio", { name: "검증 점수" }));
-    expect(names()).toEqual(["나", "가"].sort((a, b) => a.localeCompare(b, "ko")));
+    expect(names()).toEqual(["나", "가"]);
+    fireEvent.click(screen.getByRole("radio", { name: "최근 보도" }));
+    expect(names()).toEqual(["나", "가"]);
   });
 
   test("keeps a blank short in the grid but explains it on hover", () => {
