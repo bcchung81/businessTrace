@@ -141,6 +141,14 @@ describe("Panel", () => {
 
     expect(screen.queryByTestId("panel-footer")).not.toBeInTheDocument();
   });
+
+  test("wears the ink border and hard shadow", () => {
+    render(<Panel title="판정 현황"><p>본문</p></Panel>);
+    const card = screen.getByText("본문").parentElement?.parentElement;
+
+    expect(card).toHaveClass("border-2", "border-ink", "shadow-hard");
+    expect(card).not.toHaveClass("border-border");
+  });
 });
 
 

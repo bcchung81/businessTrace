@@ -37,12 +37,12 @@ export function Panel({
         {aside}
       </div>
       {hasBody ? (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-background shadow-[0_1px_2px_rgba(23,23,25,0.04)]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border-2 border-ink bg-background shadow-hard">
           <div className="flex min-h-0 flex-1 flex-col">{children}</div>
           {footer ? (
             <div
               data-testid="panel-footer"
-              className="border-t border-border bg-surface px-3.5 py-2 text-[11px] text-muted-foreground"
+              className="border-t-2 border-ink bg-surface px-3.5 py-2 text-[11px] text-muted-foreground"
             >
               {footer}
             </div>
