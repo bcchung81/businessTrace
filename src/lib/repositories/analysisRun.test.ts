@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
-import { createCollectionRun } from "@/lib/repositories/analysisRun";
+import { createCollectionRun, summariseRunActivity } from "@/lib/repositories/analysisRun";
 
 async function seedCompanyAndUser() {
   const company = await prisma.company.create({ data: { name: "크립토랩", year: 2024 } });
@@ -116,5 +116,27 @@ describe("createCollectionRun", () => {
     const run = await createCollectionRun({ companyId: company.id, userId: user.id, news: [] as never });
 
     expect(run.resultJson).toBeNull();
+  });
+});
+
+describe("summariseRunActivity", () => {
+  beforeEach(resetDatabase);
+
+  it("reports the newest run time and how many are still running", async () => {
+    const { company, user } = await seedCompanyAndUser();
+    await prisma.analysisRun.create({
+      data: { companyId: company.id, userId: user.id, model: "m", newsJson: "[]", status: "completed", createdAt: new Date("2026-08-01T00:00:00.000Z") },
+    });
+    await prisma.analysisRun.create({
+      data: { companyId: company.id, userId: user.id, model: "m", newsJson: "[]", status: "running", createdAt: new Date("2026-08-20T00:00:00.000Z") },
+    });
+
+    const activity = await summariseRunActivity(company.year);
+
+    expect(activity).toEqual({ latestAt: "2026-08-20T00:00:00.000Z", running: 1 });
+  });
+
+  it("returns nulls and zero for a year with no runs", async () => {
+    expect(await summariseRunActivity(1999)).toEqual({ latestAt: null, running: 0 });
   });
 });

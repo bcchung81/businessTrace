@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
 import {
+  summariseSourceFreshness,
   listSourceSnapshots,
   saveSourceSnapshots,
   summariseSourceCoverage,
@@ -110,5 +111,31 @@ describe("summariseSourceCoverage", () => {
     const coverage = await summariseSourceCoverage(2025);
 
     expect(coverage.bySource).toHaveLength(7);
+  });
+});
+
+describe("summariseSourceFreshness", () => {
+  beforeEach(resetDatabase);
+
+  it("reports the newest fetch time and companies refreshed on that day", async () => {
+    const a = await prisma.company.create({ data: { name: "가", year: 2025 } });
+    const b = await prisma.company.create({ data: { name: "나", year: 2025 } });
+    await prisma.sourceSnapshot.create({
+      data: { companyId: a.id, source: "nts", status: "found", summary: "", payload: "{}", fetchedAt: new Date("2026-08-28T13:19:00.000Z") },
+    });
+    await prisma.sourceSnapshot.create({
+      data: { companyId: a.id, source: "dart", status: "found", summary: "", payload: "{}", fetchedAt: new Date("2026-08-28T13:20:00.000Z") },
+    });
+    await prisma.sourceSnapshot.create({
+      data: { companyId: b.id, source: "nts", status: "found", summary: "", payload: "{}", fetchedAt: new Date("2026-08-01T00:00:00.000Z") },
+    });
+
+    const freshness = await summariseSourceFreshness(2025);
+
+    expect(freshness).toEqual({ latestAt: "2026-08-28T13:20:00.000Z", updatedOnLatestDay: 1 });
+  });
+
+  it("returns null and zero with no snapshots", async () => {
+    expect(await summariseSourceFreshness(1999)).toEqual({ latestAt: null, updatedOnLatestDay: 0 });
   });
 });

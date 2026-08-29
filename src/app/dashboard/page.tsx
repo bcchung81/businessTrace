@@ -4,7 +4,10 @@ import { listMentionArticles } from "@/lib/repositories/mentionArticles";
 import { listCompanyPipeline } from "@/lib/repositories/companyPipeline";
 import { summariseSourceCoverage } from "@/lib/repositories/sourceSnapshot";
 import { listLatestVerifications } from "@/lib/repositories/verificationResult";
+import { summariseRunActivity } from "@/lib/repositories/analysisRun";
+import { summariseSourceFreshness } from "@/lib/repositories/sourceSnapshot";
 import { buildActionItems } from "@/lib/services/actionItems";
+import { buildFreshnessItems } from "@/lib/services/freshness";
 import { buildCoMentions } from "@/lib/services/coMention";
 import { getDashboardSummary } from "@/lib/services/dashboardSummary";
 import { formatRunTime } from "@/lib/services/formatRunTime";
@@ -45,6 +48,19 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const news = buildNewsCoverage(registry, graph.articles, now);
   const actions = buildActionItems({ companies: registry, pipeline, news, declining: summary.movers.declining, now });
   const matrix = buildMatrixRows(pipeline, verdicts.companies, news.byCompany);
+  const activity = await summariseRunActivity(year);
+  const sourceFreshness = await summariseSourceFreshness(year);
+  const ribbon = buildFreshnessItems({
+    now,
+    latestNewsAt: activity.latestAt,
+    latestSourceAt: sourceFreshness.latestAt,
+    sourcesUpdatedToday: sourceFreshness.updatedOnLatestDay,
+    sourcesTotal: companies.length,
+    pensionYm: summary.months.at(-1),
+    running: activity.running,
+    todo: actions.reduce((sum, item) => sum + item.count, 0),
+    stale: actions.find((item) => item.key === "stale")?.count ?? 0,
+  });
 
   const needsHands = new Set([
     ...verdicts.companies.filter((entry) => entry.verdict === "risk").map((entry) => entry.companyId),
@@ -85,15 +101,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </div>
       </header>
 
-      <Ribbon
-        items={[
-          `PASS ${verdicts.counts.verified}`,
-          `REVIEW ${verdicts.counts.review}`,
-          `RISK ${verdicts.counts.risk}`,
-          `PENDING ${verdicts.counts.pending}`,
-          `NPS ${monthLabel(summary.months.at(-1))}`,
-        ]}
-      />
+      <Ribbon items={ribbon} />
 
       <Panel index="01" title="판정 현황" tag="분석 산출" tone="fresh" note="환각 검증 3게이트를 통과한 기업만 선정 근거로 쓸 수 있다">
         <VerdictBoard counts={verdicts.counts} averageCitations={verdicts.averageCitations} />

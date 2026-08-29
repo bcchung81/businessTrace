@@ -78,3 +78,18 @@ export async function failRun(id: number, message: string) {
     },
   });
 }
+
+/**
+ * 연도 기준 최신 실행 시각과 아직 도는 실행 수를 낸다.
+ */
+export async function summariseRunActivity(year: number) {
+  const [latest, running] = await Promise.all([
+    prisma.analysisRun.findFirst({
+      where: { company: { year } },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    }),
+    prisma.analysisRun.count({ where: { status: "running", company: { year } } }),
+  ]);
+  return { latestAt: latest?.createdAt.toISOString() ?? null, running };
+}

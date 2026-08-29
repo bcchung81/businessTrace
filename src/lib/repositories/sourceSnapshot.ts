@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+
+const KST_OFFSET_MS = 9 * 3_600_000;
 import { SOURCE_KEYS, type SnapshotRow, type SourceKey, type SourceStatus } from "@/lib/services/sourceEvidence";
 
 export type StoredSnapshot = {
@@ -77,4 +79,28 @@ export async function summariseSourceCoverage(year: number): Promise<SourceCover
     total,
     bySource: SOURCE_KEYS.map((source) => ({ source, found: counts.get(source) ?? 0 })),
   };
+}
+
+/**
+ * 원천 수집의 최신 시각과 그날 갱신된 기업 수를 낸다.
+ * 날은 KST 기준이다 — 밤 수집이 UTC 로 전날에 걸리면 "오늘 0개사" 로 오독된다.
+ */
+export async function summariseSourceFreshness(year: number) {
+  const latest = await prisma.sourceSnapshot.findFirst({
+    where: { company: { year, isActive: true } },
+    orderBy: { fetchedAt: "desc" },
+    select: { fetchedAt: true },
+  });
+  if (!latest) return { latestAt: null, updatedOnLatestDay: 0 };
+
+  const dayStart = new Date(latest.fetchedAt.getTime() + KST_OFFSET_MS);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const since = new Date(dayStart.getTime() - KST_OFFSET_MS);
+
+  const rows = await prisma.sourceSnapshot.findMany({
+    where: { fetchedAt: { gte: since }, company: { year, isActive: true } },
+    select: { companyId: true },
+    distinct: ["companyId"],
+  });
+  return { latestAt: latest.fetchedAt.toISOString(), updatedOnLatestDay: rows.length };
 }
