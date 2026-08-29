@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { SectionHead } from "@/components/dashboard/section-head";
+import { Panel } from "@/components/dashboard/panel";
 import { StateLegend } from "@/components/dashboard/state-legend";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -53,6 +54,44 @@ describe("SectionHead", () => {
     render(<SectionHead title="뉴스 언급 근거" />);
 
     expect(screen.getByRole("heading", { level: 2, name: "뉴스 언급 근거" })).toBeInTheDocument();
+  });
+});
+
+describe("SectionHead index", () => {
+  test("prints the section number before the heading", () => {
+    render(<SectionHead index="04" title="기업별 근거 매트릭스" />);
+
+    expect(screen.getByText("04")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "기업별 근거 매트릭스" })).toBeInTheDocument();
+  });
+});
+
+describe("Panel", () => {
+  test("renders head, aside, body and footer in one card", () => {
+    render(
+      <Panel index="01" title="판정 현황" tag="분석 산출" tone="fresh" aside={<span>정렬</span>} footer={<span>범례</span>}>
+        <p>본문</p>
+      </Panel>,
+    );
+
+    expect(screen.getByText("01")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "판정 현황" })).toBeInTheDocument();
+    expect(screen.getByText("정렬")).toBeInTheDocument();
+    expect(screen.getByText("본문")).toBeInTheDocument();
+    expect(screen.getByText("범례")).toBeInTheDocument();
+  });
+
+  test("shows the empty label instead of a card when there is no body", () => {
+    render(<Panel title="최근 기사" empty="수집된 기사가 없습니다.">{null}</Panel>);
+
+    expect(screen.getByText("수집된 기사가 없습니다.")).toBeInTheDocument();
+    expect(screen.queryByTestId("panel-footer")).not.toBeInTheDocument();
+  });
+
+  test("omits the footer strip when none is given", () => {
+    render(<Panel title="최근 기사"><p>본문</p></Panel>);
+
+    expect(screen.queryByTestId("panel-footer")).not.toBeInTheDocument();
   });
 });
 
