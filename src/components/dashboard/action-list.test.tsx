@@ -11,7 +11,6 @@ describe("ActionList", () => {
   test("prints title, count, chips and remedy for an item", () => {
     render(
       <ActionList
-        year={2025}
         items={[item({ key: "businessNo", title: "사업자번호 미확보", tone: "review", count: 1, companies: [{ id: 3, name: "아크릴" }], remedy: "수기 입력" })]}
       />,
     );
@@ -23,7 +22,7 @@ describe("ActionList", () => {
   });
 
   test("keeps a zero item visible and says none", () => {
-    render(<ActionList year={2025} items={[item({})]} />);
+    render(<ActionList items={[item({})]} />);
     const row = screen.getByRole("listitem", { name: "30일 이상 보도 없음" });
 
     expect(within(row).getByText("0")).toBeInTheDocument();
@@ -32,14 +31,14 @@ describe("ActionList", () => {
 
   test("collapses more than four companies into a remainder", () => {
     const companies = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, name: `기업${i + 1}` }));
-    render(<ActionList year={2025} items={[item({ count: 7, companies })]} />);
+    render(<ActionList items={[item({ count: 7, companies })]} />);
 
     expect(screen.getAllByRole("link")).toHaveLength(4);
     expect(screen.getByText("외 3")).toBeInTheDocument();
   });
 
   test("appends the detail after the name", () => {
-    render(<ActionList year={2025} items={[item({ key: "decline", count: 1, companies: [{ id: 1, name: "알체라", detail: "▼31%" }] })]} />);
+    render(<ActionList items={[item({ key: "decline", count: 1, companies: [{ id: 1, name: "알체라", detail: "▼31%" }] })]} />);
 
     expect(screen.getByRole("link", { name: /알체라/ })).toHaveTextContent("▼31%");
   });

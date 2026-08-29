@@ -112,7 +112,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       <div className="grid items-start gap-5 lg:grid-cols-[372px_minmax(0,1fr)]">
         <Panel index="05" title="조치 필요" tag="운영">
-          <ActionList items={actions} year={year} />
+          <ActionList items={actions} />
         </Panel>
         <Panel
           index="06"

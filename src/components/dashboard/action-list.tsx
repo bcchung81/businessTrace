@@ -27,7 +27,7 @@ function Icon({ item }: { item: ActionItem }) {
  * 조치 필요 항목을 건수·기업 칩·처방으로 세운다.
  * 0건도 행을 남긴다 — 항목이 사라지면 점검했는지 알 수 없다.
  */
-export function ActionList({ items }: { items: ActionItem[]; year: number }) {
+export function ActionList({ items }: { items: ActionItem[] }) {
   return (
     <ul className="flex flex-col">
       {items.map((item) => {
