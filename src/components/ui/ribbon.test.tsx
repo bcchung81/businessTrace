@@ -8,7 +8,7 @@ describe("Ribbon", () => {
   test("names the items once for assistive tech", () => {
     render(<Ribbon items={ITEMS} />);
 
-    expect(screen.getByLabelText("검증 통과 31 · 검토 12 · 리스크 3")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "검증 통과 31 · 검토 12 · 리스크 3" })).toBeInTheDocument();
   });
 
   test("repeats the run three times so the drift loops seamlessly", () => {
@@ -19,10 +19,10 @@ describe("Ribbon", () => {
 
   test("is the only tilted element and drifts unless motion is reduced", () => {
     render(<Ribbon items={ITEMS} />);
-    const band = screen.getByLabelText(/검증 통과 31/);
+    const band = screen.getByRole("img", { name: /검증 통과 31/ });
 
     expect(band).toHaveClass("-rotate-1", "bg-primary", "border-ink");
-    expect(band.firstElementChild).toHaveClass("ribbon-drift", "font-display", "uppercase");
+    expect(band.firstElementChild).toHaveClass("ribbon-drift", "hover:[animation-play-state:paused]", "font-display", "uppercase");
     expect(band.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
 });

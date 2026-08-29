@@ -8,13 +8,14 @@ export function Ribbon({ items, className }: { items: string[]; className?: stri
   const run = [...items, ...items, ...items];
   return (
     <div
+      role="img"
       aria-label={items.join(" · ")}
       className={cn(
         "-mx-5 -rotate-1 overflow-hidden border-y-2 border-ink bg-primary py-1.5 text-primary-foreground",
         className,
       )}
     >
-      <div aria-hidden="true" className="ribbon-drift flex w-max whitespace-nowrap font-display text-[13px] uppercase tracking-[0.07em]">
+      <div aria-hidden="true" className="ribbon-drift hover:[animation-play-state:paused] focus-within:[animation-play-state:paused] flex w-max whitespace-nowrap font-display text-[13px] uppercase tracking-[0.07em]">
         {run.map((item, index) => (
           <span key={index} className="flex items-center gap-4 px-4">
             {item}
