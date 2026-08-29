@@ -27,4 +27,11 @@ describe("VerdictBoard", () => {
 
     expect(screen.getAllByText("0%")).toHaveLength(4);
   });
+
+  test("states the review condition as a failed gate, not a faithfulness range", () => {
+    render(<VerdictBoard counts={COUNTS} averageCitations={6.2} />);
+    const review = screen.getByRole("group", { name: "검토 필요" });
+
+    expect(within(review).getByText("3게이트 중 하나를 못 넘었다 · 사람이 봐야 한다")).toBeInTheDocument();
+  });
 });

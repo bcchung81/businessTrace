@@ -33,7 +33,7 @@ function note(verdict: Verdict, averageCitations: number) {
         </>
       );
     case "review":
-      return "근거충실도 0.5~0.85 · 사람이 봐야 한다";
+      return "3게이트 중 하나를 못 넘었다 · 사람이 봐야 한다";
     case "risk":
       return "반증 발견 또는 원천 충돌";
     default:
