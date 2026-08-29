@@ -1,9 +1,9 @@
 import type { NewsAnalysis } from "@/lib/services/analyzer";
-import { diceSimilarity } from "@/lib/services/textSimilarity";
+import { containment } from "@/lib/services/textSimilarity";
 
 export const FAITHFULNESS_THRESHOLD = 0.85;
 export const SOURCE_COVERAGE_THRESHOLD = 0.5;
-export const EVIDENCE_MATCH_THRESHOLD = 0.4;
+export const EVIDENCE_MATCH_THRESHOLD = 0.5;
 
 export type VerificationStatus = "verified" | "needs_review";
 
@@ -42,17 +42,15 @@ export function checkSources(analyses: NewsAnalysis[]): SourceCheck {
 }
 
 /**
- * 층③ evidence-match — 분석 요약이 원문 어휘를 얼마나 반복하는지 낸다.
+ * 층③ evidence-match — 분석 요약의 어휘가 원문에 얼마나 들어 있는지 낸다.
  * LLM 을 쓰지 않는다. judge 자신의 오판을 걸러낼 독립 신호가 필요하기 때문이다.
+ * dice 는 원문이 길수록 떨어져 기사 길이를 재는 꼴이었다 — 6개사 실측에서 0.14~0.52, containment 는 0.62~0.76.
  */
 export function evidenceMatch(analyses: NewsAnalysis[]) {
   if (analyses.length === 0) return 0;
 
   const scores = analyses.map((analysis) =>
-    diceSimilarity(
-      analysis.trend.news_trend_summary,
-      `${analysis.news.title} ${analysis.news.content}`,
-    ),
+    containment(analysis.trend.news_trend_summary, `${analysis.news.title} ${analysis.news.content}`),
   );
 
   return scores.reduce((sum, score) => sum + score, 0) / scores.length;

@@ -40,21 +40,19 @@ export type VerdictSummary = {
   averageCitations: number;
 };
 
-/** 반증이 이 건수 이상이면 리스크다. 첫 실측 뒤 조정한다. */
-export const COUNTER_EVIDENCE_RISK_THRESHOLD = 1;
-
 /** 봐야 할 순서 — 막힌 것이 먼저다. */
 export const VERDICT_ORDER: Verdict[] = ["risk", "review", "verified", "pending"];
 
 function decideVerdict(row: VerificationRow | undefined, conflicts: string[]): Verdict {
   if (!row) return "pending";
-  if (row.counterEvidence >= COUNTER_EVIDENCE_RISK_THRESHOLD || conflicts.length > 0) return "risk";
+  if (conflicts.length > 0) return "risk";
   return row.status === "verified" ? "verified" : "review";
 }
 
 /**
  * 검증 2분류(verified/needs_review)를 대시보드 4분류로 파생한다.
- * 리스크는 파이프라인이 내는 상태가 아니다 — 반증 또는 원천 충돌이 있으면 judge 판정보다 우선한다.
+ * 리스크는 파이프라인이 내는 상태가 아니다 — 원천 충돌(동명 타사)이 있으면 judge 판정보다 우선한다.
+ * 반증 건수는 리스크에 넣지 않는다. 실측에서 6/6 이 "보도자료 의존" 같은 유의사항이었다.
  */
 export function rollupVerdicts(input: {
   companies: Array<{ id: number; name: string }>;

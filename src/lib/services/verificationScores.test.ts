@@ -86,6 +86,15 @@ describe("evidenceMatch", () => {
     expect(score).toBeLessThan(0.8);
   });
 
+  it("does not punish a long article for being long", () => {
+    const filler = "관련 업계에 따르면 시장 상황은 다양한 변수의 영향을 받고 있다. ".repeat(40);
+    const score = evidenceMatch([
+      analysis({ summary: "넷록스가 시리즈A 투자를 유치했다", content: `${filler}넷록스가 시리즈A 투자를 유치했다고 밝혔다.${filler}` }),
+    ]);
+
+    expect(score).toBeGreaterThan(0.6);
+  });
+
   it("is zero when there is nothing to compare", () => {
     expect(evidenceMatch([])).toBe(0);
     expect(evidenceMatch([analysis({ summary: "", content: "" })])).toBe(0);
@@ -94,10 +103,10 @@ describe("evidenceMatch", () => {
 
 describe("decide", () => {
   const cases: Array<[number | null, number, number, string]> = [
-    [0.85, 0.5, 0.4, "verified"],
-    [0.849, 0.5, 0.4, "needs_review"],
-    [0.85, 0.499, 0.4, "needs_review"],
-    [0.85, 0.5, 0.399, "needs_review"],
+    [0.85, 0.5, 0.5, "verified"],
+    [0.849, 0.5, 0.5, "needs_review"],
+    [0.85, 0.499, 0.5, "needs_review"],
+    [0.85, 0.5, 0.499, "needs_review"],
     [1, 1, 1, "verified"],
     [null, 1, 1, "needs_review"],
     [0, 0, 0, "needs_review"],

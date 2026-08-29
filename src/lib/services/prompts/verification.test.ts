@@ -52,6 +52,12 @@ describe("judgePrompt", () => {
     expect(prompt).toContain("넷록스는 투자 유치로 성장세를 보인다");
   });
 
+  it("excludes AI-computed aggregates from the source check and limits counter-evidence to contradictions", () => {
+    expect(prompt).toContain("집계 수치는 AI 산출물");
+    expect(prompt).toContain("실제로 모순되는 사실만");
+    expect(prompt).not.toContain("표본이 적은 경우가 이에 해당합니다");
+  });
+
   it("asks for a per-claim verdict rather than one overall score", () => {
     expect(prompt).toContain("claims");
     expect(prompt).toContain("supported");

@@ -24,6 +24,22 @@ export function diceSimilarity(a: string, b: string) {
 }
 
 /**
+ * 앞 문자열의 바이그램 중 뒤 문자열에도 있는 비율을 낸다.
+ * dice 와 달리 뒤 문자열 길이에 벌점이 없다 — 짧은 요약을 긴 원문과 대조할 때 쓴다.
+ */
+export function containment(needle: string, haystack: string) {
+  const left = bigrams(needle);
+  const right = bigrams(haystack);
+  if (left.size === 0 || right.size === 0) return 0;
+
+  let shared = 0;
+  for (const gram of left) {
+    if (right.has(gram)) shared += 1;
+  }
+  return shared / left.size;
+}
+
+/**
  * 문자열 안에서 특정 단어가 몇 번 나오는지 센다.
  * 정규식을 쓰지 않아 회사명에 괄호가 있어도 안전하다.
  */

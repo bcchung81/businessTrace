@@ -63,14 +63,16 @@ describe("rollupVerdicts", () => {
     expect(summary.companies.find((entry) => entry.companyId === 1)?.verdict).toBe("review");
   });
 
-  it("raises risk on counter-evidence even when the judge said verified", () => {
+  it("keeps the judge verdict when only counter-evidence notes are present", () => {
     const summary = rollupVerdicts({
       companies: COMPANIES,
-      verifications: [verification({ companyId: 1, counterEvidence: 1 })],
+      verifications: [verification({ companyId: 1, counterEvidence: 3 })],
       pipeline: [],
     });
 
-    expect(summary.companies.find((entry) => entry.companyId === 1)?.verdict).toBe("risk");
+    const entry = summary.companies.find((row) => row.companyId === 1);
+    expect(entry?.verdict).toBe("verified");
+    expect(entry?.counterEvidence).toBe(3);
   });
 
   it("raises risk on a source conflict and names the stage", () => {
