@@ -46,7 +46,7 @@ export function RecentArticles({
     <div className="min-h-0 flex-1 overflow-y-auto">
       <ul aria-label="최근 기사" className="flex flex-col">
         {grouped.map((group) => (
-          <li key={group.label} className="contents">
+          <li key={group.label} className="flex flex-col">
             <h3 className="border-b border-hairline bg-surface px-3.5 py-1.5 text-[10.5px] font-bold tracking-[0.08em] text-muted-foreground">
               {group.label}
             </h3>

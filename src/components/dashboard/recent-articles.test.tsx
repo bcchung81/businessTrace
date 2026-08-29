@@ -27,6 +27,16 @@ describe("RecentArticles", () => {
     expect(heads).toEqual(["이번 주", "지난 주", "그 이전"]);
   });
 
+  test("keeps each week group boxed as its own direct list item", () => {
+    render(<RecentArticles articles={ARTICLES} now={NOW} />);
+    const outer = screen.getByRole("list", { name: "최근 기사" });
+
+    expect(outer.children).toHaveLength(3);
+    for (const child of Array.from(outer.children)) {
+      expect(child.tagName).toBe("LI");
+    }
+  });
+
   test("lays out date, outlet, headline and company chips as columns", () => {
     render(<RecentArticles articles={ARTICLES} now={NOW} />);
     const first = within(screen.getByRole("list", { name: "최근 기사" })).getAllByRole("link").map((a) => a.closest("li")!)[0];
