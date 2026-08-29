@@ -184,3 +184,91 @@ describe("analyzeCompany — prompt caching", () => {
     expect(new Set(perArticle.map((request) => request.context)).size).toBe(1);
   });
 });
+
+describe("analyzeCompany — parallelism", () => {
+  type Gate = { resolve: () => void; promise: Promise<void> };
+  function gate(): Gate {
+    let resolve!: () => void;
+    const promise = new Promise<void>((done) => { resolve = done; });
+    return { resolve, promise };
+  }
+
+  function trackingLlm(onCall: (kind: "trend" | "award" | "investment" | "opinion") => Promise<void>) {
+    const usage = { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 };
+    return {
+      json: vi.fn(async ({ prompt }: { prompt: string }) => {
+        if (prompt.includes("동향실적을 분석해주세요")) {
+          await onCall("trend");
+          return { data: { trend_analysis: { is_about_company: "Y", news_trend_summary: "요약", sentiment_score: 5, sentiment_label: "긍정적" } }, usage };
+        }
+        if (prompt.includes("수상을 받았는지 찾아주세요")) {
+          await onCall("award");
+          return { data: { award_analysis: { is_award_related: "N", award_name: "", award_reason: "" } }, usage };
+        }
+        if (prompt.includes("투자 관련 정보를 찾아주세요")) {
+          await onCall("investment");
+          return { data: { investment_analysis: { is_investment_related: "N", investment_name: "", investment_reason: "" } }, usage };
+        }
+        await onCall("opinion");
+        return { data: { comprehensive_opinion: "의견" }, usage };
+      }),
+    } as unknown as LlmClient;
+  }
+
+  it("asks award and investment at the same time once the trend call has warmed the cache", async () => {
+    const inFlight = new Set<string>();
+    let sawBothTogether = false;
+    let awardStartedBeforeTrendFinished = false;
+    let trendDone = false;
+    const llm = trackingLlm(async (kind) => {
+      if (kind === "award" && !trendDone) awardStartedBeforeTrendFinished = true;
+      inFlight.add(kind);
+      if (inFlight.has("award") && inFlight.has("investment")) sawBothTogether = true;
+      await new Promise((tick) => setTimeout(tick, 5));
+      inFlight.delete(kind);
+      if (kind === "trend") trendDone = true;
+    });
+
+    await drain(analyzeCompany("넷록스", [news()], { llm }));
+
+    expect(sawBothTogether).toBe(true);
+    expect(awardStartedBeforeTrendFinished).toBe(false);
+  });
+
+  it("works on up to four articles at once and never more", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const llm = trackingLlm(async (kind) => {
+      if (kind !== "trend") return;
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      await new Promise((tick) => setTimeout(tick, 10));
+      inFlight -= 1;
+    });
+    const items = Array.from({ length: 9 }, (_, i) => news({ title: `기사 ${i}`, link: `https://n/${i}` }));
+
+    await drain(analyzeCompany("넷록스", items, { llm, concurrency: 4 }));
+
+    expect(peak).toBe(4);
+  });
+
+  it("keeps analyses in the original article order however the calls finish", async () => {
+    const delays = [30, 5, 20];
+    const llm = trackingLlm(async () => {});
+    (llm.json as ReturnType<typeof vi.fn>).mockImplementation(async ({ context = "", prompt }: { context?: string; prompt: string }) => {
+      const index = Number(/기사 (\d)/.exec(context)?.[1] ?? 0);
+      await new Promise((tick) => setTimeout(tick, delays[index] ?? 0));
+      if (prompt.includes("동향실적을 분석해주세요")) return { data: { trend_analysis: { is_about_company: "Y", news_trend_summary: `요약 ${index}`, sentiment_score: index, sentiment_label: "긍정적" } }, usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 } };
+      if (prompt.includes("수상을 받았는지 찾아주세요")) return { data: { award_analysis: { is_award_related: "N", award_name: "", award_reason: "" } }, usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 } };
+      if (prompt.includes("투자 관련 정보를 찾아주세요")) return { data: { investment_analysis: { is_investment_related: "N", investment_name: "", investment_reason: "" } }, usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 } };
+      return { data: { comprehensive_opinion: "의견" }, usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 } };
+    });
+    const items = [0, 1, 2].map((i) => news({ title: `기사 ${i}`, link: `https://n/${i}` }));
+
+    const events = await drain(analyzeCompany("넷록스", items, { llm, concurrency: 3 }));
+
+    expect(complete(events).result.analyses.map((a) => a.trend.news_trend_summary)).toEqual(["요약 0", "요약 1", "요약 2"]);
+    expect(events.filter((e) => e.type === "news_done")).toHaveLength(3);
+    expect(events.at(-1)?.type).toBe("complete");
+  });
+});

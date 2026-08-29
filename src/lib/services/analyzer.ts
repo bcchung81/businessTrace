@@ -134,10 +134,36 @@ function summarise(analyses: NewsAnalysis[]): AnalysisStats {
  * 뉴스별 3분석과 종합의견을 만들며 진행 상황을 흘린다.
  * 회사가 주제가 아닌 기사는 집계에서 빼되 결과에는 남긴다.
  */
+type Deps = { llm: LlmClient; model?: string; concurrency?: number };
+
+function eventQueue() {
+  const buffer: AnalyzeEvent[] = [];
+  let wake: (() => void) | null = null;
+  return {
+    push(event: AnalyzeEvent) {
+      buffer.push(event);
+      wake?.();
+      wake = null;
+    },
+    async next() {
+      if (buffer.length === 0) await new Promise<void>((resolve) => (wake = resolve));
+      return buffer.shift();
+    },
+    get size() {
+      return buffer.length;
+    },
+  };
+}
+
+/**
+ * 뉴스별 3분석과 종합의견을 만들며 진행 상황을 흘린다.
+ * 회사가 주제가 아닌 기사는 집계에서 빼되 결과에는 남긴다.
+ * 기사는 최대 concurrency 개를 동시에 돌리고, 기사 안에서는 동향을 먼저 물어 캐시를 만든 뒤 수상·투자를 함께 묻는다.
+ */
 export async function* analyzeCompany(
   companyName: string,
   news: NewsItem[],
-  deps: { llm: LlmClient; model?: string },
+  deps: Deps,
 ): AsyncGenerator<AnalyzeEvent> {
   if (news.length === 0) {
     yield { type: "error", message: "분석할 뉴스가 없습니다." };
@@ -145,7 +171,7 @@ export async function* analyzeCompany(
   }
 
   const model = deps.model ?? resolveModel();
-  const analyses: NewsAnalysis[] = [];
+  const analyses = new Array<NewsAnalysis>(news.length);
   let usage: Usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
 
   async function ask<T>(prompt: string, schema: z.ZodType<T>, fallback: T, context?: string): Promise<T> {
@@ -158,29 +184,33 @@ export async function* analyzeCompany(
     }
   }
 
-  for (const [index, item] of news.entries()) {
-    const position = index + 1;
+  const queue = eventQueue();
+  const total = news.length;
+  const concurrency = Math.max(1, deps.concurrency ?? 4);
+  let cursor = 0;
 
-    yield { type: "progress", step: "trend", current: position, total: news.length };
+  async function analyseOne(index: number) {
+    const item = news[index];
+    const position = index + 1;
     const context = newsContext(companyName, item);
+
+    queue.push({ type: "progress", step: "trend", current: position, total });
     const trend = (
       await ask(trendPrompt(companyName, item), trendSchema, { trend_analysis: NEUTRAL_TREND }, context)
     ).trend_analysis;
 
-    yield { type: "progress", step: "award", current: position, total: news.length };
-    const award = (
-      await ask(awardPrompt(companyName, item), awardSchema, { award_analysis: NO_AWARD }, context)
-    ).award_analysis;
-
-    yield { type: "progress", step: "investment", current: position, total: news.length };
-    const investment = (
-      await ask(
+    queue.push({ type: "progress", step: "award", current: position, total });
+    const [award, investment] = await Promise.all([
+      ask(awardPrompt(companyName, item), awardSchema, { award_analysis: NO_AWARD }, context).then(
+        (answer) => answer.award_analysis,
+      ),
+      ask(
         investmentPrompt(companyName, item),
         investmentSchema,
         { investment_analysis: NO_INVESTMENT },
         context,
-      )
-    ).investment_analysis;
+      ).then((answer) => answer.investment_analysis),
+    ]);
 
     const analysis: NewsAnalysis = {
       news: item,
@@ -189,9 +219,33 @@ export async function* analyzeCompany(
       award,
       investment,
     };
-    analyses.push(analysis);
-    yield { type: "news_done", index, analysis };
+    analyses[index] = analysis;
+    queue.push({ type: "news_done", index, analysis });
   }
+
+  const workers = Promise.all(
+    Array.from({ length: Math.min(concurrency, total) }, async () => {
+      while (cursor < total) {
+        const index = cursor;
+        cursor += 1;
+        await analyseOne(index);
+      }
+    }),
+  );
+
+  let finished = false;
+  void workers.then(() => {
+    finished = true;
+    queue.push({ type: "progress", step: "opinion", current: total, total });
+  });
+
+  while (!finished || queue.size > 0) {
+    const event = await queue.next();
+    if (!event) continue;
+    if (event.type === "progress" && event.step === "opinion") break;
+    yield event;
+  }
+  await workers;
 
   const stats = summarise(analyses);
 
