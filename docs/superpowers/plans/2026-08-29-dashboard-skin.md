@@ -23,7 +23,7 @@
 
 ---
 
-### Task S1: 토큰·유틸리티·Anton
+### Task 1: 토큰·유틸리티·Anton
 
 **Files:**
 - Modify: `src/app/globals.css` (`@theme inline`, `:root`, `.dark`, `@layer utilities`)
@@ -162,7 +162,7 @@ git commit -m "feat(skin): ink, paper and hard-shadow tokens with Anton display 
 
 ---
 
-### Task S2: `Panel` 셸 교체
+### Task 2: `Panel` 셸 교체
 
 **Files:**
 - Modify: `src/components/dashboard/panel.tsx`
@@ -195,7 +195,7 @@ git commit -m "feat(skin): ink, paper and hard-shadow tokens with Anton display 
 
 ---
 
-### Task S3: `Button` `hard` / `hard-outline` / `display`
+### Task 3: `Button` `hard` / `hard-outline` / `display`
 
 **Files:**
 - Modify: `src/components/ui/button.tsx`
@@ -246,7 +246,7 @@ git commit -m "feat(skin): ink, paper and hard-shadow tokens with Anton display 
 
 ---
 
-### Task S4: `Card` `comic`/`paper` + `Badge` `ink`/`stamp`
+### Task 4: `Card` `comic`/`paper` + `Badge` `ink`/`stamp`
 
 **Files:**
 - Create (via `npx shadcn@latest add card badge --yes`): `src/components/ui/card.tsx`, `src/components/ui/badge.tsx`
@@ -362,7 +362,7 @@ git commit -m "feat(skin): comic and paper cards, ink and stamp badges"
 
 ---
 
-### Task S5: `Ribbon` + 대시보드 헤더 적용
+### Task 5: `Ribbon` + 대시보드 헤더 적용
 
 **Files:**
 - Create: `src/components/ui/ribbon.tsx`, `src/components/ui/ribbon.test.tsx`

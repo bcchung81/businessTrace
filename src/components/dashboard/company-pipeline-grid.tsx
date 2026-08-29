@@ -169,8 +169,8 @@ export function CompanyPipelineGrid({
           </thead>
           <tbody>
             {slice.map((entry) => (
-              <tr key={entry.id} className={`border-b border-hairline align-middle last:border-0 ${EDGE[entry.verdict] ?? ""}`}>
-                <td className="px-2.5 py-1.5"><VerdictPill verdict={entry.verdict} /></td>
+              <tr key={entry.id} className="border-b border-hairline align-middle last:border-0">
+                <td className={`px-2.5 py-1.5 ${EDGE[entry.verdict] ?? ""}`}><VerdictPill verdict={entry.verdict} /></td>
                 <th scope="row" className="sticky left-0 z-10 whitespace-nowrap bg-background px-2.5 py-1.5 text-left font-semibold">
                   {entry.name}
                 </th>

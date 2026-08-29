@@ -68,9 +68,11 @@ describe("CompanyPipelineGrid", () => {
 
   test("draws a left edge on risk and review rows only", () => {
     render(<CompanyPipelineGrid rows={[row(1, { verdict: "risk" }), row(2, { verdict: "verified" })]} pageSize={10} now={NOW} />);
+    const riskRow = screen.getByRole("row", { name: /기업1/ });
+    const verifiedRow = screen.getByRole("row", { name: /기업2/ });
 
-    expect(screen.getByRole("row", { name: /기업1/ })).toHaveClass("shadow-[inset_3px_0_0_var(--risk-fill)]");
-    expect(screen.getByRole("row", { name: /기업2/ })).not.toHaveClass("shadow-[inset_3px_0_0_var(--risk-fill)]");
+    expect(within(riskRow).getAllByRole("cell")[0]).toHaveClass("shadow-[inset_3px_0_0_var(--risk-fill)]");
+    expect(within(verifiedRow).getAllByRole("cell")[0]).not.toHaveClass("shadow-[inset_3px_0_0_var(--risk-fill)]");
   });
 
   test("sorts in triage order by default and re-sorts by name on request", () => {
