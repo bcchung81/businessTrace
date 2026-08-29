@@ -49,4 +49,16 @@ describe("Button", () => {
 
     expect(screen.getByRole("button", { name: "RUN" })).toHaveClass("font-display", "uppercase");
   });
+
+  test("hard and hard-outline variants have visible focus indicators", () => {
+    render(
+      <>
+        <Button variant="hard">분석 실행</Button>
+        <Button variant="hard-outline">목록으로</Button>
+      </>,
+    );
+
+    expect(screen.getByRole("button", { name: "분석 실행" })).toHaveClass("focus-visible:outline-solid");
+    expect(screen.getByRole("button", { name: "목록으로" })).toHaveClass("focus-visible:outline-solid");
+  });
 });
