@@ -7,6 +7,7 @@ import { listLatestVerifications } from "@/lib/repositories/verificationResult";
 import { buildActionItems } from "@/lib/services/actionItems";
 import { buildCoMentions } from "@/lib/services/coMention";
 import { getDashboardSummary } from "@/lib/services/dashboardSummary";
+import { formatRunTime } from "@/lib/services/formatRunTime";
 import { buildMatrixRows } from "@/lib/services/matrixRows";
 import { buildNewsCoverage } from "@/lib/services/newsCoverage";
 import { rollupVerdicts } from "@/lib/services/verdictRollup";
@@ -24,10 +25,6 @@ function currentYear() {
 
 function monthLabel(ym: string | undefined) {
   return ym ? `${ym.slice(0, 4)}-${ym.slice(4, 6)}` : "—";
-}
-
-function runLabel(iso: string | null) {
-  return iso ? `${iso.slice(5, 10)} ${iso.slice(11, 16)}` : "—";
 }
 
 export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
@@ -74,7 +71,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           </dl>
           <dl className="flex flex-col gap-0.5 rounded-lg border border-border bg-background px-3 py-2">
             <dt className="text-[10.5px] text-muted-foreground">마지막 분석</dt>
-            <dd className="font-mono text-[13px] font-semibold tabular-nums">{runLabel(latestRun)}</dd>
+            <dd className="font-mono text-[13px] font-semibold tabular-nums">{formatRunTime(latestRun)}</dd>
           </dl>
           {verdicts.counts.pending > 0 ? (
             <Link
