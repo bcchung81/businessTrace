@@ -18,6 +18,7 @@ import { Panel } from "@/components/dashboard/panel";
 import { RecentArticles } from "@/components/dashboard/recent-articles";
 import { SourceCoverageBars } from "@/components/dashboard/source-coverage-bars";
 import { VerdictBoard } from "@/components/dashboard/verdict-board";
+import { Ribbon } from "@/components/ui/ribbon";
 
 function currentYear() {
   return new Date().getFullYear();
@@ -53,7 +54,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   return (
     <div className="flex flex-col gap-9">
-      <header className="flex flex-wrap items-end justify-between gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-6 pb-4">
         <div className="flex flex-col gap-1.5">
           <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
             {year}년 평가 · ICT기금사업 우수기업
@@ -83,6 +84,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           ) : null}
         </div>
       </header>
+
+      <Ribbon
+        items={[
+          `PASS ${verdicts.counts.verified}`,
+          `REVIEW ${verdicts.counts.review}`,
+          `RISK ${verdicts.counts.risk}`,
+          `PENDING ${verdicts.counts.pending}`,
+          `NPS ${monthLabel(summary.months.at(-1))}`,
+        ]}
+      />
 
       <Panel index="01" title="판정 현황" tag="분석 산출" tone="fresh" note="환각 검증 3게이트를 통과한 기업만 선정 근거로 쓸 수 있다">
         <VerdictBoard counts={verdicts.counts} averageCitations={verdicts.averageCitations} />
