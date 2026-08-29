@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { CompanyModel } from "@/generated/prisma/models";
 
 function formatBusinessNo(businessNo: string | null) {
@@ -43,7 +44,14 @@ export function CompanyTable({ companies }: { companies: CompanyModel[] }) {
                 key={company.id}
                 className="border-b border-hairline last:border-0 hover:bg-surface"
               >
-                <td className="px-4 py-2.5 font-medium">{company.name}</td>
+                <td className="px-4 py-2.5 font-medium">
+                  <Link
+                    href={`/companies/${company.id}`}
+                    className="underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    {company.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2.5">
                   {company.businessNo ? (
                     <span className="font-mono text-[12.5px]">

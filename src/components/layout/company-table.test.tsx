@@ -12,6 +12,9 @@ function company(patch: Partial<CompanyModel> = {}): CompanyModel {
     isActive: true,
     businessNo: null,
     industry: null,
+    officialName: null,
+    sector: null,
+    ceoName: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...patch,
@@ -56,5 +59,14 @@ describe("CompanyTable", () => {
     );
 
     expect(screen.getAllByRole("row")).toHaveLength(3);
+  });
+
+  it("links each company name to its evidence screen", () => {
+    render(<CompanyTable companies={[company({ id: 42, name: "크립토랩" })]} />);
+
+    expect(screen.getByRole("link", { name: "크립토랩" })).toHaveAttribute(
+      "href",
+      "/companies/42",
+    );
   });
 });
