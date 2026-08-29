@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import type { VerificationOutput } from "@/lib/services/verification";
+import type { VerificationRow } from "@/lib/services/verdictRollup";
 
 /**
  * 검증 판정과 층별 점수를 저장한다. 재검증하면 덮어쓴다.
@@ -27,4 +28,45 @@ export async function saveVerification(analysisRunId: number, output: Verificati
  */
 export async function findVerification(analysisRunId: number) {
   return prisma.verificationResult.findUnique({ where: { analysisRunId } });
+}
+
+function jsonLength(raw: string) {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * 해당 연도 기업별 최신 완료 실행의 검증 결과를 낸다.
+ * 기업당 하나만 쓴다 — 재실행분까지 세면 같은 기업이 두 번 잡혀 판정 수가 부풀려진다.
+ */
+export async function listLatestVerifications(year: number): Promise<VerificationRow[]> {
+  const runs = await prisma.analysisRun.findMany({
+    where: { status: "completed", company: { year }, verification: { isNot: null } },
+    orderBy: { createdAt: "desc" },
+    include: { verification: true },
+  });
+
+  const seen = new Set<number>();
+  const rows: VerificationRow[] = [];
+
+  for (const run of runs) {
+    if (seen.has(run.companyId) || !run.verification) continue;
+    seen.add(run.companyId);
+    rows.push({
+      companyId: run.companyId,
+      status: run.verification.status === "verified" ? "verified" : "needs_review",
+      faithfulness: run.verification.faithfulness,
+      sourceCoverage: run.verification.sourceCoverage,
+      evidenceMatch: run.verification.evidenceMatch,
+      counterEvidence: jsonLength(run.verification.counterEvidence),
+      citations: jsonLength(run.newsJson),
+      runAt: (run.completedAt ?? run.createdAt).toISOString(),
+    });
+  }
+
+  return rows;
 }
