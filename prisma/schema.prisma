@@ -26,9 +26,15 @@ model Company {
   isActive     Boolean       @default(true)
   businessNo   String?
   industry     String?
+  officialName String?
+  sector       String?
+  ceoName      String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   analysisRuns AnalysisRun[]
+  pensionSnapshots PensionSnapshot[]
+  sourceSnapshots  SourceSnapshot[]
+  geocode          CompanyGeocode?
 
   @@unique([name, year])
   @@index([year])
@@ -105,4 +111,48 @@ model VentureCertification {
   fetchedAt      DateTime @default(now())
 
   @@index([normalisedName])
+}
+
+model PensionSnapshot {
+  id               Int      @id @default(autoincrement())
+  companyId        Int
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ym               String
+  subscribers      Int?
+  noticeAmount     Int?
+  hired            Int?
+  departed         Int?
+  workplaceCount   Int      @default(1)
+  businessNoPrefix String?
+  fetchedAt        DateTime @default(now())
+
+  @@unique([companyId, ym])
+  @@index([companyId, ym])
+}
+
+model CompanyGeocode {
+  id          Int      @id @default(autoincrement())
+  companyId   Int      @unique
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  address     String
+  source      String
+  precision   String
+  roadAddress String?
+  latitude    Float
+  longitude   Float
+  fetchedAt   DateTime @default(now())
+}
+
+model SourceSnapshot {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  source    String
+  status    String
+  summary   String?
+  payload   String
+  fetchedAt DateTime @default(now())
+
+  @@unique([companyId, source])
+  @@index([companyId])
 }
