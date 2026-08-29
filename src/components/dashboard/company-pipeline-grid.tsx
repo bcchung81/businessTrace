@@ -88,10 +88,6 @@ export function compactValue(stageKey: string, cell: PipelineCell) {
   }
 }
 
-function formatBusinessNo(businessNo: string) {
-  return `${businessNo.slice(0, 3)}-${businessNo.slice(3, 5)}-${businessNo.slice(5)}`;
-}
-
 function monthDay(iso: string | null) {
   return iso ? iso.slice(5, 10) : "—";
 }
@@ -158,37 +154,32 @@ export function CompanyPipelineGrid({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1080px] table-fixed text-[12px]">
+        <table className="w-full table-fixed text-[12px]">
           <caption className="sr-only">기업별 근거 매트릭스</caption>
           <thead>
             <tr className="border-b border-border bg-surface text-[11px] text-muted-foreground">
-              <th scope="col" className="w-[84px] px-2.5 py-2 text-left font-semibold">판정</th>
-              <th scope="col" className="sticky left-0 z-10 w-[120px] bg-surface px-2.5 py-2 text-left font-semibold">기업</th>
-              <th scope="col" className="w-[112px] px-2.5 py-2 text-left font-semibold">사업자번호</th>
+              <th scope="col" className="w-[80px] px-2 py-2 text-left font-semibold">판정</th>
+              <th scope="col" className="w-[136px] px-2 py-2 text-left font-semibold">기업</th>
               {STAGES.map((stage) => (
                 <th key={stage.key} scope="col" title={`${stage.label} — ${stage.purpose} · ${stage.endpoint}`} className="px-2 py-2 text-left font-semibold">
                   {stage.short}
                 </th>
               ))}
-              <th scope="col" className="w-[68px] px-2.5 py-2 text-right font-semibold">충실도</th>
-              <th scope="col" className="w-[44px] px-2.5 py-2 text-right font-semibold">인용</th>
-              <th scope="col" className="w-[72px] px-2.5 py-2 text-left font-semibold">최근 보도</th>
+              <th scope="col" className="w-[56px] px-2 py-2 text-right font-semibold">충실도</th>
+              <th scope="col" className="w-[40px] px-2 py-2 text-right font-semibold">인용</th>
+              <th scope="col" className="w-[60px] px-2 py-2 text-left font-semibold">최근 보도</th>
             </tr>
           </thead>
           <tbody>
             {slice.map((entry) => (
               <tr key={entry.id} className="border-b border-hairline align-middle last:border-0">
                 <td className={`px-2.5 py-1.5 ${EDGE[entry.verdict] ?? ""}`}><VerdictPill verdict={entry.verdict} /></td>
-                <th scope="row" className="sticky left-0 z-10 whitespace-nowrap bg-background px-2.5 py-1.5 text-left font-semibold">
-                  {entry.name}
-                </th>
-                <td className="px-2.5 py-1.5">
-                  {entry.businessNo ? (
-                    <span className="font-mono tabular-nums">{formatBusinessNo(entry.businessNo)}</span>
-                  ) : (
-                    <span className="text-[11px] font-semibold text-review">미확보 · 대조 불가</span>
+                <th scope="row" className="px-2 py-1.5 text-left font-semibold">
+                  <span className="block truncate">{entry.name}</span>
+                  {entry.businessNo ? null : (
+                    <span className="block text-[10px] font-semibold text-review">사업자번호 미확보</span>
                   )}
-                </td>
+                </th>
                 {STAGES.map((stage) => {
                   const cell = entry.cells[stage.key] ?? { state: "pending" as CellState, value: "", note: "" };
                   return (
@@ -218,7 +209,7 @@ export function CompanyPipelineGrid({
             ))}
             {filler.map((index) => (
               <tr key={`filler-${index}`} aria-hidden className="border-b border-hairline last:border-0">
-                <td colSpan={STAGES.length + 6} className="px-2.5 py-1.5">
+                <td colSpan={STAGES.length + 5} className="px-2.5 py-1.5">
                   <span className="block h-[22px]" />
                 </td>
               </tr>

@@ -48,16 +48,19 @@ describe("CompanyPipelineGrid", () => {
     expect(cells.at(-1)).toHaveTextContent("08-26");
   });
 
-  test("warns instead of leaving the business number blank", () => {
-    render(<CompanyPipelineGrid rows={[row(1, { businessNo: null })]} pageSize={10} now={NOW} />);
+  test("flags a missing business number beside the name instead of showing numbers", () => {
+    render(<CompanyPipelineGrid rows={[row(1, { businessNo: null }), row(2)]} pageSize={10} now={NOW} />);
 
-    expect(screen.getByText("미확보 · 대조 불가")).toHaveClass("text-review");
+    const flagged = screen.getByRole("rowheader", { name: /기업1/ });
+    expect(within(flagged).getByText("사업자번호 미확보")).toHaveClass("text-review");
+    expect(screen.queryByText("119-87-01587")).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "사업자번호" })).not.toBeInTheDocument();
   });
 
-  test("formats a present business number with dashes in tabular figures", () => {
-    render(<CompanyPipelineGrid rows={[row(1)]} pageSize={10} now={NOW} />);
+  test("fits the viewport without forcing a horizontal scroll", () => {
+    const { container } = render(<CompanyPipelineGrid rows={[row(1)]} pageSize={10} now={NOW} />);
 
-    expect(screen.getByText("119-87-01587")).toHaveClass("font-mono");
+    expect(container.querySelector("table")?.className).not.toMatch(/min-w-\[/);
   });
 
   test("marks a newest article older than 30 days in risk colour", () => {
