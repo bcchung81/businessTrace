@@ -17,11 +17,12 @@ describe("Ribbon", () => {
     expect(screen.getAllByText("리스크 3")).toHaveLength(3);
   });
 
-  test("is the only tilted element and drifts unless motion is reduced", () => {
+  test("lies flat and drifts unless motion is reduced", () => {
     render(<Ribbon items={ITEMS} />);
     const band = screen.getByRole("img", { name: /검증 통과 31/ });
 
-    expect(band).toHaveClass("-rotate-1", "bg-primary", "border-ink");
+    expect(band).toHaveClass("bg-primary", "border-ink");
+    expect(band).not.toHaveClass("-rotate-1");
     expect(band.firstElementChild).toHaveClass("ribbon-drift", "hover:[animation-play-state:paused]", "font-display", "uppercase");
     expect(band.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
