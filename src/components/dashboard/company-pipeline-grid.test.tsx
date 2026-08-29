@@ -7,6 +7,7 @@ function row(id: number, over: Partial<CompanyPipelineRow> = {}): CompanyPipelin
   return {
     id,
     name: `기업${id}`,
+    businessNo: null,
     cells: {
       news: { state: "ok", value: "15건", note: "" },
       nts: { state: "ok", value: "계속사업자", note: "부가가치세 일반과세자" },
