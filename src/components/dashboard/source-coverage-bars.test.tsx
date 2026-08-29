@@ -48,4 +48,10 @@ describe("SourceCoverageBars", () => {
 
     expect(screen.getByText(/비상장·비외감이라 구조적 결측/)).toBeInTheDocument();
   });
+
+  test("names each progressbar for assistive tech", () => {
+    render(<SourceCoverageBars coverage={COVERAGE} />);
+
+    expect(screen.getByRole("progressbar", { name: "국민연금 확인" })).toBeInTheDocument();
+  });
 });

@@ -34,6 +34,7 @@ export function SourceCoverageBars({ coverage }: { coverage: SourceCoverage }) {
               <span className="text-[12px] font-medium">{SOURCE_NAME[entry.source]}</span>
               <div
                 role="progressbar"
+                aria-label={`${SOURCE_NAME[entry.source]} 확인`}
                 aria-valuenow={entry.found}
                 aria-valuemin={0}
                 aria-valuemax={coverage.total}
