@@ -1,7 +1,7 @@
 import Parser from "rss-parser";
 import pressMapping from "@/lib/services/pressMapping.json";
 import { enrichWithBodies } from "@/lib/services/articleBody";
-import { countOccurrences, diceSimilarity } from "@/lib/services/textSimilarity";
+import { countCompanyMentions, diceSimilarity } from "@/lib/services/textSimilarity";
 import type { FetchDeps, NewsItem, Relevance } from "@/lib/services/newsTypes";
 
 const NAVER_HUB = "https://naverapihub.apigw.ntruss.com/search/v1/news";
@@ -64,9 +64,9 @@ export function pressNameFromUrl(url: string) {
  * 언급 1회는 대체로 스쳐 지나가는 언급이다. 버리지 않고 등급으로 남긴다.
  */
 export function classifyRelevance(input: { title: string; content: string; name: string }) {
-  const titleMatch = input.title.includes(input.name);
-  const mentions = countOccurrences(input.content, input.name);
-  const firstIndex = input.content.indexOf(input.name);
+  const titleMatch = countCompanyMentions(input.title, input.name) > 0;
+  const mentions = countCompanyMentions(input.content, input.name);
+  const firstIndex = input.content.indexOf(input.name.replace(/\s+/g, ""));
   const inLead =
     firstIndex >= 0 && input.content.length > 0 && firstIndex / input.content.length < LEAD_RATIO;
 

@@ -126,11 +126,28 @@ function decodeHtml(buffer: Buffer, contentType: string | null) {
   return iconv.decode(buffer, encoding);
 }
 
+type DomFactory = { createDom?: (html: string, url: string) => { window: { document: Document; close: () => void } } };
+
+/**
+ * 페이지에서 본문 텍스트만 뽑는다.
+ * 파싱 창은 반드시 닫는다 — 기사 100건을 병렬로 훑으므로, 안 닫으면 문서 트리가 그만큼 메모리에 남는다.
+ */
+export function extractReadableText(html: string, url: string, deps: DomFactory = {}) {
+  const dom = (deps.createDom ?? ((source, at) => new JSDOM(source, { url: at })))(html, url);
+
+  try {
+    const parsed = new Readability(dom.window.document).parse();
+    return (parsed?.textContent ?? "").replace(/\s+/g, " ").trim();
+  } finally {
+    dom.window.close();
+  }
+}
+
 /**
  * 기사 본문을 크롤링해 정제된 텍스트로 돌려준다.
  * 실패하면 예외 대신 빈 문자열을 준다. 본문 없음은 수집 실패가 아니다.
  */
-export async function fetchArticleBody(url: string, deps: FetchDeps = {}) {
+export async function fetchArticleBody(url: string, deps: FetchDeps & DomFactory = {}) {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const resolved = await resolveGoogleNewsUrl(url, deps);
   if (resolved.includes(GOOGLE_HOST)) return "";
@@ -145,8 +162,7 @@ export async function fetchArticleBody(url: string, deps: FetchDeps = {}) {
 
     const html = decodeHtml(Buffer.from(await response.arrayBuffer()), response.headers.get("content-type"));
 
-    const parsed = new Readability(new JSDOM(html, { url: resolved }).window.document).parse();
-    const article = (parsed?.textContent ?? "").replace(/\s+/g, " ").trim();
+    const article = extractReadableText(html, resolved, deps);
     if (article.length >= MIN_BODY_LENGTH) return article.slice(0, MAX_BODY_LENGTH);
 
     const naverBody = cheerio.load(html)("#dic_area").text().replace(/\s+/g, " ").trim();
@@ -164,7 +180,7 @@ export async function fetchArticleBody(url: string, deps: FetchDeps = {}) {
  */
 export async function enrichWithBodies(
   items: NewsItem[],
-  deps: FetchDeps & { concurrency?: number } = {},
+  deps: FetchDeps & DomFactory & { concurrency?: number } = {},
 ) {
   const enriched = new Array<NewsItem>(items.length);
   const concurrency = Math.max(1, deps.concurrency ?? 4);

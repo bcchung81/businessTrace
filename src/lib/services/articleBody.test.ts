@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { resolveGoogleNewsUrl, fetchArticleBody, enrichWithBodies } from "@/lib/services/articleBody";
+import { resolveGoogleNewsUrl, fetchArticleBody, enrichWithBodies, extractReadableText } from "@/lib/services/articleBody";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import tokens from "./__fixtures__/google-tokens.json";
 import naverHtml from "./__fixtures__/article-naver.html?raw";
@@ -143,3 +143,55 @@ describe("enrichWithBodies", () => {
     expect(enriched.map((entry) => entry.title)).toEqual(["a", "b", "c", "d", "e"]);
   });
 });
+
+describe("extractReadableText", () => {
+  function fakeDom() {
+    let closed = 0;
+    const createDom = (html: string) => {
+      const doc = document.implementation.createHTMLDocument();
+      doc.body.innerHTML = html;
+      return {
+        window: {
+          document: doc,
+          close: () => {
+            closed += 1;
+          },
+        },
+      };
+    };
+    return { createDom, closed: () => closed };
+  }
+
+  const ARTICLE = `<article><h1>크립토랩 시리즈B</h1>${"<p>동형암호 기업 크립토랩이 200억원 규모 투자를 유치했다.</p>".repeat(8)}</article>`;
+
+  it("pulls the article text out of the page", () => {
+    const dom = fakeDom();
+
+    expect(extractReadableText(ARTICLE, "https://n.example/1", dom)).toContain("동형암호");
+  });
+
+  it("closes the parsing window so a batch of articles does not pile up documents", () => {
+    const dom = fakeDom();
+
+    extractReadableText(ARTICLE, "https://n.example/1", dom);
+
+    expect(dom.closed()).toBe(1);
+  });
+
+  it("closes the window even when parsing throws", () => {
+    let closed = 0;
+    const createDom = () => ({
+      window: {
+        get document(): Document {
+          throw new Error("파싱 실패");
+        },
+        close: () => {
+          closed += 1;
+        },
+      },
+    });
+
+    expect(() => extractReadableText(ARTICLE, "https://n.example/1", { createDom })).toThrow();
+    expect(closed).toBe(1);
+  });
+})

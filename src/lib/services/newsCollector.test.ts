@@ -210,3 +210,16 @@ describe("collectNews", () => {
     expect(errors.join(" ")).toContain("google");
   });
 });
+
+describe("classifyRelevance 띄어쓰기", () => {
+  it("recognises the company when the article writes the name without its space", () => {
+    const result = classifyRelevance({
+      title: "코난테크놀로지, 군 AI 사업 수주",
+      content: "코난테크놀로지가 계약을 맺었다. 코난테크놀로지는 상장사다.",
+      name: "코난 테크놀로지",
+    });
+
+    expect(result.titleMatch).toBe(true);
+    expect(result.relevance).toBe("primary");
+  });
+});

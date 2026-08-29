@@ -38,3 +38,26 @@ export function countOccurrences(haystack: string, needle: string) {
   }
   return count;
 }
+
+const FLEXIBLE_MIN_LENGTH = 3;
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * 기사에서 기업명이 몇 번 나오는지 센다. 띄어쓰기 차이를 무시한다.
+ * 명단은 "코난 테크놀로지", 기사는 "코난테크놀로지"로 쓴다 - 그대로 세면 주제 기사가 0건이 된다.
+ * 두 글자 이름은 어절을 건너뛰어 오탐할 수 있어 정확 일치만 센다.
+ */
+export function countCompanyMentions(haystack: string, needle: string) {
+  const compact = (needle ?? "").replace(/\s+/g, "");
+  if (compact.length === 0) return 0;
+
+  const pattern =
+    compact.length < FLEXIBLE_MIN_LENGTH
+      ? escapeRegExp(compact)
+      : [...compact].map(escapeRegExp).join("\\s*");
+
+  return (haystack ?? "").match(new RegExp(pattern, "g"))?.length ?? 0;
+}
