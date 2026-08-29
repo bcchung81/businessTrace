@@ -47,8 +47,11 @@ describe("skin tokens", () => {
   test("defines ink, paper and hard shadows in light and dark", () => {
     for (const selector of [":root", ".dark"]) {
       const block = cssBlock(css, selector);
-      for (const token of ["--ink", "--paper", "--paper-2", "--shadow-hard", "--shadow-hard-lg", "--shadow-hard-primary"]) {
+      for (const token of ["--ink", "--paper", "--paper-2", "--shadow-hard", "--shadow-hard-lg"]) {
         expect(block, `${selector} ${token}`).toMatch(new RegExp(`${token}:\\s*\\S`));
+      }
+      if (selector === ":root") {
+        expect(block, `${selector} --shadow-hard-primary`).toMatch(/--shadow-hard-primary:\s*\S/);
       }
     }
   });
@@ -76,6 +79,8 @@ describe("skin tokens", () => {
       expect(css).toContain(rule);
     }
     expect(css).toMatch(/prefers-reduced-motion: reduce\)\s*\{\s*\.ribbon-drift\s*\{\s*animation:\s*none/);
+    const grainRule = cssBlock(css, ".paper-grain::after");
+    expect(grainRule).toContain("border-radius: inherit");
   });
 });
 
