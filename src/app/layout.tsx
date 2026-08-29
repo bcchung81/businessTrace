@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Anton, Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
@@ -13,6 +13,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const anton = Anton({ weight: "400", subsets: ["latin"], variable: "--font-anton", display: "swap" });
+
 export const metadata: Metadata = {
   title: "성과돋보기",
   description: "뉴스·AI 기반 기업 분석 및 우수기업 선정 관리 시스템",
@@ -22,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
     >
       <head>
         <link

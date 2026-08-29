@@ -41,6 +41,54 @@ describe("status tokens", () => {
   });
 });
 
+describe("skin tokens", () => {
+  const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
+
+  test("defines ink, paper and hard shadows in light and dark", () => {
+    for (const selector of [":root", ".dark"]) {
+      const block = cssBlock(css, selector);
+      for (const token of ["--ink", "--paper", "--paper-2", "--shadow-hard", "--shadow-hard-lg", "--shadow-hard-primary"]) {
+        expect(block, `${selector} ${token}`).toMatch(new RegExp(`${token}:\\s*\\S`));
+      }
+    }
+  });
+
+  test("swaps the grey surface for cream paper", () => {
+    expect(cssBlock(css, ":root")).toContain("--surface: #faf8f2");
+  });
+
+  test("exposes the skin as Tailwind theme keys", () => {
+    for (const line of [
+      "--color-ink: var(--ink);",
+      "--color-paper: var(--paper);",
+      "--color-paper-2: var(--paper-2);",
+      "--shadow-hard: var(--shadow-hard);",
+      "--shadow-hard-lg: var(--shadow-hard-lg);",
+      "--shadow-hard-primary: var(--shadow-hard-primary);",
+      "--font-display: var(--font-anton)",
+    ]) {
+      expect(css).toContain(line);
+    }
+  });
+
+  test("ships the grain, cut and ribbon utilities with reduced-motion off switch", () => {
+    for (const rule of [".paper-grain::after", ".cut-top", ".cut-top-rl", "@keyframes ribbon-drift", ".ribbon-drift"]) {
+      expect(css).toContain(rule);
+    }
+    expect(css).toMatch(/prefers-reduced-motion: reduce\)\s*\{\s*\.ribbon-drift\s*\{\s*animation:\s*none/);
+  });
+});
+
+describe("root layout font", () => {
+  const layout = readFileSync(resolve(process.cwd(), "src/app/layout.tsx"), "utf8");
+
+  test("self-hosts Anton under --font-anton", () => {
+    expect(layout).toContain('from "next/font/google"');
+    expect(layout).toMatch(/Anton\(\{[^}]*variable:\s*"--font-anton"/);
+    expect(layout).toContain("anton.variable");
+  });
+});
+
 describe("SectionHead", () => {
   test("puts the heading, its tag and its note in one block", () => {
     render(<SectionHead title="구분별 요약" tag="실측" note="구분으로 먼저 접는다" />);
