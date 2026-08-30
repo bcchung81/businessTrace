@@ -48,7 +48,7 @@ export function EventTimeline({ events, path }: { events: EventRow[]; path: stri
                     href={item.link}
                     target="_blank"
                     rel="noreferrer"
-                    className="underline-offset-2 hover:underline"
+                    className="underline decoration-dotted underline-offset-2"
                   >
                     {item.label}
                   </a>

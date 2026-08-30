@@ -171,7 +171,7 @@ export function EventTable({
                           <div className="flex flex-wrap gap-1.5">
                             {row.event.evidence.map((item, index) =>
                               item.link ? (
-                                <a key={index} href={item.link} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+                                <a key={index} href={item.link} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2">
                                   {item.label}
                                 </a>
                               ) : (

@@ -32,6 +32,12 @@ describe("EventTimeline", () => {
     expect(within(screen.getAllByRole("listitem")[1]).getByRole("button", { name: "메모 저장" })).toBeInTheDocument();
   });
 
+  test("shows evidence links as underlined, not only on hover", () => {
+    render(<EventTimeline events={ROWS} path="/companies/1" />);
+
+    expect(screen.getByRole("link", { name: "기사" })).toHaveClass("underline");
+  });
+
   test("says so when a company has no events", () => {
     render(<EventTimeline events={[]} path="/companies/1" />);
     expect(screen.getByText(/기록된 사건이 없습니다/)).toBeInTheDocument();

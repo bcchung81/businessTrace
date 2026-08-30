@@ -44,6 +44,12 @@ describe("EventTable", () => {
     expect(screen.getByRole("row", { name: /조용한회사/ })).toHaveTextContent("무보도");
   });
 
+  test("shows evidence links as underlined, not only on hover", () => {
+    render(<EventTable events={[row({})]} silence={[]} now={NOW} />);
+
+    expect(screen.getByRole("link", { name: "대상" })).toHaveClass("underline");
+  });
+
   test("says the last event date when the window is empty", () => {
     render(<EventTable events={[]} silence={[]} lastEventAt="2026-07-14T00:00:00.000Z" />);
 
