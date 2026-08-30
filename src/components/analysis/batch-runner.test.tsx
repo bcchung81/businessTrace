@@ -35,6 +35,13 @@ describe("BatchRunner", () => {
     expect(screen.getByRole("checkbox", { name: "㈜가" })).toBeChecked();
   });
 
+  test("defaults the period to the last 90 days, editable", () => {
+    render(<BatchRunner candidates={CANDIDATES} />);
+    const start = screen.getByLabelText("시작일") as HTMLInputElement;
+    expect(start.value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(screen.getByText(/기본 최근 90일/)).toBeInTheDocument();
+  });
+
   test("starts preselected companies checked", () => {
     render(<BatchRunner candidates={CANDIDATES} preselected={[2]} />);
     expect(screen.getByRole("checkbox", { name: "㈜나" })).toBeChecked();
@@ -59,6 +66,8 @@ describe("BatchRunner", () => {
 
     const body = JSON.parse(String(fetchImpl.mock.calls[0][1]?.body));
     expect(body).toMatchObject({ companyIds: [1], stage: "news", limit: 50, force: true, naver: true, google: true });
+    expect(body.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(Date.now() - Date.parse(body.startDate)).toBeGreaterThan(89 * 86_400_000);
 
     await waitFor(() => expect(screen.getByRole("list", { name: "파이프라인 단계" })).toBeInTheDocument());
     const steps = within(screen.getByRole("list", { name: "파이프라인 단계" })).getAllByRole("listitem").map((li) => li.textContent);

@@ -30,7 +30,7 @@ export function BatchRunner({
 }) {
   const [selected, setSelected] = useState<Set<number>>(() => new Set(preselected));
   const [stage, setStage] = useState<BatchStage>(initialStage);
-  const [startDate, setStartDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState("");
   const [limit, setLimit] = useState(20);
   const [force, setForce] = useState(false);
@@ -152,11 +152,12 @@ export function BatchRunner({
             <div className="grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-1">
                 <span className="font-bold">시작일</span>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 text-[12px]" />
+                <Input type="date" aria-label="시작일" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 text-[12px]" />
+                <span className="text-[10.5px] text-muted-foreground">기본 최근 90일 — 오래된 기사는 사건 창에 들어오지 않는다</span>
               </label>
               <label className="flex flex-col gap-1">
                 <span className="font-bold">종료일</span>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-8 text-[12px]" />
+                <Input type="date" aria-label="종료일" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-8 text-[12px]" />
               </label>
             </div>
             <label className="flex items-center gap-2">

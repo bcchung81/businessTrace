@@ -47,6 +47,12 @@ describe("sortCards / filterCards", () => {
     expect(filterCards(cards, { missingBusinessNo: true }).map((c) => c.name)).toEqual(["알체라"]);
   });
 
+  it("remembers whether a company ever had an event, from the all-time list", () => {
+    const built = buildCompanyCards({ companies: [{ id: 9, name: "㈜조용", industry: null, businessNo: "1" }], events: [], series: [], news: [], verdicts: [], everEventIds: [9] });
+    expect(built[0].everHadEvents).toBe(true);
+    expect(buildCompanyCards({ companies: [{ id: 9, name: "㈜조용", industry: null, businessNo: "1" }], events: [], series: [], news: [], verdicts: [] })[0].everHadEvents).toBe(false);
+  });
+
   it("filters review-only from the ids a person must settle", () => {
     const flagged = cards.map((c) => ({ ...c, needsReview: c.name === "딥노이드" }));
     expect(filterCards(flagged, { reviewOnly: true }).map((c) => c.name)).toEqual(["딥노이드"]);

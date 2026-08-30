@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createCompanies, listCompanies, listYears } from "@/lib/repositories/companyRepository";
-import { listEvents } from "@/lib/repositories/eventRepository";
+import { listCompanyIdsWithEvents, listEvents } from "@/lib/repositories/eventRepository";
 import { listMentionArticles } from "@/lib/repositories/mentionArticles";
 import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listLatestVerifications } from "@/lib/repositories/verificationResult";
@@ -39,7 +39,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   const news = buildNewsCoverage(activeCompanies, graph.articles, now);
   const verdicts = (await listLatestVerifications(year)).map((row) => ({ companyId: row.companyId, verdict: row.status }));
   const review = await countReviewCompanies(year);
-  const cards = buildCompanyCards({ companies: activeCompanies, events, series, news: news.byCompany, verdicts, reviewIds: review.ids });
+  const cards = buildCompanyCards({ companies: activeCompanies, events, series, news: news.byCompany, verdicts, reviewIds: review.ids, everEventIds: await listCompanyIdsWithEvents(year) });
   const initialFilter = params.filter === "review" ? { reviewOnly: true } : {};
   const candidates = cards.map((card) => ({
     id: card.id,

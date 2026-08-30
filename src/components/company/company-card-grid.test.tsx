@@ -4,6 +4,7 @@ import { CompanyCardGrid } from "@/components/company/company-card-grid";
 import type { CompanyCardData } from "@/lib/services/companyCards";
 
 const card = (id: number, name: string, needsReview: boolean): CompanyCardData => ({
+  everHadEvents: false,
   id, name, industry: null, businessNo: "1", headcount: { latest: null, delta12m: null }, latestArticle: null,
   events30d: { alert: 0, notice: 0, positive: 0, info: 0 }, open: 0, worstSeverity: null, trust: null, needsReview,
 });

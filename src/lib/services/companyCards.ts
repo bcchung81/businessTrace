@@ -8,6 +8,7 @@ export type CompanyCardData = {
   headcount: { latest: number | null; delta12m: number | null }; latestArticle: string | null;
   events30d: Record<Severity, number>; open: number; worstSeverity: Severity | null; trust: Trust;
   needsReview: boolean;
+  everHadEvents: boolean;
 };
 export type CardSort = "triage" | "name" | "news";
 export type CardFilter = { noticeOnly?: boolean; positiveOnly?: boolean; missingBusinessNo?: boolean; reviewOnly?: boolean };
@@ -28,11 +29,13 @@ export function buildCompanyCards(input: {
   companies: Array<{ id: number; name: string; industry: string | null; businessNo: string | null }>;
   events: EventRow[]; series: CompanySeries[]; news: CompanyNews[]; verdicts: Array<{ companyId: number; verdict: Trust }>;
   reviewIds?: Iterable<number>;
+  everEventIds?: Iterable<number>;
 }): CompanyCardData[] {
   const seriesById = new Map(input.series.map((s) => [s.companyId, s]));
   const newsById = new Map(input.news.map((n) => [n.companyId, n]));
   const trustById = new Map(input.verdicts.map((v) => [v.companyId, v.verdict]));
   const reviewIds = new Set(input.reviewIds ?? []);
+  const everEventIds = new Set(input.everEventIds ?? []);
 
   return input.companies.map((company) => {
     const events = input.events.filter((e) => e.companyId === company.id);
@@ -44,6 +47,7 @@ export function buildCompanyCards(input: {
       headcount: headcount(seriesById.get(company.id)), latestArticle: newsById.get(company.id)?.latest ?? null,
       events30d, open: events.filter((e) => e.status === "open").length, worstSeverity: worst, trust: trustById.get(company.id) ?? null,
       needsReview: reviewIds.has(company.id),
+      everHadEvents: everEventIds.has(company.id) || events.length > 0,
     };
   });
 }

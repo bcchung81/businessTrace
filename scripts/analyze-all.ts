@@ -7,7 +7,7 @@ config({ quiet: true });
 
 /**
  * 판정이 없는 활성 기업을 차례로 수집 → 분석 → 검증한다. 이미 검증된 기업은 --force 없이는 건너뛴다.
- * 사용: npx tsx scripts/analyze-all.ts [연도] [기업당 기사수] [기업명 필터] [--force]
+ * 사용: npx tsx scripts/analyze-all.ts [연도] [기업당 기사수] [기업명 필터] [--force] [--since=YYYY-MM-DD]  (기본 최근 90일)
  */
 async function main() {
   const args = process.argv.slice(2);
@@ -16,6 +16,8 @@ async function main() {
   const year = Number(positional[0]) || new Date().getFullYear();
   const limit = Number(positional[1]) || 20;
   const only = (positional[2] ?? "").split(",").map((name) => name.trim()).filter(Boolean);
+  const sinceArg = args.find((arg) => arg.startsWith("--since="))?.slice("--since=".length);
+  const since = sinceArg ?? new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10);
 
   const user = await prisma.user.findFirst({ orderBy: { id: "asc" } });
   if (!user) throw new Error("관리자 계정이 없습니다. scripts/create-admin.ts 를 먼저 실행하세요.");
@@ -41,7 +43,7 @@ async function main() {
 
     let news;
     try {
-      news = (await collectNews({ query: company.name, limit })).items;
+      news = (await collectNews({ query: company.name, limit, startDate: since })).items;
     } catch (caught) {
       const reason = caught instanceof NewsRateLimitError ? "레이트리밋" : String(caught);
       tally.failed += 1;
