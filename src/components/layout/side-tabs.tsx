@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/companies", index: "02", label: "기업" },
   { href: "/ranking", index: "03", label: "랭킹" },
   { href: "/history", index: "04", label: "이력" },
+  { href: "/reports", index: "05", label: "리포트" },
 ] as const;
 
 /**
