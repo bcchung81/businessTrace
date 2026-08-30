@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { EvidenceGrid } from "@/components/company/evidence-grid";
+import { EvidenceGrid, EvidenceStrip } from "@/components/company/evidence-grid";
 import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
 
 const AT = new Date("2026-08-28T04:00:00Z");
@@ -76,5 +76,30 @@ describe("EvidenceGrid", () => {
 
     expect(screen.getByText("측정 불가")).toBeInTheDocument();
     expect(screen.getByText(/원천에 이 기업이 없다/)).toBeInTheDocument();
+  });
+});
+
+describe("EvidenceStrip", () => {
+  const SNAPSHOTS = [
+    snapshot({ source: "dart", status: "found", summary: "(주)엘리스그룹" }),
+    snapshot({ source: "dartFinance", status: "absent", summary: "재무제표 미공시 (비외감)" }),
+    snapshot({ source: "fsc", status: "pending", summary: "조회하지 않았다" }),
+    snapshot({ source: "nts", status: "found", summary: "계속사업자" }),
+    snapshot({ source: "narajangteo", status: "unmeasurable", summary: "조달 실적 없음" }),
+    snapshot({ source: "venture", status: "found", summary: "벤처투자유형" }),
+    snapshot({ source: "nps", status: "conflict", summary: "후보 8건" }),
+  ];
+
+  test("summarises the seven sources on one row with name, status and texture, keeping the full summary as a title", () => {
+    render(<EvidenceStrip snapshots={SNAPSHOTS} />);
+    const list = screen.getByRole("list", { name: "원천 대조 요약" });
+    expect(list).toHaveClass("grid-cols-7");
+    const items = within(list).getAllByRole("listitem");
+    expect(items).toHaveLength(7);
+    expect(items[0]).toHaveTextContent("DART");
+    expect(items[0]).toHaveTextContent("확인");
+    expect(items[1]).toHaveClass("hatch");
+    expect(items[1]).toHaveTextContent("결측");
+    expect(items[1]).toHaveAttribute("title", expect.stringContaining("재무제표"));
   });
 });

@@ -6,12 +6,11 @@ import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { buildExplanation } from "@/lib/repositories/explainInputs";
 import { buildDashboard } from "@/lib/services/dashboardSummary";
-import { AnalysisRunner } from "@/components/analysis/analysis-runner";
 import { ContributionBars } from "@/components/company/contribution-bars";
 import { OpinionCitations } from "@/components/company/opinion-citations";
 import { VerificationPanel } from "@/components/company/verification-panel";
 import { EventTimeline } from "@/components/company/event-timeline";
-import { EvidenceGrid } from "@/components/company/evidence-grid";
+import { EvidenceStrip } from "@/components/company/evidence-grid";
 import { RefreshSources } from "@/components/company/refresh-sources";
 import { HeadcountTrend } from "@/components/dashboard/headcount-trend";
 import { Panel } from "@/components/dashboard/panel";
@@ -63,26 +62,6 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         </div>
       </header>
 
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-[13px] font-semibold">공식 원천 대조</h2>
-          <span className="text-[11px] text-muted-foreground">
-            빈칸은 네 종류다 — 결측·측정 불가·충돌·미조회는 처방이 다르다
-          </span>
-        </div>
-        <EvidenceGrid snapshots={snapshots} />
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-[13px] font-semibold">뉴스 분석 실행</h2>
-          <span className="text-[11px] text-muted-foreground">
-            수집 → 분석 → 검증. 기사 결과는 도착하는 대로 쌓인다
-          </span>
-        </div>
-        <AnalysisRunner companies={[{ id: company.id, name: company.name }]} />
-      </section>
-
       <Panel
         title="기여도 · 인용 근거"
         tag="분석 산출"
@@ -91,6 +70,10 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
       >
         {explanation ? (
           <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1.5 pt-3">
+              <h3 className="text-[12px] font-bold">공식 원천 대조</h3>
+              <EvidenceStrip snapshots={snapshots} />
+            </div>
             <ContributionBars contributions={explanation.contributions} total={explanation.total} />
             <div className="grid gap-5 border-t border-hairline pt-4 md:grid-cols-[minmax(0,1fr)_280px]">
               <div className="flex flex-col gap-2">

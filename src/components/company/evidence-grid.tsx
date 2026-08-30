@@ -71,3 +71,39 @@ export function EvidenceGrid({ snapshots }: { snapshots: StoredSnapshot[] }) {
     </div>
   );
 }
+
+const SHORT_NAME: Record<SourceKey, string> = {
+  dart: "DART",
+  dartFinance: "재무제표",
+  fsc: "금융위",
+  nts: "국세청",
+  narajangteo: "나라장터",
+  venture: "벤처확인",
+  nps: "국민연금",
+};
+
+/**
+ * 원천 7개를 한 줄 7칸으로 줄인다 — 이름·상태·질감만 남기고 요약은 title 로 넘긴다.
+ * 기여도 패널 머리에 붙어 "무엇을 못 봤는지" 를 한눈에 준다. 빈칸 네 종류의 질감은 카드와 같다.
+ */
+export function EvidenceStrip({ snapshots }: { snapshots: StoredSnapshot[] }) {
+  const bySource = new Map(snapshots.map((snapshot) => [snapshot.source, snapshot]));
+  return (
+    <ul aria-label="원천 대조 요약" className="grid grid-cols-7 gap-1.5">
+      {(Object.keys(SHORT_NAME) as SourceKey[]).map((source) => {
+        const snapshot = bySource.get(source);
+        const status: SourceStatus = snapshot?.status ?? "pending";
+        return (
+          <li
+            key={source}
+            title={snapshot ? `${SOURCE_LABEL[source].name} · ${snapshot.summary} · ${day(snapshot.fetchedAt)}` : `${SOURCE_LABEL[source].name} · 미조회`}
+            className={`flex flex-col gap-0.5 rounded-none border-[1.5px] px-2 py-1.5 text-[11px] ${STATUS_CLASS[status]}`}
+          >
+            <span className="truncate font-semibold text-foreground">{SHORT_NAME[source]}</span>
+            <span className="font-bold">{STATUS_LABEL[status]}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
