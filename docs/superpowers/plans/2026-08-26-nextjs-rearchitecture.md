@@ -366,7 +366,7 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 - **커밋**: `feat: industry-weighted benchmarking ranking`
 
 #### Task 13: XAI 기여도 리포트 & AlphaSense형 인터랙티브 인용 UI
-- **파일**: `src/lib/services/explainer.ts`, `src/app/api/company/explain/route.ts`, UI(Recharts, `src/components/analysis/EvidenceHighlight.tsx`), 테스트
+- **파일**: `src/lib/services/explainer.ts`, `src/lib/repositories/explainInputs.ts`, `src/app/api/companies/[id]/explain/route.ts`, UI `src/components/company/{contribution-bars,opinion-citations,verification-panel}.tsx`(Recharts 미사용 — 막대는 div, 인용 매핑은 `containment` 바이그램·임계 0.5), 엑셀 "기여도" 시트, 테스트 — **완료 2026-08-30**, 실행 플랜 `docs/superpowers/plans/2026-08-30-explainer-citations.md`
 - **내용**:
   - 벤치마킹 총점을 지표별 기여도로 분해(규칙 기반, LLM 호출 없음), 근거 요약(뉴스 헤드라인 3건·DART 수치·검증상태) 조립. UI: 기여도 수평 막대 차트. 엑셀에 기여도 행 추가
   - **AlphaSense/Hebbia 벤치마킹 (인터랙티브 인용 UI)**:
