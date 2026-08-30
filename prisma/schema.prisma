@@ -72,6 +72,7 @@ model VerificationResult {
   unsupportedClaims String
   counterEvidence   String
   detailJson        String
+  usageJson         String?
   createdAt         DateTime    @default(now())
 }
 

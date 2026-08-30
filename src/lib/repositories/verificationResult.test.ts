@@ -74,6 +74,15 @@ describe("verification result repository", () => {
     expect(saved.evidenceMatch).toBeCloseTo(0.7);
   });
 
+  it("records the judge token usage so verification cost is visible per run", async () => {
+    const { company, user } = await seedCompanyWithUser("넷록스", 2024);
+    const run = await seedRun({ companyId: company.id, userId: user.id, status: "completed", createdAt: new Date() });
+
+    const saved = await saveVerification(run.id, output({ usage: { inputTokens: 21000, outputTokens: 9000, cacheReadTokens: 0 } }));
+
+    expect(JSON.parse(saved.usageJson ?? "null")).toEqual({ inputTokens: 21000, outputTokens: 9000, cacheReadTokens: 0 });
+  });
+
   it("keeps the counter evidence readable for the committee", async () => {
     const { company, user } = await seedCompanyWithUser("넷록스", 2024);
     const run = await seedRun({ companyId: company.id, userId: user.id, status: "completed", createdAt: new Date() });

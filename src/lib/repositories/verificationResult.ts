@@ -3,7 +3,7 @@ import type { VerificationOutput } from "@/lib/services/verification";
 import type { VerificationRow } from "@/lib/services/verdictRollup";
 
 /**
- * 검증 판정과 층별 점수를 저장한다. 재검증하면 덮어쓴다.
+ * 검증 판정과 층별 점수, judge 토큰 사용량을 저장한다. 재검증하면 덮어쓴다.
  */
 export async function saveVerification(analysisRunId: number, output: VerificationOutput) {
   const data = {
@@ -14,6 +14,7 @@ export async function saveVerification(analysisRunId: number, output: Verificati
     unsupportedClaims: JSON.stringify(output.unsupportedClaims),
     counterEvidence: JSON.stringify(output.counterEvidence),
     detailJson: JSON.stringify(output.detail),
+    usageJson: JSON.stringify(output.usage),
   };
 
   return prisma.verificationResult.upsert({
