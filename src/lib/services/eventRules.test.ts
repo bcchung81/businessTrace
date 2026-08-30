@@ -93,6 +93,18 @@ describe("extractSourceEvents", () => {
     expect(events).toEqual([expect.objectContaining({ kind: "closure", severity: "alert", title: "휴·폐업 — 폐업 · 2026-07-01", evidenceKey: "nts:폐업", occurredAt: new Date("2026-08-29T11:20:00.000Z") })]);
   });
 
+  it("dates the closure event by the tax office closure date, not the fetch time", () => {
+    const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("nts", "found", "폐업 · 20260710", { closedAt: "20260710" })] });
+
+    expect(events).toEqual([expect.objectContaining({ kind: "closure", severity: "alert", occurredAt: new Date("2026-07-10T00:00:00.000Z") })]);
+  });
+
+  it("falls back to the fetch time when the closure payload has no usable date", () => {
+    const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("nts", "found", "폐업 · 일자 미상", { closedAt: "미상" })] });
+
+    expect(events[0].occurredAt).toEqual(new Date("2026-08-29T11:20:00.000Z"));
+  });
+
   it("notices a venture certificate expiring within 60 days or already expired", () => {
     const soon = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("venture", "found", "벤처투자유형 · 2026-10-01 까지", { validUntil: "2026-10-01" })] });
     const far = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("venture", "found", "벤처투자유형 · 2027-03-01 까지", { validUntil: "2027-03-01" })] });

@@ -94,8 +94,14 @@ export function extractPensionEvents(input: { companyId: number; points: Pension
   return hit ? [hit] : [];
 }
 
+function dateFromYmd(raw: string | undefined): Date | null {
+  if (!raw || !/^\d{8}$/.test(raw)) return null;
+  return new Date(Date.UTC(Number(raw.slice(0, 4)), Number(raw.slice(4, 6)) - 1, Number(raw.slice(6, 8))));
+}
+
 /**
  * 원천 스냅샷에서 휴·폐업, 벤처확인 만료, 동명 타사 충돌을 뽑는다.
+ * 사건 날짜는 원천이 준 날짜(폐업일)를 우선하고, 없으면 조회 시각이다 — 조회일로 적으면 오래된 폐업이 새 사건처럼 보인다.
  */
 export function extractSourceEvents(input: { companyId: number; snapshots: StoredSnapshot[]; now: Date }): NewEvent[] {
   const events: NewEvent[] = [];
@@ -104,7 +110,8 @@ export function extractSourceEvents(input: { companyId: number; snapshots: Store
 
     if (snap.source === "nts" && /^(폐업|휴업)/.test(snap.summary)) {
       const state = snap.summary.split(" · ")[0];
-      events.push({ ...base, kind: "closure", severity: "alert", title: `휴·폐업 — ${snap.summary}`, evidenceKey: `nts:${state}`, evidence: [{ label: snap.summary, source: "nts" }] });
+      const closedAt = dateFromYmd((snap.payload as { closedAt?: string } | null)?.closedAt);
+      events.push({ ...base, occurredAt: closedAt ?? snap.fetchedAt, kind: "closure", severity: "alert", title: `휴·폐업 — ${snap.summary}`, evidenceKey: `nts:${state}`, evidence: [{ label: snap.summary, source: "nts" }] });
     }
 
     if (snap.source === "venture" && snap.status === "found") {
