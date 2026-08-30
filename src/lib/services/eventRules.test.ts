@@ -114,6 +114,19 @@ describe("extractSourceEvents", () => {
     expect(far).toEqual([]);
   });
 
+  it("raises an alert when the pension registry says the workplace withdrew", () => {
+    const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("nps", "found", "가입자 12명 · 625870", { withdrawnAt: "20260615" })] });
+
+    expect(events).toEqual([expect.objectContaining({ kind: "closure", severity: "alert", title: "연금 사업장 탈퇴 — 20260615", evidenceKey: "nps:탈퇴:20260615", occurredAt: new Date("2026-06-15T00:00:00.000Z") })]);
+    expect(events[0].evidence[0]).toEqual({ label: "연금 사업장 탈퇴 20260615", source: "nps" });
+  });
+
+  it("stays quiet on a pension snapshot without a withdrawal date", () => {
+    const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("nps", "found", "가입자 12명 · 625870", { subscribers: 12 })] });
+
+    expect(events).toEqual([]);
+  });
+
   it("notices a same-name conflict on source stages only", () => {
     const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("dart", "conflict", "이름이 정확히 맞는 기업이 없다 · 후보 1건"), snap("nts", "found", "계속사업자 · 일반과세자")] });
 

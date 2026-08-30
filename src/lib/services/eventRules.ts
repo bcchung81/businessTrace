@@ -114,6 +114,13 @@ export function extractSourceEvents(input: { companyId: number; snapshots: Store
       events.push({ ...base, occurredAt: closedAt ?? snap.fetchedAt, kind: "closure", severity: "alert", title: `휴·폐업 — ${snap.summary}`, evidenceKey: `nts:${state}`, evidence: [{ label: snap.summary, source: "nts" }] });
     }
 
+    if (snap.source === "nps") {
+      const withdrawnAt = (snap.payload as { withdrawnAt?: string } | null)?.withdrawnAt;
+      if (withdrawnAt) {
+        events.push({ ...base, occurredAt: dateFromYmd(withdrawnAt) ?? snap.fetchedAt, kind: "closure", severity: "alert", title: `연금 사업장 탈퇴 — ${withdrawnAt}`, evidenceKey: `nps:탈퇴:${withdrawnAt}`, evidence: [{ label: `연금 사업장 탈퇴 ${withdrawnAt}`, source: "nps" }] });
+      }
+    }
+
     if (snap.source === "venture" && snap.status === "found") {
       const validUntil = (snap.payload as { validUntil?: string } | null)?.validUntil;
       if (validUntil) {
