@@ -14,6 +14,8 @@ import { OpinionCitations } from "@/components/company/opinion-citations";
 import { VerificationPanel } from "@/components/company/verification-panel";
 import { EventTimeline } from "@/components/company/event-timeline";
 import { EvidenceStrip } from "@/components/company/evidence-grid";
+import { EmployeeCounts, FactsLine, FinanceLine, SourceDetails } from "@/components/company/company-facts";
+import { buildCompanyFacts } from "@/lib/services/companyFacts";
 import { RefreshSources } from "@/components/company/refresh-sources";
 import { HeadcountInline } from "@/components/dashboard/headcount-trend";
 import { Panel } from "@/components/dashboard/panel";
@@ -35,6 +37,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
   const events = await listEvents({ year: company.year, companyId: company.id });
   const explanation = await buildExplanation(company.id);
   const review = await buildReviewItems(company.id);
+  const facts = buildCompanyFacts({ businessNo: company.businessNo, snapshots });
 
   return (
     <div className="flex flex-col gap-8">
@@ -57,6 +60,8 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
             )}
             {company.industry ? <span> · {company.industry}</span> : null}
           </p>
+          <FactsLine facts={facts} />
+          <EmployeeCounts facts={facts} />
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -98,6 +103,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
             <div className="flex flex-col gap-1.5 pt-3">
               <h3 className="text-[12px] font-bold">공식 원천 대조</h3>
               <EvidenceStrip snapshots={snapshots} />
+              <SourceDetails details={facts.sourceDetails} />
             </div>
             <ContributionBars contributions={explanation.contributions} total={explanation.total} />
             <div className="grid gap-5 border-t border-hairline pt-4 md:grid-cols-[minmax(0,1fr)_280px]">
@@ -131,10 +137,8 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
                   )}
                 </dd>
                 <dt className="font-bold">DART 재무</dt>
-                <dd className="font-mono tabular-nums">
-                  {explanation.evidence.finance
-                    ? `${explanation.evidence.finance.fiscalYear} 매출 ${explanation.evidence.finance.revenue ?? "—"} · 영업이익 ${explanation.evidence.finance.operatingIncome ?? "—"} · 순이익 ${explanation.evidence.finance.netIncome ?? "—"}`
-                    : <span className="hatch px-2 font-sans text-muted-foreground">미공시</span>}
+                <dd>
+                  <FinanceLine facts={facts} />
                 </dd>
               </dl>
             </div>
