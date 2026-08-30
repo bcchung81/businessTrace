@@ -12,7 +12,7 @@ export function CompanyBulkForm({ year, action, notice }: CompanyBulkFormProps) 
   return (
     <form
       action={action}
-      className="flex flex-col gap-4 rounded-lg border border-border bg-background p-5"
+      className="flex flex-col gap-4 border-t-2 border-ink bg-background pt-4"
     >
       <div className="flex flex-col gap-1.5 sm:max-w-[160px]">
         <Label htmlFor="year" className="text-[13px]">
@@ -30,7 +30,7 @@ export function CompanyBulkForm({ year, action, notice }: CompanyBulkFormProps) 
           name="names"
           rows={8}
           placeholder={"크립토랩\n올림플래닛\n넷록스"}
-          className="min-h-36 rounded-md border border-input bg-transparent px-3 py-2 text-[13px] leading-relaxed shadow-xs outline-none placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30"
+          className="min-h-36 border-[1.5px] border-hairline bg-transparent px-3 py-2 text-[13px] leading-relaxed outline-none placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30"
           required
         />
         <p className="text-[12px] text-muted-foreground">
@@ -41,7 +41,7 @@ export function CompanyBulkForm({ year, action, notice }: CompanyBulkFormProps) 
       {notice ? (
         <p
           role="status"
-          className="rounded-md border border-primary/20 bg-accent px-3 py-2 text-[13px] text-accent-foreground"
+          className="border-l-2 border-primary bg-accent px-3 py-2 text-[13px] text-accent-foreground"
         >
           {notice}
         </p>

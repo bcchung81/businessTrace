@@ -9,7 +9,7 @@ function formatBusinessNo(businessNo: string | null) {
 export function CompanyTable({ companies }: { companies: CompanyModel[] }) {
   if (companies.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-background p-8 text-center">
+      <div className="border border-dashed border-hairline bg-background p-8 text-center">
         <p className="text-sm text-muted-foreground">등록된 기업이 없습니다.</p>
       </div>
     );
@@ -19,7 +19,7 @@ export function CompanyTable({ companies }: { companies: CompanyModel[] }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="overflow-x-auto rounded-lg border border-border bg-background">
+      <div className="overflow-x-auto border-t-2 border-ink bg-background">
         <table className="w-full border-collapse text-[13px]">
           <caption className="sr-only">등록된 분석 대상 기업 목록</caption>
           <thead>

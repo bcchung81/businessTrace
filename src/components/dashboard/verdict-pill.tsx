@@ -35,7 +35,7 @@ function Icon({ verdict }: { verdict: Verdict }) {
 export function VerdictPill({ verdict, className = "" }: { verdict: Verdict; className?: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full py-[2px] pl-1.5 pr-2 text-[11px] font-bold ${VERDICT_CLASS[verdict]} ${className}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-none py-[2px] pl-1.5 pr-2 text-[11px] font-bold ${VERDICT_CLASS[verdict]} ${className}`}
     >
       <Icon verdict={verdict} />
       {VERDICT_LABEL[verdict]}

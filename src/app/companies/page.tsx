@@ -53,20 +53,20 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
     <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
             {year}년 평가
           </p>
-          <h1 className="text-[24px] font-bold tracking-[-0.03em]">기업</h1>
+          <h1 className="font-display text-[36px] font-black leading-none tracking-[-0.04em]">기업</h1>
         </div>
         <div className="flex flex-wrap items-end gap-6">
           <dl className="flex items-end gap-6">
             <div className="flex flex-col gap-0.5">
               <dt className="text-[11px] text-muted-foreground">분석 대상</dt>
-              <dd className="font-mono text-[20px] font-semibold leading-none">{active}</dd>
+              <dd className="font-display text-[28px] font-black leading-none tracking-[-0.03em] tabular-nums">{active}</dd>
             </div>
             <div className="flex flex-col gap-0.5">
               <dt className="text-[11px] text-muted-foreground">등록 전체</dt>
-              <dd className="font-mono text-[20px] font-semibold leading-none text-muted-foreground">
+              <dd className="font-display text-[28px] font-black leading-none tracking-[-0.03em] tabular-nums text-muted-foreground">
                 {companies.length}
               </dd>
             </div>
@@ -82,7 +82,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
               key={entry}
               href={`/companies?year=${entry}`}
               aria-current={entry === year ? "page" : undefined}
-              className="rounded-md border border-border px-2.5 py-1 font-mono text-[12px] text-muted-foreground transition-colors hover:bg-surface aria-[current=page]:border-primary aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground"
+              className="-ml-px border-[1.5px] border-hairline px-2.5 py-1 font-mono text-[12px] font-bold text-muted-foreground transition-colors first:ml-0 hover:bg-secondary aria-[current=page]:border-ink aria-[current=page]:bg-ink aria-[current=page]:text-background"
             >
               {entry}
             </a>

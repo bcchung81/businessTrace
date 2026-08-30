@@ -21,10 +21,10 @@ const STATUS_LABEL: Record<SourceStatus, string> = {
 };
 
 const STATUS_CLASS: Record<SourceStatus, string> = {
-  found: "border-verified/30 bg-verified-surface text-verified",
+  found: "border-verified bg-verified-surface text-verified",
   absent: "hatch border-hairline text-muted-foreground",
-  unmeasurable: "border-dashed border-muted-foreground/60 text-muted-foreground",
-  conflict: "border-risk/35 bg-risk-surface text-risk",
+  unmeasurable: "border-dashed border-muted-foreground text-muted-foreground",
+  conflict: "border-risk bg-risk-surface text-risk",
   pending: "border-hairline bg-surface text-muted-foreground",
 };
 
@@ -39,7 +39,7 @@ function day(at: Date) {
 export function EvidenceGrid({ snapshots }: { snapshots: StoredSnapshot[] }) {
   if (snapshots.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border p-6 text-center text-[13px] text-muted-foreground">
+      <p className="border border-dashed border-hairline p-6 text-center text-[13px] text-muted-foreground">
         원천 조회를 아직 실행하지 않았습니다.
       </p>
     );
@@ -53,7 +53,7 @@ export function EvidenceGrid({ snapshots }: { snapshots: StoredSnapshot[] }) {
         return (
           <li
             key={snapshot.source}
-            className={`rounded-lg border px-3 py-2.5 ${STATUS_CLASS[snapshot.status]}`}
+            className={`rounded-none border-[1.5px] px-3 py-2.5 ${STATUS_CLASS[snapshot.status]}`}
           >
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-[12px] font-semibold text-foreground">{label.name}</span>

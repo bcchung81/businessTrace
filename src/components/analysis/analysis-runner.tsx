@@ -55,7 +55,7 @@ export function AnalysisRunner({
 
   if (companies.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border p-6 text-center text-[13px] text-muted-foreground">
+      <p className="border border-dashed border-hairline p-6 text-center text-[13px] text-muted-foreground">
         등록된 기업이 없습니다. 기업 등록에서 먼저 명단을 올리세요.
       </p>
     );
@@ -117,14 +117,14 @@ export function AnalysisRunner({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid gap-3 rounded-lg border border-border bg-background p-4 sm:grid-cols-4">
+      <div className="grid gap-3 border-[1.5px] border-ink bg-background p-4 sm:grid-cols-4">
         <label className="flex flex-col gap-1 text-[12px] font-medium">
           기업
           <select
             aria-label="기업"
             value={companyId}
             onChange={(event) => setCompanyId(Number(event.target.value))}
-            className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] font-normal"
+            className="border-[1.5px] border-hairline bg-background px-2.5 py-1.5 text-[13px] font-normal focus-visible:border-ink focus-visible:outline-none"
           >
             {companies.map((company) => (
               <option key={company.id} value={company.id}>
@@ -140,7 +140,7 @@ export function AnalysisRunner({
             type="date"
             value={startDate}
             onChange={(event) => setStartDate(event.target.value)}
-            className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] font-normal"
+            className="border-[1.5px] border-hairline bg-background px-2.5 py-1.5 text-[13px] font-normal focus-visible:border-ink focus-visible:outline-none"
           />
         </label>
         <label className="flex flex-col gap-1 text-[12px] font-medium">
@@ -150,7 +150,7 @@ export function AnalysisRunner({
             type="date"
             value={endDate}
             onChange={(event) => setEndDate(event.target.value)}
-            className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] font-normal"
+            className="border-[1.5px] border-hairline bg-background px-2.5 py-1.5 text-[13px] font-normal focus-visible:border-ink focus-visible:outline-none"
           />
         </label>
         <label className="flex flex-col gap-1 text-[12px] font-medium">
@@ -162,7 +162,7 @@ export function AnalysisRunner({
             max={100}
             value={limit}
             onChange={(event) => setLimit(Number(event.target.value))}
-            className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] font-normal tabular-nums"
+            className="border-[1.5px] border-hairline bg-background px-2.5 py-1.5 text-[13px] font-normal focus-visible:border-ink focus-visible:outline-none tabular-nums"
           />
         </label>
       </div>
@@ -177,7 +177,7 @@ export function AnalysisRunner({
         </span>
         {status ? (
           <span
-            className={`rounded-md px-2 py-0.5 text-[12px] font-semibold ${
+            className={`px-2 py-0.5 text-[12px] font-bold ${
               status === "검증 완료"
                 ? "bg-verified-surface text-verified"
                 : "bg-review-surface text-review"
@@ -201,14 +201,14 @@ export function AnalysisRunner({
               {state.current} / {state.total}
             </span>
           </div>
-          <div className="h-[6px] overflow-hidden rounded-full bg-surface shadow-[inset_0_0_0_1px_var(--hairline)]">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${ratio}%` }} />
+          <div className="h-2 overflow-hidden border border-hairline bg-surface">
+            <div className="h-full bg-primary" style={{ width: `${ratio}%` }} />
           </div>
         </div>
       ) : null}
 
       {state.log.length > 0 ? (
-        <ul className="flex flex-col gap-0.5 rounded-lg border border-border bg-surface p-3 font-mono text-[11.5px]">
+        <ul className="flex flex-col gap-0.5 border-l-2 border-ink bg-surface p-3 font-mono text-[11.5px]">
           {state.log.map((entry, index) => (
             <li
               key={`${index}-${entry.text}`}
@@ -227,7 +227,7 @@ export function AnalysisRunner({
       ) : null}
 
       {state.analyses.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-border bg-background">
+        <div className="overflow-x-auto border-t-2 border-ink bg-background">
           <table className="w-full text-[12.5px]">
             <caption className="sr-only">기사별 분석 결과</caption>
             <thead>
@@ -267,7 +267,7 @@ export function AnalysisRunner({
                     <td className="px-3 py-2">{analysis.investment.investment_name || "—"}</td>
                     <td className="px-3 py-2">
                       <span
-                        className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${
+                        className={`px-1.5 py-0.5 text-[11px] font-bold ${
                           analysis.isAboutCompany
                             ? "bg-verified-surface text-verified"
                             : "bg-surface text-muted-foreground"
@@ -285,7 +285,7 @@ export function AnalysisRunner({
       ) : null}
 
       {state.opinion ? (
-        <section className="rounded-lg border border-border bg-background p-4">
+        <section className="border-[1.5px] border-ink bg-background p-4">
           <h3 className="mb-2 text-[13px] font-semibold">종합의견</h3>
           <p className="text-[12.5px] leading-relaxed text-muted-foreground">{state.opinion}</p>
           {state.runId ? (

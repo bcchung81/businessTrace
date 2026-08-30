@@ -15,7 +15,7 @@ import { kstDate } from "@/lib/services/kst";
 export function EventTimeline({ events, path }: { events: EventRow[]; path: string }) {
   if (events.length === 0) {
     return (
-      <p className="rounded-[10px] p-6 text-center text-[13px] text-muted-foreground">
+      <p className="p-6 text-center text-[13px] text-muted-foreground">
         기록된 사건이 없습니다.
       </p>
     );
@@ -33,7 +33,7 @@ export function EventTimeline({ events, path }: { events: EventRow[]; path: stri
               <SeverityIcon severity={event.severity} />
               {KIND_LABEL[event.kind]}
             </span>
-            <Badge variant="ink">{trustLabel(event.trust)}</Badge>
+            <Badge variant="signal">{trustLabel(event.trust)}</Badge>
             <span>{STATUS_LABEL[event.status]}</span>
           </div>
 
@@ -67,7 +67,7 @@ export function EventTimeline({ events, path }: { events: EventRow[]; path: stri
               defaultValue={event.note ?? ""}
               placeholder="메모"
               rows={2}
-              className="w-full max-w-md rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px]"
+              className="w-full max-w-md border-[1.5px] border-hairline bg-background px-2.5 py-1.5 text-[12px] focus-visible:border-ink focus-visible:outline-none"
             />
           </EventReviewButtons>
         </li>

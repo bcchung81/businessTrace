@@ -34,7 +34,7 @@ function percent(ratio: number | null) {
 export function HeadcountTrend({ facets }: { facets: Facet[] }) {
   if (facets.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border p-6 text-center text-[13px] text-muted-foreground">
+      <p className="border border-dashed border-hairline p-6 text-center text-[13px] text-muted-foreground">
         저장된 연금 스냅샷이 없습니다. <code className="font-mono">npx tsx scripts/collect-pension.ts</code> 를 먼저 실행하세요.
       </p>
     );
@@ -43,7 +43,7 @@ export function HeadcountTrend({ facets }: { facets: Facet[] }) {
   return (
     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {facets.map((facet) => (
-        <li key={facet.companyId} className="rounded-lg border border-border bg-background p-3">
+        <li key={facet.companyId} className="border-t-2 border-ink bg-background pt-3">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-[13px] font-semibold">{facet.name}</span>
             <span className="font-mono text-[16px] font-bold tabular-nums">{facet.latest ?? "—"}</span>

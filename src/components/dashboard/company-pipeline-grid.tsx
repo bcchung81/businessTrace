@@ -1,5 +1,6 @@
 "use client";
 
+import { Segmented } from "@/components/ui/segmented";
 import { useState } from "react";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
 import type { CellState, PipelineCell } from "@/lib/repositories/companyPipeline";
@@ -116,7 +117,7 @@ export function CompanyPipelineGrid({
 
   if (rows.length === 0) {
     return (
-      <p className="rounded-[10px] border border-dashed border-border p-6 text-center text-[13px] text-muted-foreground">
+      <p className="border border-dashed border-hairline p-6 text-center text-[13px] text-muted-foreground">
         등록된 기업이 없습니다.
       </p>
     );
@@ -130,34 +131,23 @@ export function CompanyPipelineGrid({
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-end gap-1 border-b border-hairline px-3 py-2">
-        <div role="radiogroup" aria-label="정렬" className="flex items-center gap-1 rounded-[7px] bg-secondary p-0.5 text-[11.5px]">
-          {SORTS.map((entry) => {
-            const selected = entry.key === sort;
-            return (
-              <button
-                key={entry.key}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => {
-                  setSort(entry.key);
-                  setPage(0);
-                }}
-                className={`rounded-[5px] px-2.5 py-1 ${selected ? "bg-background font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.06)]" : "text-muted-foreground"}`}
-              >
-                {entry.label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="flex items-center justify-end gap-1 border-b border-hairline px-0 py-2">
+        <Segmented
+          label="정렬"
+          value={sort}
+          options={SORTS.map((entry) => ({ value: entry.key, label: entry.label }))}
+          onChange={(value) => {
+            setSort(value);
+            setPage(0);
+          }}
+        />
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full table-fixed text-[12px]">
           <caption className="sr-only">기업별 근거 매트릭스</caption>
           <thead>
-            <tr className="border-b border-border bg-surface text-[11px] text-muted-foreground">
+            <tr className="border-b-2 border-ink text-[11px] font-bold tracking-[0.06em] text-foreground">
               <th scope="col" className="w-[80px] px-2 py-2 text-left font-semibold">판정</th>
               <th scope="col" className="w-[136px] px-2 py-2 text-left font-semibold">기업</th>
               {STAGES.map((stage) => (
@@ -187,7 +177,7 @@ export function CompanyPipelineGrid({
                       <div
                         aria-label={`${entry.name} ${stage.short} ${STATE_LABEL[cell.state]}${cell.value ? ` ${cell.value}` : ""}`}
                         title={cell.note ? `${cell.value} · ${cell.note}` : cell.value}
-                        className={`rounded px-1.5 py-1 ${STATE_CLASS[cell.state]}`}
+                        className={`px-1.5 py-1 ${STATE_CLASS[cell.state]}`}
                       >
                         <span className={`block truncate text-[11px] font-semibold ${VALUE_CLASS[cell.state]}`}>
                           {compactValue(stage.key, cell)}
@@ -218,11 +208,11 @@ export function CompanyPipelineGrid({
         </table>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-surface px-3.5 py-2 text-[11px] text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-ink px-0 py-2.5 text-[11px] text-muted-foreground">
         <span className="flex flex-wrap items-center gap-3">
           {LEGEND.map((entry) => (
             <span key={entry.label} className="flex items-center gap-1.5">
-              <span aria-hidden className={`h-3 w-3 rounded-[3px] ${entry.swatch}`} />
+              <span aria-hidden className={`h-3 w-3 ${entry.swatch}`} />
               {entry.label}
             </span>
           ))}
@@ -230,11 +220,11 @@ export function CompanyPipelineGrid({
         </span>
         <span className="flex items-center gap-2">
           <span>{rows.length}개사</span>
-          <button type="button" onClick={() => setPage(current - 1)} disabled={current === 0} className="rounded-[5px] border border-border bg-background px-2 py-0.5 disabled:opacity-40">
+          <button type="button" onClick={() => setPage(current - 1)} disabled={current === 0} className="border-[1.5px] border-hairline bg-background px-2.5 py-0.5 font-bold disabled:opacity-40">
             이전
           </button>
           <span className="font-mono tabular-nums">{current + 1} / {pages}</span>
-          <button type="button" onClick={() => setPage(current + 1)} disabled={current >= pages - 1} className="rounded-[5px] border border-border bg-background px-2 py-0.5 disabled:opacity-40">
+          <button type="button" onClick={() => setPage(current + 1)} disabled={current >= pages - 1} className="border-[1.5px] border-hairline bg-background px-2.5 py-0.5 font-bold disabled:opacity-40">
             다음
           </button>
         </span>

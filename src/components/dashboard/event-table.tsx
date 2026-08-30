@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Segmented } from "@/components/ui/segmented";
 import { SeverityMark, trustLabel } from "@/components/dashboard/severity-ui";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { KIND_LABEL, compareSeverity, type EventKind, type Severity } from "@/lib/services/eventRules";
@@ -80,27 +81,16 @@ export function EventTable({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-wrap items-center gap-3 border-b border-hairline px-3 py-2 text-[11.5px]">
-        <div role="radiogroup" aria-label="기간" className="flex items-center gap-1 rounded-[7px] bg-secondary p-0.5">
-          {PERIODS.map((value) => {
-            const selected = value === period;
-            return (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => {
-                  setPeriod(value);
-                  setPage(0);
-                }}
-                className={`rounded-[5px] px-2.5 py-1 ${selected ? "bg-background font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.06)]" : "text-muted-foreground"}`}
-              >
-                {value}일
-              </button>
-            );
-          })}
-        </div>
+      <div className="flex flex-wrap items-center gap-3 border-b border-hairline px-0 py-2 text-[11.5px]">
+        <Segmented
+          label="기간"
+          value={String(period)}
+          options={PERIODS.map((value) => ({ value: String(value), label: `${value}일` }))}
+          onChange={(value) => {
+            setPeriod(Number(value) as (typeof PERIODS)[number]);
+            setPage(0);
+          }}
+        />
 
         {availableKinds.length > 0 ? (
           <fieldset className="flex flex-wrap items-center gap-2">
@@ -128,14 +118,14 @@ export function EventTable({
       </div>
 
       {combined.length === 0 ? (
-        <p className="rounded-[10px] p-6 text-center text-[13px] text-muted-foreground">{emptyMessage}</p>
+        <p className="p-6 text-center text-[13px] text-muted-foreground">{emptyMessage}</p>
       ) : (
         <>
           <div className="min-h-0 flex-1 overflow-x-auto">
             <table className="w-full text-[12px]">
               <caption className="sr-only">이달의 사건</caption>
               <thead>
-                <tr className="border-b border-border bg-surface text-[11px] text-muted-foreground">
+                <tr className="border-b-2 border-ink text-[11px] font-bold tracking-[0.06em] text-foreground">
                   <th scope="col" className="px-2 py-2 text-left font-semibold">날짜</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">기업</th>
                   <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">심각도</th>
@@ -157,7 +147,7 @@ export function EventTable({
                       <td className="whitespace-nowrap px-2 py-1.5">
                         <div className="flex items-center gap-1.5">
                           <SeverityMark severity={row.event.severity} />
-                          <Badge variant="ink">{trustLabel(row.event.trust)}</Badge>
+                          <Badge variant="signal">{trustLabel(row.event.trust)}</Badge>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{KIND_LABEL[row.event.kind]}</td>
@@ -203,12 +193,12 @@ export function EventTable({
           </div>
 
           {pages > 1 ? (
-            <div className="flex items-center justify-end gap-2 border-t border-hairline px-3 py-2 text-[11px] text-muted-foreground">
-              <button type="button" onClick={() => setPage(current - 1)} disabled={current === 0} className="rounded-[5px] border border-border bg-background px-2 py-0.5 disabled:opacity-40">
+            <div className="flex items-center justify-end gap-2 border-t border-hairline px-0 py-2 text-[11px] text-muted-foreground">
+              <button type="button" onClick={() => setPage(current - 1)} disabled={current === 0} className="border-[1.5px] border-hairline bg-background px-2.5 py-0.5 font-bold disabled:opacity-40">
                 이전
               </button>
               <span className="font-mono tabular-nums">{current + 1} / {pages}</span>
-              <button type="button" onClick={() => setPage(current + 1)} disabled={current >= pages - 1} className="rounded-[5px] border border-border bg-background px-2 py-0.5 disabled:opacity-40">
+              <button type="button" onClick={() => setPage(current + 1)} disabled={current >= pages - 1} className="border-[1.5px] border-hairline bg-background px-2.5 py-0.5 font-bold disabled:opacity-40">
                 다음
               </button>
             </div>

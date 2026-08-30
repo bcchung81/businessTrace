@@ -32,10 +32,10 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
     <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
             {company.year}년 평가
           </p>
-          <h1 className="text-[24px] font-bold tracking-[-0.03em]">{company.name}</h1>
+          <h1 className="font-display text-[36px] font-black leading-none tracking-[-0.04em]">{company.name}</h1>
           <p className="text-[12px] text-muted-foreground">
             {businessNo ? (
               <span className="font-mono">{businessNo}</span>
