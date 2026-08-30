@@ -36,6 +36,8 @@ model Company {
   sourceSnapshots  SourceSnapshot[]
   geocode          CompanyGeocode?
   events       Event[]
+  aliases      String?
+  sourceDecisions SourceDecision[]
 
   @@unique([name, year])
   @@index([year])
@@ -75,6 +77,9 @@ model VerificationResult {
   counterEvidence   String
   detailJson        String
   usageJson         String?
+  reviewedAt        DateTime?
+  reviewedBy        Int?
+  reviewNote        String?
   createdAt         DateTime    @default(now())
 }
 
@@ -182,4 +187,17 @@ model Event {
   @@unique([companyId, kind, evidenceKey])
   @@index([occurredAt])
   @@index([companyId, status])
+}
+
+model SourceDecision {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  source    String
+  value     String
+  label     String?
+  decidedAt DateTime @default(now())
+  decidedBy Int
+
+  @@unique([companyId, source])
 }
