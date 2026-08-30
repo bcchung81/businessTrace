@@ -177,6 +177,24 @@ describe("toSnapshots", () => {
     expect(find(rows, "dart")).toMatchObject({ status: "pending" });
   });
 
+  it("reads a matching financial-services number as agreement", () => {
+    const rows = toSnapshots(
+      evidence({ outline: { found: true, corpName: "옥타코", businessNo: "1018162201", employeeCount: null } }),
+      "1018162201",
+    );
+
+    expect(find(rows, "fsc")).toMatchObject({ status: "found", summary: "옥타코 · 1018162201 번호 일치" });
+  });
+
+  it("marks fsc as conflict when its number disagrees with the one already secured", () => {
+    const rows = toSnapshots(
+      evidence({ outline: { found: true, corpName: "옥타코", businessNo: "9999999999", employeeCount: null } }),
+      "1018162201",
+    );
+
+    expect(find(rows, "fsc")).toMatchObject({ status: "conflict", summary: "사업자번호 불일치 · 확보 1018162201 ↔ 금융위 9999999999" });
+  });
+
   it("holds a failed financial-services lookup at pending", () => {
     const rows = toSnapshots(
       evidence({ outline: { found: false, failed: true, employeeCount: null, reason: "금융위 응답 500" } }),

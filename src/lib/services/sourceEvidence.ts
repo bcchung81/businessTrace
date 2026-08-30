@@ -73,19 +73,29 @@ function dartFinance(financial: FinancialSummary | null): SnapshotRow {
     : { source: "dartFinance", status: "absent", summary: "재무제표 미공시 (비외감)", payload: financial };
 }
 
-function fsc(outline: CorpOutline | null): SnapshotRow {
+function fsc(outline: CorpOutline | null, businessNo: string | null): SnapshotRow {
   if (!outline) {
-    return { source: "fsc", status: "pending", summary: "DART 로 사업자번호를 확보해 조회하지 않았다", payload: null };
+    return { source: "fsc", status: "pending", summary: "조회하지 않았다", payload: null };
   }
   if (outline.failed) return failure("fsc", outline.reason, outline);
-  return outline.found
-    ? {
-        source: "fsc",
-        status: "found",
-        summary: `${outline.corpName ?? "기업"} · ${outline.businessNo ?? "번호 없음"}`,
-        payload: outline,
-      }
-    : { source: "fsc", status: "absent", summary: "금융위 명단에 없음", payload: outline };
+  if (!outline.found) return { source: "fsc", status: "absent", summary: "금융위 명단에 없음", payload: outline };
+  if (businessNo && outline.businessNo && outline.businessNo !== businessNo) {
+    return {
+      source: "fsc",
+      status: "conflict",
+      summary: `사업자번호 불일치 · 확보 ${businessNo} ↔ 금융위 ${outline.businessNo}`,
+      payload: outline,
+    };
+  }
+  return {
+    source: "fsc",
+    status: "found",
+    summary:
+      businessNo && outline.businessNo === businessNo
+        ? `${outline.corpName ?? "기업"} · ${businessNo} 번호 일치`
+        : `${outline.corpName ?? "기업"} · ${outline.businessNo ?? "번호 없음"}`,
+    payload: outline,
+  };
 }
 
 function nts(status: BusinessStatus | null): SnapshotRow {
@@ -166,14 +176,14 @@ function nps(workplace: NpsWorkplace): SnapshotRow {
 }
 
 /**
- * 원천별 조회 결과를 저장 가능한 스냅샷 행으로 접는다.
+ * 원천별 조회 결과를 저장 가능한 스냅샷 행으로 접는다. 확보한 사업자번호를 주면 금융위 번호와 대조한다.
  * 조회하지 못한 원천도 pending 으로 남긴다 — 행이 빠지면 화면에서 없는 줄도 모른다.
  */
-export function toSnapshots(evidence: Evidence): SnapshotRow[] {
+export function toSnapshots(evidence: Evidence, businessNo: string | null = null): SnapshotRow[] {
   return [
     dart(evidence.profile),
     dartFinance(evidence.financial),
-    fsc(evidence.outline),
+    fsc(evidence.outline, businessNo),
     nts(evidence.businessStatus),
     narajangteo(evidence.procurement),
     venture(evidence.certification),

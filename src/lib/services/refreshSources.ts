@@ -19,7 +19,7 @@ export async function refreshSourcesFor(companyId: number, deps: { collect?: typ
   if (!company) return null;
   const decisions = Object.fromEntries((await listSourceDecisions(companyId)).map((d) => [d.source, d.value])) as Decisions;
   const collected = await (deps.collect ?? collectEvidence)(company, undefined, decisions);
-  const snapshots = toSnapshots(collected.evidence);
+  const snapshots = toSnapshots(collected.evidence, collected.businessNo);
   await saveSourceSnapshots(companyId, snapshots);
   const stored = await listSourceSnapshots(companyId);
   await upsertEvents(extractSourceEvents({ companyId, snapshots: stored, now: new Date() }));

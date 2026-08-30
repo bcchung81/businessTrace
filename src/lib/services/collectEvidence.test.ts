@@ -34,17 +34,18 @@ function collectors(over: Partial<Collectors> = {}): Collectors {
 const COMPANY = { id: 1, name: "크립토랩", year: 2026 };
 
 describe("collectEvidence", () => {
-  it("skips the financial-services fallback when DART already gave the business number", async () => {
+  it("still asks the financial-services registry when DART already gave the business number — cross-checking, not fallback", async () => {
     const deps = collectors({
       getCompanyProfile: vi.fn(async () => ({ found: true, businessNo: "1208824298" })),
+      lookupCorpOutline: vi.fn(async () => ({ found: true, businessNo: "1208824298", employeeCount: 12 })),
     });
 
     const result = await collectEvidence(COMPANY, deps);
 
     expect(result.businessNo).toBe("1208824298");
     expect(result.businessNoSource).toBe("dart");
-    expect(deps.lookupCorpOutline).not.toHaveBeenCalled();
-    expect(result.evidence.outline).toBeNull();
+    expect(deps.lookupCorpOutline).toHaveBeenCalledWith("크립토랩");
+    expect(result.evidence.outline).toMatchObject({ found: true });
   });
 
   it("falls back to the financial-services registry when DART has no such company", async () => {
@@ -108,7 +109,7 @@ describe("collectEvidence", () => {
 
     expect(result.businessNo).toBe("1018162201");
     expect(result.businessNoSource).toBe("registry");
-    expect(deps.lookupCorpOutline).not.toHaveBeenCalled();
+    expect(deps.lookupCorpOutline).toHaveBeenCalledWith("동아사이언스");
     expect(deps.checkBusinessStatus).toHaveBeenCalledWith("1018162201");
   });
 
