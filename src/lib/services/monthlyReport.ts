@@ -30,10 +30,22 @@ function pensionLabel(ym: string | undefined): string {
   return ym ? `${ym.slice(0, 4)}-${ym.slice(4, 6)}` : "—";
 }
 
+const DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * ISO 시각을 KST 벽시계 날짜 `YYYY-MM-DD` 로 낸다 — UTC 로 슬라이스하면 자정 근처 날짜가 하루 어긋난다.
+ */
 function dateLabel(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  const parts = DATE_FORMATTER.formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 function styleHeaderRow(row: ExcelJS.Row) {
@@ -153,7 +165,7 @@ function writePromotionSheet(sheet: ExcelJS.Worksheet, events: EventRow[]) {
 }
 
 function writeCompanyStatusSheet(sheet: ExcelJS.Worksheet, cards: CompanyCardData[]) {
-  styleHeaderRow(sheet.addRow(["기업", "업종", "사업자번호", "가입자", "12개월 증감", "최근 보도", "판정"]));
+  styleHeaderRow(sheet.addRow(["기업", "업종", "사업자번호 유무", "가입자", "12개월 증감", "최근 보도", "판정"]));
   for (const card of cards) {
     sheet.addRow([
       card.name,

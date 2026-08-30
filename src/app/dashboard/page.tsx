@@ -12,6 +12,7 @@ import { getDashboardSummary } from "@/lib/services/dashboardSummary";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { formatRunTime } from "@/lib/services/formatRunTime";
 import { buildMatrixRows } from "@/lib/services/matrixRows";
+import { KST_OFFSET_MS } from "@/lib/services/monthlyReportData";
 import { buildNewsCoverage, isStale } from "@/lib/services/newsCoverage";
 import { rollupVerdicts } from "@/lib/services/verdictRollup";
 import { CompanyChips } from "@/components/dashboard/company-chips";
@@ -52,9 +53,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * DAY_MS);
   const since90 = new Date(now.getTime() - 90 * DAY_MS);
-  const thisMonth = { year: now.getFullYear(), month: now.getMonth() + 1 };
-  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonth = { year: lastMonthDate.getFullYear(), month: lastMonthDate.getMonth() + 1 };
+  const kstNow = new Date(now.getTime() + KST_OFFSET_MS);
+  const thisMonth = { year: kstNow.getUTCFullYear(), month: kstNow.getUTCMonth() + 1 };
+  const lastMonthDate = new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth() - 1, 1));
+  const lastMonth = { year: lastMonthDate.getUTCFullYear(), month: lastMonthDate.getUTCMonth() + 1 };
 
   const companies = await listCompanies({ year });
   const registry = companies.map((company) => ({ id: company.id, name: company.name, businessNo: company.businessNo ?? null }));
@@ -120,13 +122,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             </summary>
             <div className="absolute right-0 top-full z-10 mt-1 flex min-w-[7rem] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-md">
               <a
-                href={`/api/reports/monthly?year=${thisMonth.year}&month=${thisMonth.month}`}
+                href={`/api/reports/monthly?cohort=${year}&year=${thisMonth.year}&month=${thisMonth.month}`}
                 className="px-3.5 py-2 text-[12px] text-foreground hover:bg-surface"
               >
                 이번 달
               </a>
               <a
-                href={`/api/reports/monthly?year=${lastMonth.year}&month=${lastMonth.month}`}
+                href={`/api/reports/monthly?cohort=${year}&year=${lastMonth.year}&month=${lastMonth.month}`}
                 className="px-3.5 py-2 text-[12px] text-foreground hover:bg-surface"
               >
                 지난 달
