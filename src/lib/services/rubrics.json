@@ -1,0 +1,33 @@
+{
+  "formulaVersion": "rank-v1",
+  "default": {
+    "id": "default",
+    "name": "기본",
+    "industries": [],
+    "weights": { "sentiment": 0.3, "award": 0.2, "investment": 0.2, "finance": 0.2, "verification": 0.1 },
+    "riskPenalty": 0.15
+  },
+  "rubrics": [
+    {
+      "id": "ict",
+      "name": "ICT",
+      "industries": ["SW", "데이터", "클라우드", "사이버보안", "블록체인", "양자", "IoT", "AI", "미디어콘텐츠"],
+      "weights": { "sentiment": 0.25, "award": 0.2, "investment": 0.25, "finance": 0.15, "verification": 0.15 },
+      "riskPenalty": 0.15
+    },
+    {
+      "id": "manufacturing",
+      "name": "제조",
+      "industries": ["첨단로봇", "첨단모빌리티", "반도체", "제조"],
+      "weights": { "sentiment": 0.2, "award": 0.15, "investment": 0.15, "finance": 0.35, "verification": 0.15 },
+      "riskPenalty": 0.2
+    },
+    {
+      "id": "bio",
+      "name": "바이오",
+      "industries": ["의료/헬스케어", "바이오", "디지털헬스"],
+      "weights": { "sentiment": 0.2, "award": 0.25, "investment": 0.3, "finance": 0.1, "verification": 0.15 },
+      "riskPenalty": 0.2
+    }
+  ]
+}
