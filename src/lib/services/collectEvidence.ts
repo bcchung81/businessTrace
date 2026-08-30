@@ -18,6 +18,8 @@ export type Collectors = {
 
 export type BusinessNoSource = "registry" | "dart" | "fsc" | null;
 
+export type Decisions = { dart?: string; nps?: string };
+
 export type CollectedEvidence = {
   evidence: Evidence;
   businessNo: string | null;
@@ -37,13 +39,20 @@ const DEFAULT_COLLECTORS: Collectors = {
 /**
  * 한 기업의 모든 공식 원천을 모은다.
  * 사업자번호가 연쇄의 시작점이라 DART → 금융위 순으로 먼저 확보하고, 실패하면 번호가 필요한 원천은 건너뛴다.
+ * 운영자 결정이 있으면 DART 는 그 코드로(또는 미등록으로), 국민연금은 그 앞 6자리로 고정한다.
  */
 export async function collectEvidence(
   company: { name: string; year: number; businessNo?: string | null },
   deps: Collectors = DEFAULT_COLLECTORS,
+  decisions: Decisions = {},
 ): Promise<CollectedEvidence> {
   const known = company.businessNo ?? null;
-  const profile = await deps.getCompanyProfile(company.name);
+  const profile =
+    decisions.dart === "none"
+      ? { found: false, decidedAbsent: true, reason: "운영자가 DART 미등록으로 확정" }
+      : decisions.dart
+        ? await deps.getCompanyProfile(company.name, undefined, { corpCode: decisions.dart })
+        : await deps.getCompanyProfile(company.name);
   const outline = known || profile.businessNo ? null : await deps.lookupCorpOutline(company.name);
   const businessNo = known ?? profile.businessNo ?? outline?.businessNo ?? null;
   const businessNoSource: BusinessNoSource = known
@@ -59,7 +68,7 @@ export async function collectEvidence(
     businessNo ? deps.checkBusinessStatus(businessNo) : Promise.resolve(null),
     businessNo ? deps.getProcurementProfile(businessNo) : Promise.resolve(null),
     deps.findCertification(company.name, new Date()),
-    deps.lookupWorkplace(company.name, { businessNo: businessNo ?? undefined }),
+    deps.lookupWorkplace(company.name, { businessNo: decisions.nps ?? businessNo ?? undefined }),
   ]);
 
   return {

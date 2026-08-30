@@ -16,6 +16,7 @@ export type CompanyProfile = {
   ceoName?: string;
   industryCode?: string;
   candidates?: CorpCandidate[];
+  decidedAbsent?: boolean;
   failed?: boolean;
   reason?: string;
 };
@@ -72,8 +73,11 @@ function parseAmount(raw: unknown) {
 export async function getCompanyProfile(
   companyName: string,
   deps: DartDeps = {},
+  hints: { corpCode?: string } = {},
 ): Promise<CompanyProfile> {
-  const { candidates, exact } = await resolveCorp(companyName);
+  const { candidates, exact } = hints.corpCode
+    ? { candidates: [], exact: { corpCode: hints.corpCode, corpName: companyName.trim(), stockCode: null } }
+    : await resolveCorp(companyName);
 
   if (!exact) {
     if (candidates.length === 0) {

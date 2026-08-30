@@ -2,17 +2,12 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createCollectionRun } from "@/lib/repositories/analysisRun";
-import { updateCompany } from "@/lib/repositories/companyRepository";
-import { upsertEvents } from "@/lib/repositories/eventRepository";
-import { listSourceSnapshots, saveSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { defaultPipelineDeps } from "@/lib/services/analysisPipeline";
 import { readBatch } from "@/lib/services/batchRegistry";
 import { runBatch, type BatchTarget } from "@/lib/services/batchRun";
-import { collectEvidence } from "@/lib/services/collectEvidence";
 import { refreshCorpCodes } from "@/lib/services/dartCorpCode";
-import { extractSourceEvents } from "@/lib/services/eventRules";
 import { collectNews } from "@/lib/services/newsCollector";
-import { toSnapshots } from "@/lib/services/sourceEvidence";
+import { refreshSourcesFor } from "@/lib/services/refreshSources";
 import { createSseSink } from "@/lib/services/sse";
 
 const bodySchema = z.object({
@@ -25,17 +20,6 @@ const bodySchema = z.object({
   naver: z.boolean().default(true),
   google: z.boolean().default(true),
 });
-
-/**
- * 원천 대조 한 기업 — 기존 `/api/companies/[id]/dart` 와 같은 순서다.
- */
-async function refreshSources(target: BatchTarget) {
-  const { evidence, businessNo } = await collectEvidence({ name: target.name, year: target.year, businessNo: target.businessNo });
-  const snapshots = toSnapshots(evidence);
-  await saveSourceSnapshots(target.id, snapshots);
-  await upsertEvents(extractSourceEvents({ companyId: target.id, snapshots: await listSourceSnapshots(target.id), now: new Date() }));
-  await updateCompany(target.id, { businessNo: businessNo ?? target.businessNo });
-}
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -72,7 +56,7 @@ export async function POST(request: Request) {
           pipeline: defaultPipelineDeps(),
           collect: (options) => collectNews(options),
           collectOnly: createCollectionRun,
-          refreshSources,
+          refreshSources: (target) => refreshSourcesFor(target.id),
           isOpen: () => out.open,
         });
         for await (const event of events) out.send(event);

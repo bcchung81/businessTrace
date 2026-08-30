@@ -15,6 +15,7 @@ function company(patch: Partial<CompanyModel> = {}): CompanyModel {
     officialName: null,
     sector: null,
     ceoName: null,
+  aliases: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...patch,

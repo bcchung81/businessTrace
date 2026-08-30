@@ -85,6 +85,15 @@ describe("getCompanyProfile", () => {
   });
 });
 
+describe("getCompanyProfile with a corp code hint", () => {
+  it("skips name resolution and calls DART with that code", async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request) => Response.json({ status: "000", corp_name: "주식회사 가", bizr_no: "1234567890" }));
+    const profile = await getCompanyProfile("㈜가", { fetchImpl }, { corpCode: "00123456" });
+    expect(profile).toMatchObject({ found: true, corpCode: "00123456", corpName: "주식회사 가", businessNo: "1234567890" });
+    expect(String(fetchImpl.mock.calls[0][0])).toContain("corp_code=00123456");
+  });
+});
+
 describe("getFinancialSummary", () => {
   it("extracts the four headline figures as numbers", async () => {
     const summary = await getFinancialSummary("올림플래닛", 2024, { fetchImpl: jsonFetch(FINANCE_OK) });

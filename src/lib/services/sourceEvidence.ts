@@ -54,6 +54,7 @@ function dart(profile: CompanyProfile): SnapshotRow {
       payload: profile,
     };
   }
+  if (profile.decidedAbsent) return { source: "dart", status: "absent", summary: profile.reason ?? "운영자가 DART 미등록으로 확정", payload: profile };
   return { source: "dart", status: "absent", summary: "DART 에 등록되지 않은 기업", payload: profile };
 }
 

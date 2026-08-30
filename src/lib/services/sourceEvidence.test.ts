@@ -219,4 +219,9 @@ describe("toSnapshots", () => {
 
     expect(find(rows, "dartFinance")).toMatchObject({ status: "pending" });
   });
+
+  it("reads an operator-decided absence as absent with that reason", () => {
+    const rows = toSnapshots(evidence({ profile: { found: false, decidedAbsent: true, reason: "운영자가 DART 미등록으로 확정" } }));
+    expect(find(rows, "dart")).toMatchObject({ status: "absent", summary: "운영자가 DART 미등록으로 확정" });
+  });
 });

@@ -133,4 +133,18 @@ describe("collectEvidence", () => {
     expect(result.businessNo).toBe("1018162201");
     expect(result.businessNoSource).toBe("registry");
   });
+
+  it("a DART 'none' decision skips the lookup and reads as absent by decision", async () => {
+    const deps = collectors();
+    const result = await collectEvidence({ name: "㈜가", year: 2026, businessNo: "1234567890" }, deps, { dart: "none" });
+    expect(deps.getCompanyProfile).not.toHaveBeenCalled();
+    expect(result.evidence.profile).toMatchObject({ found: false, decidedAbsent: true });
+  });
+
+  it("a DART corp code decision is passed as a hint and an NPS prefix pins the workplace", async () => {
+    const deps = collectors();
+    await collectEvidence({ name: "㈜가", year: 2026, businessNo: null }, deps, { dart: "00123456", nps: "625870" });
+    expect(deps.getCompanyProfile).toHaveBeenCalledWith("㈜가", undefined, { corpCode: "00123456" });
+    expect(deps.lookupWorkplace).toHaveBeenCalledWith("㈜가", { businessNo: "625870" });
+  });
 });
