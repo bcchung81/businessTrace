@@ -381,6 +381,10 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 - **검증**: 이력 저장/추이/카테고리 산출 테스트
 - **커밋**: `feat: selection history tracking and award categories`
 
+#### Task D: 기업 상세 "확인 필요" 블록 — **완료 2026-08-30**
+- **파일**: `prisma` SourceDecision · Company.aliases · VerificationResult.reviewed*, `src/lib/repositories/{sourceDecision,reviewItems}.ts`, `src/lib/services/{refreshSources,collectForCompany}.ts`, `src/app/companies/[id]/actions.ts`, `src/components/company/review-block.tsx`, 실행 플랜 `docs/superpowers/plans/2026-08-30-review-block.md`
+- **내용**: 동명 충돌 후보 확정(국민연금 앞 6자리·DART 고유번호/미등록)이 재조회에 고정됨 · 검증 검토 기록 · 미확인 경보·주의 사건 확인 · 검색 별칭(수집 질의에 합침) · 사업자번호 입력 후 즉시 원천 대조
+
 #### Task C: 일괄 분석 실행 화면 — **완료 2026-08-30**
 - **파일**: `src/lib/services/{batchRegistry,batchRun,batchProgress}.ts`, `src/app/api/analyze/{batch,status}/route.ts`, `src/components/analysis/batch-runner.tsx`, `src/components/layout/batch-indicator.tsx`, 실행 플랜 `docs/superpowers/plans/2026-08-30-batch-runner.md`
 - **내용**: `/companies` 에서 다중 선택 → SSE 로 순차 실행 · 4단 스테퍼 · 헤더 진행 배지(프로세스 메모리 레지스트리, 인스턴스 1개 전제) · 등록 직후 실행 링크. 자동 스케줄은 두지 않았다(사용자 결정)
