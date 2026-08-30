@@ -70,6 +70,19 @@ describe("event repository", () => {
     expect(await listEvents({ year: 2025, status: ["done"] })).toEqual([]);
   });
 
+  it("breaks a same-severity same-date tie by insertion order", async () => {
+    const a = await prisma.company.create({ data: { name: "가", year: 2025 } });
+    const sameDate = new Date("2026-08-20T00:00:00.000Z");
+    await upsertEvents([
+      fresh({ companyId: a.id, kind: "award", evidenceKey: "first", occurredAt: sameDate }),
+      fresh({ companyId: a.id, kind: "investment", evidenceKey: "second", occurredAt: sameDate }),
+    ]);
+
+    const rows = await listEvents({ year: 2025 });
+    expect(rows.map((r) => r.kind)).toEqual(["award", "investment"]);
+    expect(rows[0].id).toBeLessThan(rows[1].id);
+  });
+
   it("reports the newest event's date, not the most severe one's", async () => {
     const a = await prisma.company.create({ data: { name: "가", year: 2025 } });
     await upsertEvents([

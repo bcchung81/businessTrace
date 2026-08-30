@@ -87,7 +87,7 @@ export async function listEvents(input: { year: number; since?: Date; until?: Da
     },
     include: { company: { select: { name: true } } },
   });
-  return rows.map(toRow).sort((a, b) => compareSeverity(a.severity, b.severity) || b.occurredAt.localeCompare(a.occurredAt));
+  return rows.map(toRow).sort((a, b) => compareSeverity(a.severity, b.severity) || b.occurredAt.localeCompare(a.occurredAt) || a.id - b.id);
 }
 
 /**
