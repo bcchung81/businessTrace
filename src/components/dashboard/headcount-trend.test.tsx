@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { HeadcountTrend } from "@/components/dashboard/headcount-trend";
+import { HeadcountInline, HeadcountTrend } from "@/components/dashboard/headcount-trend";
 import type { Facet } from "@/lib/services/dashboardSummary";
 
 function facet(over: Partial<Facet> = {}): Facet {
@@ -39,5 +39,18 @@ describe("HeadcountTrend", () => {
     render(<HeadcountTrend facets={[]} />);
 
     expect(screen.getByText(/collect-pension/)).toBeInTheDocument();
+  });
+
+  test("inline variant sits beside a company name with count, direction in words, delta and range", () => {
+    render(<HeadcountInline facet={facet({ direction: "down", ratio: -0.16, latest: 190 })} />);
+    const group = screen.getByRole("group", { name: "고용 규모 12개월" });
+    expect(group).toHaveTextContent("가입자");
+    expect(group).toHaveTextContent("감소");
+    expect(group).toHaveTextContent("세로축 0부터");
+  });
+
+  test("inline variant says so when there is no snapshot instead of drawing an empty chart", () => {
+    render(<HeadcountInline facet={null} />);
+    expect(screen.getByRole("group", { name: "고용 규모 12개월" })).toHaveTextContent("연금 스냅샷 없음");
   });
 });

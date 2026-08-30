@@ -12,7 +12,7 @@ import { VerificationPanel } from "@/components/company/verification-panel";
 import { EventTimeline } from "@/components/company/event-timeline";
 import { EvidenceStrip } from "@/components/company/evidence-grid";
 import { RefreshSources } from "@/components/company/refresh-sources";
-import { HeadcountTrend } from "@/components/dashboard/headcount-trend";
+import { HeadcountInline } from "@/components/dashboard/headcount-trend";
 import { Panel } from "@/components/dashboard/panel";
 
 function formatBusinessNo(businessNo: string | null) {
@@ -39,7 +39,10 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
             {company.year}년 평가
           </p>
-          <h1 className="font-display text-[36px] font-black leading-none tracking-[-0.04em]">{company.name}</h1>
+          <div className="flex flex-wrap items-end gap-5">
+            <h1 className="font-display text-[36px] font-black leading-none tracking-[-0.04em]">{company.name}</h1>
+            <HeadcountInline facet={summary.facets.find((facet) => facet.companyId === company.id) ?? summary.facets[0] ?? null} />
+          </div>
           <p className="text-[12px] text-muted-foreground">
             {businessNo ? (
               <span className="font-mono">{businessNo}</span>
@@ -116,14 +119,6 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
           </div>
         ) : null}
       </Panel>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-[13px] font-semibold">고용 규모 12개월</h2>
-          <span className="text-[11px] text-muted-foreground">국민연금 가입 사업장 · 법인 단위 합산</span>
-        </div>
-        <HeadcountTrend facets={summary.facets} />
-      </section>
 
       <Panel title="사건 이력" note="원천·분석에서 추출한 기록 · 최신순">
         <EventTimeline events={events} />

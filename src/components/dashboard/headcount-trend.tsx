@@ -89,3 +89,41 @@ export function HeadcountTrend({ facets }: { facets: Facet[] }) {
     </ul>
   );
 }
+
+/**
+ * 기업명 옆에 붙는 고용 규모 요약 — 인원·방향(말로)·증감률·스파크라인·기간을 한 줄에.
+ * 스냅샷이 없으면 빈 차트 대신 "없음" 이라고 적는다.
+ */
+export function HeadcountInline({ facet }: { facet: Facet | null }) {
+  return (
+    <div role="group" aria-label="고용 규모 12개월" className="flex items-center gap-3 border-l-2 border-ink pl-3 text-[11px] text-muted-foreground">
+      {facet ? (
+        <>
+          <div className="flex flex-col">
+            <span className="font-bold tracking-[0.06em]">가입자</span>
+            <span className="font-display text-[22px] font-black leading-none tabular-nums text-foreground">{facet.latest ?? "—"}</span>
+          </div>
+          <div className="flex flex-col">
+            <span>{facet.points.length}개월 · {DIRECTION_LABEL[facet.direction]}</span>
+            <span style={{ color: DIRECTION_COLOR[facet.direction] }} className="font-mono text-[13px] font-semibold tabular-nums">
+              {percent(facet.ratio)}
+            </span>
+          </div>
+          <div className="h-8 w-[120px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={facet.points} margin={{ top: 2, right: 1, bottom: 0, left: 1 }}>
+                <YAxis hide domain={[0, "dataMax"]} />
+                <Line type="monotone" dataKey="subscribers" stroke={DIRECTION_COLOR[facet.direction]} strokeWidth={1.5} dot={false} connectNulls={false} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <span className="font-mono text-[10px] text-muted-foreground/70">
+            {facet.points.length > 0 ? `${label(facet.points[0].ym)} ~ ${label(facet.points[facet.points.length - 1].ym)} · 세로축 0부터` : null}
+          </span>
+        </>
+      ) : (
+        <span>연금 스냅샷 없음 · 국민연금 가입 사업장 기준</span>
+      )}
+    </div>
+  );
+}
