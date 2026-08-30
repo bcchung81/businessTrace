@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { INITIAL_RUN, reduceAnalysis, type RunState } from "@/lib/services/analysisProgress";
 import { createSseParser } from "@/lib/services/sse";
@@ -48,6 +49,7 @@ export function AnalysisRunner({
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<RunState>(INITIAL_RUN);
   const running = useRef<AbortController | null>(null);
+  const router = useRouter();
 
   useEffect(() => () => running.current?.abort(), []);
 
@@ -99,6 +101,8 @@ export function AnalysisRunner({
         }
         setState(current);
       }
+
+      if (current.phase === "done") router.refresh();
     } catch (caught) {
       if (controller.signal.aborted) return;
       setError(caught instanceof Error ? caught.message : "알 수 없는 오류");

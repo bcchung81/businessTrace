@@ -2,6 +2,8 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { describe, expect, test, vi } from "vitest";
 import { AnalysisRunner } from "@/components/analysis/analysis-runner";
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 const COMPANIES = [
   { id: 1, name: "크립토랩" },
   { id: 2, name: "올림플래닛" },

@@ -1,13 +1,16 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { listEvents } from "@/lib/repositories/eventRepository";
 import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { buildDashboard } from "@/lib/services/dashboardSummary";
 import { AnalysisRunner } from "@/components/analysis/analysis-runner";
+import { EventTimeline } from "@/components/company/event-timeline";
 import { EvidenceGrid } from "@/components/company/evidence-grid";
 import { RefreshSources } from "@/components/company/refresh-sources";
 import { HeadcountTrend } from "@/components/dashboard/headcount-trend";
+import { Panel } from "@/components/dashboard/panel";
 
 function formatBusinessNo(businessNo: string | null) {
   if (!businessNo) return null;
@@ -23,6 +26,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
   const series = await listPensionSeries(company.year);
   const summary = buildDashboard(series.filter((entry) => entry.companyId === company.id));
   const businessNo = formatBusinessNo(company.businessNo);
+  const events = await listEvents({ year: company.year, companyId: company.id });
 
   return (
     <div className="flex flex-col gap-8">
@@ -53,6 +57,10 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
           <RefreshSources companyId={company.id} />
         </div>
       </header>
+
+      <Panel title="사건 이력">
+        <EventTimeline events={events} path={`/companies/${company.id}`} />
+      </Panel>
 
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline gap-2">
