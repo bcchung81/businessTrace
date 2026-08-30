@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db";
-
-const KST_OFFSET_MS = 9 * 3_600_000;
+import { KST_OFFSET_MS } from "@/lib/services/kst";
 import { SOURCE_KEYS, type SnapshotRow, type SourceKey, type SourceStatus } from "@/lib/services/sourceEvidence";
 
 export type StoredSnapshot = {

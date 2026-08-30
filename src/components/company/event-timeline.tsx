@@ -5,6 +5,7 @@ import { EventReviewButtons } from "@/components/dashboard/event-review-buttons"
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { KIND_LABEL, type Severity, type Trust } from "@/lib/services/eventRules";
 import { STATUS_LABEL } from "@/lib/services/eventReview";
+import { kstDate } from "@/lib/services/kst";
 
 const SEVERITY_CLASS: Record<Severity, string> = {
   alert: "text-risk",
@@ -53,7 +54,7 @@ export function EventTimeline({ events, path }: { events: EventRow[]; path: stri
       {sorted.map((event) => (
         <li key={event.id} className="flex flex-col gap-2 border-b border-hairline pb-4 last:border-0 last:pb-0">
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="font-mono tabular-nums">{event.occurredAt.slice(0, 10)}</span>
+            <span className="font-mono tabular-nums">{kstDate(event.occurredAt)}</span>
             <span className={`flex items-center gap-1 font-semibold ${SEVERITY_CLASS[event.severity]}`}>
               <SeverityIcon severity={event.severity} />
               {KIND_LABEL[event.kind]}

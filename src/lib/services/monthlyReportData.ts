@@ -9,9 +9,8 @@ import { buildCoMentions } from "@/lib/services/coMention";
 import { buildCompanyCards, type CompanyCardData } from "@/lib/services/companyCards";
 import { getDashboardSummary } from "@/lib/services/dashboardSummary";
 import type { FreshnessInput } from "@/lib/services/freshness";
+import { KST_OFFSET_MS } from "@/lib/services/kst";
 import { buildNewsCoverage, isStale } from "@/lib/services/newsCoverage";
-
-export const KST_OFFSET_MS = 9 * 3_600_000;
 
 /**
  * 달력월(KST)의 시작·끝을 UTC 로 낸다. occurredAt 은 UTC 로 저장되므로 KST 자정 경계를 직접 보정해야 한다.

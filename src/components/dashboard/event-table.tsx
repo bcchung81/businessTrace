@@ -7,6 +7,7 @@ import { EventReviewButtons } from "@/components/dashboard/event-review-buttons"
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { KIND_LABEL, SEVERITY_LABEL, compareSeverity, type EventKind, type Severity, type Trust } from "@/lib/services/eventRules";
 import { STATUS_LABEL } from "@/lib/services/eventReview";
+import { kstMonthDay } from "@/lib/services/kst";
 
 const DAY_MS = 86_400_000;
 const PERIODS = [30, 90] as const;
@@ -21,10 +22,6 @@ const SEVERITY_CLASS: Record<Severity, string> = {
   positive: "text-verified",
   info: "text-muted-foreground",
 };
-
-function monthDay(iso: string) {
-  return iso.slice(5, 10);
-}
 
 function trustLabel(trust: Trust) {
   if (trust === "verified") return "근거 확인";
@@ -106,7 +103,7 @@ export function EventTable({
   }
 
   const emptyMessage = lastEventAt
-    ? `지난 ${period}일 사건 없음 · 마지막 사건 ${monthDay(lastEventAt)}`
+    ? `지난 ${period}일 사건 없음 · 마지막 사건 ${kstMonthDay(lastEventAt)}`
     : `지난 ${period}일 사건 없음`;
 
   return (
@@ -182,7 +179,7 @@ export function EventTable({
                 {pageRows.map((row) =>
                   row.type === "event" ? (
                     <tr key={`event-${row.event.id}`} className="border-b border-hairline align-middle last:border-0">
-                      <td className="px-2 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">{monthDay(row.event.occurredAt)}</td>
+                      <td className="px-2 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">{kstMonthDay(row.event.occurredAt)}</td>
                       <td className="px-2 py-1.5">
                         <Link href={`/companies/${row.event.companyId}`} className="font-semibold hover:underline">
                           {row.event.companyName}
@@ -223,7 +220,7 @@ export function EventTable({
                     </tr>
                   ) : (
                     <tr key={`silence-${row.companyId}`} className="border-b border-hairline align-middle text-muted-foreground last:border-0">
-                      <td className="px-2 py-1.5 font-mono text-[11px] tabular-nums">{row.latest ? monthDay(row.latest) : "—"}</td>
+                      <td className="px-2 py-1.5 font-mono text-[11px] tabular-nums">{row.latest ? kstMonthDay(row.latest) : "—"}</td>
                       <td className="px-2 py-1.5">
                         <Link href={`/companies/${row.companyId}`} className="font-semibold text-foreground hover:underline">
                           {row.companyName}
@@ -237,7 +234,7 @@ export function EventTable({
                       </td>
                       <td className="px-2 py-1.5">{KIND_LABEL.silence}</td>
                       <td className="px-2 py-1.5" colSpan={3}>
-                        {`무보도 — 최근 보도 ${row.latest ? monthDay(row.latest) : "없음"}`}
+                        {`무보도 — 최근 보도 ${row.latest ? kstMonthDay(row.latest) : "없음"}`}
                       </td>
                       <td className="px-2 py-1.5">—</td>
                       <td className="px-2 py-1.5" />

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { SEVERITY_LABEL, type Severity, type Trust } from "@/lib/services/eventRules";
+import { kstMonthDay } from "@/lib/services/kst";
 import type { CompanyCardData } from "@/lib/services/companyCards";
 
 const SEVERITY_CLASS: Record<Severity, string> = {
@@ -41,7 +42,7 @@ function headcountLabel(headcount: CompanyCardData["headcount"]) {
 }
 
 function monthDay(iso: string | null) {
-  return iso ? iso.slice(5, 10) : null;
+  return iso ? kstMonthDay(iso) : null;
 }
 
 /**

@@ -5,6 +5,7 @@ import { STATUS_LABEL } from "@/lib/services/eventReview";
 import { KIND_LABEL, SEVERITY_LABEL, type Severity, type Trust } from "@/lib/services/eventRules";
 import type { FreshnessInput } from "@/lib/services/freshness";
 import { formatRunTime } from "@/lib/services/formatRunTime";
+import { kstDate } from "@/lib/services/kst";
 import { HEADER_FILL, fitColumns } from "@/lib/services/reportExcel";
 
 export type MonthlyStats = {
@@ -30,22 +31,11 @@ function pensionLabel(ym: string | undefined): string {
   return ym ? `${ym.slice(0, 4)}-${ym.slice(4, 6)}` : "—";
 }
 
-const DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
-  timeZone: "Asia/Seoul",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-
 /**
- * ISO 시각을 KST 벽시계 날짜 `YYYY-MM-DD` 로 낸다 — UTC 로 슬라이스하면 자정 근처 날짜가 하루 어긋난다.
+ * ISO 시각을 KST 벽시계 날짜로 낸다.
  */
 function dateLabel(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  const parts = DATE_FORMATTER.formatToParts(date);
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}`;
+  return kstDate(iso);
 }
 
 function styleHeaderRow(row: ExcelJS.Row) {
