@@ -6,7 +6,7 @@ import { defaultPipelineDeps } from "@/lib/services/analysisPipeline";
 import { readBatch } from "@/lib/services/batchRegistry";
 import { runBatch, type BatchTarget } from "@/lib/services/batchRun";
 import { refreshCorpCodes } from "@/lib/services/dartCorpCode";
-import { collectNews } from "@/lib/services/newsCollector";
+import { collectForCompany } from "@/lib/services/collectForCompany";
 import { refreshSourcesFor } from "@/lib/services/refreshSources";
 import { createSseSink } from "@/lib/services/sse";
 
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     year: company.year,
     businessNo: company.businessNo,
     verified: company.analysisRuns.length > 0,
+    aliases: company.aliases,
   }));
   if (targets.length === 0) return Response.json({ message: "실행할 기업이 없습니다." }, { status: 400 });
   if (parsed.data.stage === "sources") await refreshCorpCodes();
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
         const events = runBatch(targets, parsed.data, {
           userId,
           pipeline: defaultPipelineDeps(),
-          collect: (options) => collectNews(options),
+          collect: ({ query, aliases, ...options }) => collectForCompany({ name: query, aliases }, options),
           collectOnly: createCollectionRun,
           refreshSources: (target) => refreshSourcesFor(target.id),
           isOpen: () => out.open,

@@ -2,7 +2,8 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { defaultPipelineDeps, runCompanyAnalysis } from "@/lib/services/analysisPipeline";
-import { NewsRateLimitError, collectNews } from "@/lib/services/newsCollector";
+import { collectForCompany } from "@/lib/services/collectForCompany";
+import { NewsRateLimitError } from "@/lib/services/newsCollector";
 import { createSseSink } from "@/lib/services/sse";
 
 const bodySchema = z.object({
@@ -24,8 +25,7 @@ export async function POST(request: Request) {
 
   let collected;
   try {
-    collected = await collectNews({
-      query: company.name,
+    collected = await collectForCompany(company, {
       startDate: parsed.data.startDate,
       endDate: parsed.data.endDate,
       limit: parsed.data.limit,

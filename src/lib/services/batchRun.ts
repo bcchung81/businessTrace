@@ -2,7 +2,7 @@ import { advanceBatch, finishBatch, startBatch, type BatchStage } from "@/lib/se
 import { runCompanyAnalysis, type PipelineDeps, type PipelineEvent, type PipelineOutcome } from "@/lib/services/analysisPipeline";
 import { NewsRateLimitError, type CollectResult } from "@/lib/services/newsCollector";
 
-export type BatchTarget = { id: number; name: string; year: number; businessNo: string | null; verified: boolean };
+export type BatchTarget = { id: number; name: string; year: number; businessNo: string | null; verified: boolean; aliases: string | null };
 export type BatchOptions = {
   stage: BatchStage;
   startDate?: string;
@@ -22,7 +22,7 @@ export type BatchEvent =
 export type BatchDeps = {
   userId: number;
   pipeline: PipelineDeps;
-  collect: (options: { query: string; startDate?: string; endDate?: string; limit: number; naver: boolean; google: boolean }) => Promise<CollectResult>;
+  collect: (options: { query: string; aliases: string | null; startDate?: string; endDate?: string; limit: number; naver: boolean; google: boolean }) => Promise<CollectResult>;
   collectOnly: (input: { companyId: number; userId: number; news: CollectResult["items"] }) => Promise<unknown>;
   refreshSources: (company: BatchTarget) => Promise<unknown>;
   isOpen?: () => boolean;
@@ -47,6 +47,7 @@ async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDep
   try {
     collected = await deps.collect({
       query: target.name,
+      aliases: target.aliases,
       startDate: options.startDate,
       endDate: options.endDate,
       limit: options.limit,
