@@ -6,7 +6,10 @@ import { latestEventAt, listEvents, summariseEvents } from "@/lib/repositories/e
 import { listLatestVerifications } from "@/lib/repositories/verificationResult";
 import { summariseRunActivity } from "@/lib/repositories/analysisRun";
 import { summariseSourceFreshness } from "@/lib/repositories/sourceSnapshot";
-import { buildFreshnessItems } from "@/lib/services/freshness";
+import { buildRibbonGroups } from "@/lib/services/freshness";
+import { countReviewCompanies, fullSourceRefreshAt, summariseCells, summariseCollection } from "@/lib/repositories/pipelineRepo";
+import { buildPipelineFacts } from "@/lib/services/pipelineFacts";
+import { PipelineBand } from "@/components/dashboard/pipeline-band";
 import { buildCoMentions } from "@/lib/services/coMention";
 import { getDashboardSummary } from "@/lib/services/dashboardSummary";
 import type { EventRow } from "@/lib/repositories/eventRepository";
@@ -80,59 +83,65 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const promoted = tallyByCompany(events30.filter((event) => event.severity === "positive"));
   const latestRun = verdicts.companies.map((entry) => entry.runAt).filter((value): value is string => value !== null).sort().at(-1) ?? null;
 
-  const ribbon = buildFreshnessItems({
+  const [collection, cells, fullRefreshAt, review] = await Promise.all([
+    summariseCollection(year),
+    summariseCells(year),
+    fullSourceRefreshAt(year),
+    countReviewCompanies(year),
+  ]);
+  const monthLabelOf = (y: number, m: number) => `${y}-${String(m).padStart(2, "0")}`;
+  const facts = buildPipelineFacts({
+    companies: companies.length,
+    articles: collection.articles,
+    duplicatesRemoved: 0,
+    analysed: collection.analysed,
+    noNews: collection.noNews,
+    running: activity.running,
+    latestRunAt: latestRun,
+    counts: verdicts.counts,
+    gateDropouts: verdicts.gateDropouts,
+    cells,
+    events30: events30.length,
+    staleNews: silence.length,
+    reviewCompanies: review.companies,
+    monthLabel: monthLabelOf(thisMonth.year, thisMonth.month),
+  });
+  const ribbon = buildRibbonGroups({
     now,
     latestNewsAt: activity.latestAt,
-    latestSourceAt: sourceFreshness.latestAt,
-    sourcesUpdatedToday: sourceFreshness.updatedOnLatestDay,
-    sourcesTotal: companies.length,
+    fullSourceRefreshAt: fullRefreshAt,
     pensionYm: summary.months.at(-1),
-    running: activity.running,
-    openEvents: eventSummary.open,
-    stale: silence.length,
+    reviewCompanies: review.companies,
+    openAlertNotice: review.openAlertNotice,
+    needsReview: review.needsReview,
+    year,
   });
 
   return (
     <div className="flex flex-col gap-12">
-      <div className="bg-band text-band-foreground">
-        <header className="grid gap-10 px-6 pb-8 pt-8 md:grid-cols-[minmax(0,1fr)_260px]">
-          <div className="flex flex-col">
-            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
-              {year}년 우수기업 · 지난 30일 동향
-            </span>
-            <h1 className="mb-3.5 mt-1.5 font-display text-[40px] md:text-[52px] font-black leading-[0.95] tracking-[-0.04em]">이달의 동향</h1>
-            <p className="text-[17px] md:text-[20px] font-medium leading-[1.35] tracking-[-0.01em] text-band-foreground/78">
-              {companies.length}개사 중 <b className="font-black text-band-foreground">{eventSummary.companiesWithEvents}개사</b>에 사건 · 주의{" "}
-              <b className="font-black text-[#FFB454]">{eventSummary.bySeverity.notice}</b> · 경보{" "}
-              <b className="font-black text-[#FF8080]">{eventSummary.bySeverity.alert}</b> · 홍보 후보{" "}
-              <b className="font-black text-[#49E57D]">{eventSummary.bySeverity.positive}</b> · 미확인{" "}
-              <b className="font-black text-band-foreground">{eventSummary.open}</b>
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 self-end">
-            <dl className="flex justify-between border-t border-band-foreground/25 py-1.5 text-[12px]">
-              <dt className="text-band-foreground/65">연금 스냅샷</dt>
-              <dd className="font-bold tabular-nums">{monthLabel(summary.months.at(-1))}</dd>
-            </dl>
-            <dl className="flex justify-between border-t border-band-foreground/25 py-1.5 text-[12px]">
-              <dt className="text-band-foreground/65">마지막 분석</dt>
-              <dd className="font-bold tabular-nums">{formatRunTime(latestRun)}</dd>
-            </dl>
+      <PipelineBand
+        year={year}
+        facts={facts}
+        summary={
+          <p className="text-[15px] font-medium leading-[1.35] text-band-foreground/78">
+            {companies.length}개사 중 <b className="font-black text-band-foreground">{eventSummary.companiesWithEvents}개사</b>에 사건 · 주의{" "}
+            <b className="font-black text-[#FFB454]">{eventSummary.bySeverity.notice}</b> · 경보{" "}
+            <b className="font-black text-[#FF8080]">{eventSummary.bySeverity.alert}</b> · 홍보 후보{" "}
+            <b className="font-black text-[#49E57D]">{eventSummary.bySeverity.positive}</b> · 미확인{" "}
+            <b className="font-black text-band-foreground">{eventSummary.open}</b>
+          </p>
+        }
+        aside={
+          <>
             <details className="group relative">
               <summary className="flex cursor-pointer select-none items-center justify-center border border-band-foreground/40 px-3.5 py-2.5 text-[13px] font-bold">
                 월간 문서 ▾
               </summary>
               <div className="absolute left-0 right-0 top-full z-10 mt-1 flex flex-col overflow-hidden border border-band-foreground/40 bg-band">
-                <a
-                  href={`/api/reports/monthly?cohort=${year}&year=${thisMonth.year}&month=${thisMonth.month}`}
-                  className="px-3.5 py-2 text-[12px] hover:bg-band-foreground/10"
-                >
+                <a href={`/api/reports/monthly?cohort=${year}&year=${thisMonth.year}&month=${thisMonth.month}`} className="px-3.5 py-2 text-[12px] hover:bg-band-foreground/10">
                   이번 달
                 </a>
-                <a
-                  href={`/api/reports/monthly?cohort=${year}&year=${lastMonth.year}&month=${lastMonth.month}`}
-                  className="px-3.5 py-2 text-[12px] hover:bg-band-foreground/10"
-                >
+                <a href={`/api/reports/monthly?cohort=${year}&year=${lastMonth.year}&month=${lastMonth.month}`} className="px-3.5 py-2 text-[12px] hover:bg-band-foreground/10">
                   지난 달
                 </a>
               </div>
@@ -145,13 +154,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 미분석 {verdicts.counts.pending}개사 보기
               </Link>
             ) : null}
-          </div>
-        </header>
-      </div>
+          </>
+        }
+      />
 
-      <Ribbon items={ribbon} className="-mt-12" />
+      <Ribbon groups={ribbon} className="-mt-12" />
 
-      <Panel index="01" title="이달의 사건" tag="실측" empty="등록된 기업이 없습니다.">
+      <Panel index="01" title="이달의 사건" tag="실측" empty="등록된 기업이 없습니다." className="scroll-mt-20" id="events">
         {companies.length === 0 ? null : <EventTable events={events} silence={silence} lastEventAt={lastEventAt} now={now} />}
       </Panel>
 

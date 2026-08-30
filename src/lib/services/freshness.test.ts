@@ -1,56 +1,62 @@
 import { describe, expect, it } from "vitest";
-import { buildFreshnessItems, nextPensionDate } from "@/lib/services/freshness";
+import { buildRibbonGroups, nextPensionDate } from "@/lib/services/freshness";
 
-const NOW = new Date("2026-08-29T03:00:00.000Z");
+const NOW = new Date("2026-08-30T03:00:00.000Z");
 
 describe("nextPensionDate", () => {
-  it("points at the 15th of the month after the latest snapshot", () => {
-    expect(nextPensionDate("202607")).toBe("08-15");
-    expect(nextPensionDate("202612")).toBe("01-15");
+  it("points at the 15th of the month after the latest snapshot when that is still ahead", () => {
+    expect(nextPensionDate("202607", new Date("2026-08-01T00:00:00Z"))).toBe("08-15");
+    expect(nextPensionDate("202612", new Date("2027-01-02T00:00:00Z"))).toBe("01-15");
+  });
+
+  it("never points into the past — it rolls forward to the next 15th", () => {
+    expect(nextPensionDate("202607", NOW)).toBe("09-15");
+    expect(nextPensionDate("202601", NOW)).toBe("09-15");
   });
 
   it("gives a dash when no snapshot exists", () => {
-    expect(nextPensionDate(undefined)).toBe("—");
+    expect(nextPensionDate(undefined, NOW)).toBe("—");
   });
 });
 
-describe("buildFreshnessItems", () => {
+describe("buildRibbonGroups", () => {
   const base = {
     now: NOW,
-    latestNewsAt: "2026-08-29T00:12:00.000Z",
-    latestSourceAt: "2026-08-28T13:19:00.000Z",
-    sourcesUpdatedToday: 50,
-    sourcesTotal: 50,
+    latestNewsAt: "2026-08-30T03:31:00.000Z",
+    fullSourceRefreshAt: "2026-08-28T13:19:00.000Z",
     pensionYm: "202607",
-    running: 0,
-    openEvents: 4,
-    stale: 30,
+    reviewCompanies: 12,
+    openAlertNotice: 16,
+    needsReview: 7,
+    year: 2025,
   };
 
-  it("leads with collection freshness in KST", () => {
-    const items = buildFreshnessItems(base);
-
-    expect(items[0]).toBe("뉴스 08-29 09:12");
-    expect(items[1]).toBe("원천 08-28 22:19 · 50/50");
-    expect(items[2]).toBe("연금 2026-07 · 다음 08-15");
+  it("leads with three reference dates carrying their age", () => {
+    const [dates] = buildRibbonGroups(base);
+    expect(dates.label).toBe("기준일");
+    expect(dates.items.map((i) => i.text)).toEqual(["뉴스 08-30 (오늘)", "원천 08-28 (2일 전)", "연금 2026-07 · 다음 적재 09-15"]);
+    expect(dates.items.every((i) => !i.stale)).toBe(true);
   });
 
-  it("shows running analyses only while something is running", () => {
-    expect(buildFreshnessItems(base)).not.toContain("실행 중 0");
-    expect(buildFreshnessItems({ ...base, running: 3 })).toContain("실행 중 3");
+  it("marks a reference older than 30 days as stale instead of colouring it", () => {
+    const [dates] = buildRibbonGroups({ ...base, fullSourceRefreshAt: "2026-07-01T00:00:00.000Z" });
+    expect(dates.items[1]).toMatchObject({ text: "원천 07-01 (60일 전) · 낡음", stale: true });
   });
 
-  it("ends with today's open-event and stale counts", () => {
-    const items = buildFreshnessItems(base);
-
-    expect(items.at(-2)).toBe("미확인 사건 4");
-    expect(items.at(-1)).toBe("낡은 근거 30");
+  it("ends with three things to do, each a link", () => {
+    const [, todo] = buildRibbonGroups(base);
+    expect(todo.label).toBe("할 일");
+    expect(todo.items).toEqual([
+      { text: "확인 필요 12개사", href: "/companies?year=2025&filter=review" },
+      { text: "미확인 경보·주의 16", href: "/dashboard?year=2025#events" },
+      { text: "검토 필요 7", href: "/ranking?year=2025" },
+    ]);
   });
 
-  it("dashes out collection times that never happened", () => {
-    const items = buildFreshnessItems({ ...base, latestNewsAt: null, latestSourceAt: null, sourcesUpdatedToday: 0 });
-
-    expect(items[0]).toBe("뉴스 —");
-    expect(items[1]).toBe("원천 — · 0/50");
+  it("keeps zero counts visible and dashes out dates that never happened", () => {
+    const [dates, todo] = buildRibbonGroups({ ...base, latestNewsAt: null, fullSourceRefreshAt: null, reviewCompanies: 0, openAlertNotice: 0, needsReview: 0 });
+    expect(dates.items[0].text).toBe("뉴스 —");
+    expect(dates.items[1].text).toBe("원천 —");
+    expect(todo.items.map((i) => i.text)).toEqual(["확인 필요 0개사", "미확인 경보·주의 0", "검토 필요 0"]);
   });
 });

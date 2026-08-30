@@ -15,6 +15,7 @@ export function Panel({
   footer,
   empty = "표시할 내용이 없습니다.",
   className = "",
+  id,
   children,
 }: {
   index?: string;
@@ -26,12 +27,13 @@ export function Panel({
   footer?: ReactNode;
   empty?: string;
   className?: string;
+  id?: string;
   children?: ReactNode;
 }) {
   const hasBody = children !== null && children !== undefined && children !== false;
 
   return (
-    <section className={`flex min-h-0 flex-col gap-3.5 border-t-4 border-ink pt-2.5 ${className}`}>
+    <section id={id} className={`flex min-h-0 flex-col gap-3.5 border-t-4 border-ink pt-2.5 ${className}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <SectionHead index={index} title={title} tag={tag} tone={tone} note={note} />
         {aside}
