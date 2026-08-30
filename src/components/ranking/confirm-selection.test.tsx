@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ConfirmSelection } from "@/components/ranking/confirm-selection";
 
-const confirm = vi.fn(async () => ({ ok: true as const, saved: 48 }));
+const confirm = vi.fn(async (_input: unknown) => ({ ok: true as const, saved: 48 }));
 vi.mock("@/app/ranking/actions", () => ({ confirmSelectionAction: (input: unknown) => confirm(input) }));
 
 describe("ConfirmSelection", () => {

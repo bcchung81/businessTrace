@@ -18,7 +18,7 @@ export function pivotEvents(events: EventRow[], year: number): { months: string[
       companyId: event.companyId,
       companyName: event.companyName,
       total: 0,
-      cells: months.map((ym) => ({ ym, total: 0, byKind: {} })),
+      cells: months.map((ym): PivotCell => ({ ym, total: 0, byKind: {} })),
     };
     const cell = row.cells[occurred.getUTCMonth()];
     cell.total += 1;

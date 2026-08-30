@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", index: "01", label: "동향" },
   { href: "/companies", index: "02", label: "기업" },
   { href: "/ranking", index: "03", label: "랭킹" },
+  { href: "/history", index: "04", label: "이력" },
 ] as const;
 
 /**
