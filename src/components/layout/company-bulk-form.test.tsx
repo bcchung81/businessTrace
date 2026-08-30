@@ -28,4 +28,10 @@ describe("CompanyBulkForm", () => {
 
     expect(screen.queryByRole("status")).toBeNull();
   });
+
+  it("offers to run the freshly registered companies right away", () => {
+    render(<CompanyBulkForm year={2026} notice="2건 등록" runHref="/companies?year=2026&run=5,6" />);
+
+    expect(screen.getByRole("link", { name: "지금 분석 실행" })).toHaveAttribute("href", "/companies?year=2026&run=5,6");
+  });
 });

@@ -59,4 +59,9 @@ describe("AppShell", () => {
 
     expect(within(screen.getByRole("main")).getByText("분석 결과 없음")).toBeInTheDocument();
   });
+
+  test("shows the running batch in the band", () => {
+    render(<AppShell batch={{ stage: "full", total: 2, done: 0, startedAt: "x", current: null }}>본문</AppShell>);
+    expect(within(screen.getByRole("banner")).getByRole("status")).toHaveTextContent("2개사 분석 중");
+  });
 });

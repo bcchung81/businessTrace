@@ -6,9 +6,10 @@ type CompanyBulkFormProps = {
   year: number;
   action?: (formData: FormData) => void | Promise<void>;
   notice?: string;
+  runHref?: string;
 };
 
-export function CompanyBulkForm({ year, action, notice }: CompanyBulkFormProps) {
+export function CompanyBulkForm({ year, action, notice, runHref }: CompanyBulkFormProps) {
   return (
     <form
       action={action}
@@ -44,6 +45,11 @@ export function CompanyBulkForm({ year, action, notice }: CompanyBulkFormProps) 
           className="border-l-2 border-primary bg-accent px-3 py-2 text-[13px] text-accent-foreground"
         >
           {notice}
+          {runHref ? (
+            <a href={runHref} className="ml-3 border-b border-primary font-bold text-primary">
+              지금 분석 실행
+            </a>
+          ) : null}
         </p>
       ) : null}
 

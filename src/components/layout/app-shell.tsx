@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BatchIndicator } from "@/components/layout/batch-indicator";
 import { SideTabs } from "@/components/layout/side-tabs";
+import type { BatchStatus } from "@/lib/services/batchRegistry";
 import { Wordmark } from "@/components/layout/wordmark";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, batch = null }: { children: ReactNode; batch?: BatchStatus | null }) {
   return (
     <div className="flex min-h-svh flex-col overflow-x-clip bg-background text-foreground">
       <header className="sticky top-0 z-10 bg-band text-band-foreground">
@@ -12,6 +14,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Wordmark height={22} />
             <span className="hidden text-[11px] text-band-foreground/65 sm:inline">우수기업 선정 근거 관리</span>
           </Link>
+          <BatchIndicator initial={batch} />
         </div>
       </header>
 

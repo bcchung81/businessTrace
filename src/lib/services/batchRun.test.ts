@@ -5,6 +5,7 @@ import { NewsRateLimitError } from "@/lib/services/newsCollector";
 import type { NewsItem } from "@/lib/services/newsTypes";
 
 const item: NewsItem = { title: "t", link: "https://n/1", description: "", content: "", published: "2026-08-01", source: "s", provider: "naver", titleMatch: true, mentions: 1, relevance: "primary" };
+const collected = () => ({ items: [item], duplicatesRemoved: 0, errors: [] as string[], primaryCount: 1, noNews: false });
 const targets: BatchTarget[] = [
   { id: 1, name: "㈜가", year: 2026, businessNo: "1", verified: false },
   { id: 2, name: "㈜나", year: 2026, businessNo: null, verified: true },
@@ -15,7 +16,7 @@ function deps(over: Partial<BatchDeps> = {}): BatchDeps {
   return {
     userId: 1,
     pipeline: { model: "m", analyze: vi.fn(), verify: vi.fn() },
-    collect: vi.fn(async () => ({ items: [item], duplicatesRemoved: 0, errors: [] })),
+    collect: vi.fn(async () => collected()),
     collectOnly: vi.fn(async () => ({})),
     refreshSources: vi.fn(async () => ({})),
     ...over,
@@ -91,7 +92,7 @@ describe("runBatch", () => {
       isOpen: () => open,
       collect: vi.fn(async () => {
         open = false;
-        return { items: [item], duplicatesRemoved: 0, errors: [] };
+        return collected();
       }),
     });
     const events = await drain(runBatch(targets, { ...options, force: true }, d));

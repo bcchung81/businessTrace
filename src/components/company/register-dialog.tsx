@@ -18,11 +18,13 @@ export function RegisterDialog({
   companies,
   action,
   notice,
+  runHref,
 }: {
   year: number;
   companies: CompanyModel[];
   action: (formData: FormData) => void | Promise<void>;
   notice?: string;
+  runHref?: string;
 }) {
   const [tab, setTab] = useState<Tab>(notice ? "register" : "manage");
 
@@ -52,7 +54,7 @@ export function RegisterDialog({
         </div>
 
         {tab === "register" ? (
-          <CompanyBulkForm year={year} action={action} notice={notice} />
+          <CompanyBulkForm year={year} action={action} notice={notice} runHref={runHref} />
         ) : (
           <div className="max-h-[60vh] overflow-y-auto">
             <CompanyTable companies={companies} />

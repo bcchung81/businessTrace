@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Gothic_A1 } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
+import { readBatch } from "@/lib/services/batchRegistry";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,7 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full">
-        <AppShell>{children}</AppShell>
+        <AppShell batch={readBatch()}>{children}</AppShell>
       </body>
     </html>
   );

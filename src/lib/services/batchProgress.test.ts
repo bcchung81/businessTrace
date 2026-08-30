@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { INITIAL_BATCH, reduceBatch, stepOf, STEP_ORDER } from "@/lib/services/batchProgress";
+import { INITIAL_BATCH, reduceBatch, stepOf, STEP_ORDER, type BatchState } from "@/lib/services/batchProgress";
 
 function feed(events: unknown[]) {
-  return events.reduce((state, event) => reduceBatch(state, event), INITIAL_BATCH);
+  return events.reduce<BatchState>((state, event) => reduceBatch(state, event), INITIAL_BATCH);
 }
 
 describe("reduceBatch", () => {

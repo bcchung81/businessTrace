@@ -60,7 +60,8 @@ describe("createCompanies", () => {
       names: ["크립토랩", " 올림플래닛 ", "넷록스", "", "페어리"],
     });
 
-    expect(result).toEqual({ created: 3, skipped: ["넷록스"] });
+    expect(result).toMatchObject({ created: 3, skipped: ["넷록스"] });
+    expect(result.createdIds).toHaveLength(3);
     expect(await prisma.company.count()).toBe(4);
   });
 

@@ -45,6 +45,7 @@ export async function createCompany(input: CompanyInput): Promise<CompanyResult>
  */
 export async function createCompanies(input: { year: number; names: string[] }) {
   const skipped: string[] = [];
+  const createdIds: number[] = [];
   let created = 0;
 
   for (const raw of input.names) {
@@ -52,11 +53,13 @@ export async function createCompanies(input: { year: number; names: string[] }) 
     if (!name) continue;
 
     const result = await createCompany({ name, year: input.year });
-    if (result.ok) created += 1;
-    else skipped.push(name);
+    if (result.ok) {
+      created += 1;
+      createdIds.push(result.company.id);
+    } else skipped.push(name);
   }
 
-  return { created, skipped };
+  return { created, skipped, createdIds };
 }
 
 /**
