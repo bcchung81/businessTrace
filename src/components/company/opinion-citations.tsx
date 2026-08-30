@@ -15,7 +15,7 @@ export function OpinionCitations({ sentences }: { sentences: CitedSentence[] }) 
       {sentences.map((entry, index) => {
         const cited = entry.snippets.length > 0;
         return (
-          <span key={index} className="relative">
+          <span key={index}>
             <span
               tabIndex={0}
               data-cited={cited ? "true" : "false"}
@@ -30,7 +30,7 @@ export function OpinionCitations({ sentences }: { sentences: CitedSentence[] }) 
             {open === index ? (
               <span
                 role="tooltip"
-                className="absolute left-0 top-full z-20 mt-1 flex w-[360px] flex-col gap-2 border-[1.5px] border-ink bg-background p-3 text-[12px] leading-snug"
+                className="absolute left-0 top-full z-20 mt-1 flex w-full max-w-[560px] flex-col gap-2 border-[1.5px] border-ink bg-background p-3 text-[12px] leading-snug"
               >
                 {cited ? (
                   entry.snippets.map((snippet) => (
