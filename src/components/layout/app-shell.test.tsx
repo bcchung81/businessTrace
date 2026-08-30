@@ -11,19 +11,14 @@ describe("AppShell", () => {
     ).toBeInTheDocument();
   });
 
-  test("shows only the two things this tool does — register companies and read the data", () => {
+  test("shows the three places this tool has — trends, companies, ranking", () => {
     render(<AppShell>본문</AppShell>);
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
 
-    expect(within(nav).getAllByRole("link")).toHaveLength(2);
-    expect(within(nav).getByRole("link", { name: "동향" })).toHaveAttribute(
-      "href",
-      "/dashboard",
-    );
-    expect(within(nav).getByRole("link", { name: "기업" })).toHaveAttribute(
-      "href",
-      "/companies",
-    );
+    expect(within(nav).getAllByRole("link")).toHaveLength(3);
+    expect(within(nav).getByRole("link", { name: "동향" })).toHaveAttribute("href", "/dashboard");
+    expect(within(nav).getByRole("link", { name: "기업" })).toHaveAttribute("href", "/companies");
+    expect(within(nav).getByRole("link", { name: "랭킹" })).toHaveAttribute("href", "/ranking");
   });
 
   test("renders its children inside the main region", () => {

@@ -5,6 +5,7 @@ import { Wordmark } from "@/components/layout/wordmark";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "동향" },
   { href: "/companies", label: "기업" },
+  { href: "/ranking", label: "랭킹" },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

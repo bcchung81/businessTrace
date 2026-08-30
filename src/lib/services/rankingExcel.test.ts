@@ -15,7 +15,7 @@ describe("ranking workbook", () => {
     );
     const buffer = await buildRankingWorkbook({ year: 2026, rows, weightLabel: weightLabel(book.default), formulaVersion: book.formulaVersion });
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(buffer as never);
     const sheet = workbook.getWorksheet("벤치마킹 랭킹")!;
 
     expect(String(sheet.getCell("A2").value)).toContain("감성 0.3 · 수상 0.2");
