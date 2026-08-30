@@ -163,4 +163,21 @@ describe("buildReport", () => {
 
     expect(workbook.getWorksheet("뉴스별 분석 결과")?.rowCount).toBe(1);
   });
+
+  it("adds a 기여도 sheet when contributions are given", async () => {
+    const workbook = await open(
+      await buildReport({
+        result: result(),
+        contributions: [
+          { key: "sentiment", label: "감성", normalised: 1, weight: 0.3, share: 0.6 },
+          { key: "award", label: "수상", normalised: null, weight: 0.2, share: null },
+        ],
+      }),
+    );
+    const sheet = workbook.getWorksheet("기여도")!;
+    expect(sheet.getRow(1).values).toEqual([undefined, "지표", "정규화", "가중치", "기여도"]);
+    expect(sheet.getCell("A2").value).toBe("감성");
+    expect(sheet.getCell("D2").value).toBe("60%");
+    expect(sheet.getCell("B3").value).toBe("—");
+  });
 });

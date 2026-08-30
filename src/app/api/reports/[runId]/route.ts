@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { buildExplanation } from "@/lib/repositories/explainInputs";
 import { findVerification } from "@/lib/repositories/verificationResult";
 import type { AnalysisResult } from "@/lib/services/analyzer";
 import { buildReport, reportFileName } from "@/lib/services/reportExcel";
@@ -30,7 +31,8 @@ export async function GET(_request: Request, context: RouteContext<"/api/reports
       }
     : undefined;
 
-  const buffer = await buildReport({ result, verification });
+  const explanation = await buildExplanation(run.companyId);
+  const buffer = await buildReport({ result, verification, contributions: explanation?.contributions });
   const filename = reportFileName(result.companyName, run.completedAt ?? new Date());
 
   return new Response(buffer as ArrayBuffer, {

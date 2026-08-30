@@ -1,3 +1,4 @@
+import type { Contribution } from "@/lib/services/explainer";
 import ExcelJS from "exceljs";
 import type { AnalysisResult, NewsAnalysis } from "@/lib/services/analyzer";
 import type { VerificationOutput } from "@/lib/services/verification";
@@ -213,9 +214,24 @@ function writeVerificationSheet(sheet: ExcelJS.Worksheet, verification?: Verific
  * 평가위원회 제출용 엑셀 리포트를 만든다.
  * 검증이 없으면 '검증 미실행' 을 명시한다. 빈칸으로 두면 통과로 오해된다.
  */
+function writeContributionSheet(sheet: ExcelJS.Worksheet, contributions: Contribution[]) {
+  sheet.getRow(1).values = ["지표", "정규화", "가중치", "기여도"];
+  sheet.getRow(1).font = { bold: true };
+  for (const entry of contributions) {
+    sheet.addRow([
+      entry.label,
+      entry.normalised === null ? "—" : Number(entry.normalised.toFixed(2)),
+      entry.weight,
+      entry.share === null ? "—" : `${Math.round(entry.share * 100)}%`,
+    ]);
+  }
+  fitColumns(sheet);
+}
+
 export async function buildReport(input: {
   result: AnalysisResult;
   verification?: VerificationOutput;
+  contributions?: Contribution[];
 }) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "성과돋보기";
@@ -224,6 +240,7 @@ export async function buildReport(input: {
   writeSummarySheet(workbook.addWorksheet("종합 분석 결과"), input.result);
   writeNewsSheet(workbook.addWorksheet("뉴스별 분석 결과"), input.result);
   writeVerificationSheet(workbook.addWorksheet("다차원 검증"), input.verification);
+  if (input.contributions) writeContributionSheet(workbook.addWorksheet("기여도"), input.contributions);
 
   return workbook.xlsx.writeBuffer();
 }

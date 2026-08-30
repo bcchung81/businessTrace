@@ -4,8 +4,12 @@ import { prisma } from "@/lib/db";
 import { listEvents } from "@/lib/repositories/eventRepository";
 import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
+import { buildExplanation } from "@/lib/repositories/explainInputs";
 import { buildDashboard } from "@/lib/services/dashboardSummary";
 import { AnalysisRunner } from "@/components/analysis/analysis-runner";
+import { ContributionBars } from "@/components/company/contribution-bars";
+import { OpinionCitations } from "@/components/company/opinion-citations";
+import { VerificationPanel } from "@/components/company/verification-panel";
 import { EventTimeline } from "@/components/company/event-timeline";
 import { EvidenceGrid } from "@/components/company/evidence-grid";
 import { RefreshSources } from "@/components/company/refresh-sources";
@@ -27,6 +31,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
   const summary = buildDashboard(series.filter((entry) => entry.companyId === company.id));
   const businessNo = formatBusinessNo(company.businessNo);
   const events = await listEvents({ year: company.year, companyId: company.id });
+  const explanation = await buildExplanation(company.id);
 
   return (
     <div className="flex flex-col gap-8">
@@ -81,6 +86,57 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         </div>
         <AnalysisRunner companies={[{ id: company.id, name: company.name }]} />
       </section>
+
+      <Panel
+        title="기여도 · 인용 근거"
+        tag="분석 산출"
+        note="감점 전 점수를 100% 로 나눈 몫 · 문장에 올리면 일치 기사 단락"
+        aside={explanation ? <VerificationPanel layers={explanation.layers} /> : null}
+      >
+        {explanation ? (
+          <div className="flex flex-col gap-5">
+            <ContributionBars contributions={explanation.contributions} total={explanation.total} />
+            <div className="grid gap-5 border-t border-hairline pt-4 md:grid-cols-[minmax(0,1fr)_280px]">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-[12px] font-bold">종합의견</h3>
+                {explanation.sentences.length === 0 ? (
+                  <p className="text-[12.5px] text-muted-foreground">분석을 아직 실행하지 않았다</p>
+                ) : (
+                  <OpinionCitations sentences={explanation.sentences} />
+                )}
+              </div>
+              <dl className="flex flex-col gap-2 text-[12px]">
+                <dt className="font-bold">헤드라인</dt>
+                <dd>
+                  {explanation.evidence.headlines.length === 0 ? (
+                    <span className="text-muted-foreground">없음</span>
+                  ) : (
+                    <ul className="flex flex-col gap-1">
+                      {explanation.evidence.headlines.map((headline) => (
+                        <li key={headline.link}>
+                          <a href={headline.link} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2">
+                            {headline.title}
+                          </a>{" "}
+                          <span className="font-mono text-[10.5px] text-muted-foreground">
+                            {headline.sentiment > 0 ? "+" : ""}
+                            {headline.sentiment}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </dd>
+                <dt className="font-bold">DART 재무</dt>
+                <dd className="font-mono tabular-nums">
+                  {explanation.evidence.finance
+                    ? `${explanation.evidence.finance.fiscalYear} 매출 ${explanation.evidence.finance.revenue ?? "—"} · 영업이익 ${explanation.evidence.finance.operatingIncome ?? "—"} · 순이익 ${explanation.evidence.finance.netIncome ?? "—"}`
+                    : <span className="hatch px-2 font-sans text-muted-foreground">미공시</span>}
+                </dd>
+              </dl>
+            </div>
+          </div>
+        ) : null}
+      </Panel>
 
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline gap-2">
