@@ -126,7 +126,7 @@ Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는
 
 **방향 B「신호(Signal)」** — `docs/superpowers/specs/2026-08-30-visual-redesign-design.md` 가 원천이다. 구현은 shadcn/ui + Tailwind v4 그대로다. Montage 토큰과 코믹북 층(크림지·잉크 2px·하드 그림자·Anton 리본)은 걷어냈다 — 다시 들이지 않는다.
 
-- 토큰은 `src/app/globals.css` 세 곳(`:root` · `.dark` · `@theme inline`)에 있다. band `#0B1220`(헤더 밴드) · ink/foreground `#0B1220` · hairline `#E3E5EA` · primary `#2B6BFF` 하나. 다크는 밴드를 배경보다 한 단계 더 어둡게 둔다
+- 토큰은 `src/app/globals.css` 세 곳(`:root` · `.dark` · `@theme inline`)에 있다. band `#0B1220`(헤더 밴드) · ink/foreground `#0B1220` · hairline `#E3E5EA` · primary `#2B6BFF` 하나. 다크는 밴드를 배경보다 한 단계 더 어둡게 둔다. 다크 전환은 토글이 아니라 `prefers-color-scheme` 을 따른다(`layout.tsx` 인라인 스크립트) — 설정 메뉴는 없다
 - 서체는 Pretendard 본문 + **Gothic A1 900** 디스플레이(`font-display` — H1·절 번호·절 제목·리본). Gothic A1 은 `next/font/google` 로 self-host 한다(`--font-gothic-a1`)
 - 절은 상자가 아니라 **4px 상단 괘선 + 큰 번호**(`Panel`·`SectionHead`)로 나뉜다. 배지·버튼·카드는 `signal`/`signal-outline` 변형 — 사각, 그림자 없음
 - 워드마크는 `src/components/layout/wordmark.tsx` 하나로 헤더·로그인에 쓴다. 브랜드색은 currentColor·primary 만

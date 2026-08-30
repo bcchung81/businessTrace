@@ -20,13 +20,18 @@ export const metadata: Metadata = {
   description: "뉴스·AI 기반 기업 분석 및 우수기업 선정 관리 시스템",
 };
 
+const THEME_SCRIPT =
+  "(function(){var m=window.matchMedia('(prefers-color-scheme: dark)');var r=document.documentElement;function a(){r.classList.toggle('dark',m.matches)}a();m.addEventListener('change',a)})();";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} ${gothicA1.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
