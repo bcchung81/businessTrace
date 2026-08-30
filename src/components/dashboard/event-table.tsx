@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { SeverityMark, trustLabel } from "@/components/dashboard/severity-ui";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { KIND_LABEL, compareSeverity, type EventKind, type Severity } from "@/lib/services/eventRules";
-import { STATUS_LABEL } from "@/lib/services/eventReview";
 import { kstMonthDay } from "@/lib/services/kst";
 
 const DAY_MS = 86_400_000;
@@ -144,7 +143,6 @@ export function EventTable({
                   <th scope="col" className="px-2 py-2 text-left font-semibold">사건</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">근거</th>
                   <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">신뢰</th>
-                  <th scope="col" className="w-[64px] whitespace-nowrap px-2 py-2 text-left font-semibold">상태</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,7 +180,6 @@ export function EventTable({
                       <td className="whitespace-nowrap px-2 py-1.5">
                         <Badge variant="ink">{trustLabel(row.event.trust)}</Badge>
                       </td>
-                      <td className="whitespace-nowrap px-2 py-1.5">{STATUS_LABEL[row.event.status]}</td>
                     </tr>
                   ) : (
                     <tr key={`silence-${row.companyId}`} className="border-b border-hairline align-middle text-muted-foreground last:border-0">
@@ -199,7 +196,6 @@ export function EventTable({
                       <td className="px-2 py-1.5" colSpan={3}>
                         {`무보도 — 최근 보도 ${row.latest ? kstMonthDay(row.latest) : "없음"}`}
                       </td>
-                      <td className="whitespace-nowrap px-2 py-1.5">—</td>
                     </tr>
                   ),
                 )}

@@ -10,14 +10,14 @@ function row(over: Partial<EventRow>): EventRow {
 }
 
 describe("EventTable", () => {
-  test("lists events with severity, kind, trust and status in words", () => {
+  test("lists events with severity, kind and trust in words — status is only a filter", () => {
     render(<EventTable events={[row({}), row({ id: 2, kind: "negative_press", severity: "notice", trust: "needs_review", title: "부정 보도 — 자본잠식", companyName: "한국첨단소재" })]} silence={[]} now={NOW} />);
     const rows = screen.getAllByRole("row").slice(1);
 
     expect(rows[0]).toHaveTextContent("주의");
     expect(rows[0]).toHaveTextContent("확인 필요");
     expect(rows[1]).toHaveTextContent("근거 확인");
-    expect(rows[1]).toHaveTextContent("미확인");
+    expect(screen.queryByRole("columnheader", { name: "상태" })).not.toBeInTheDocument();
   });
 
   test("has no action column — review happens on the company page", () => {
