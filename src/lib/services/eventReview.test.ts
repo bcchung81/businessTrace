@@ -7,6 +7,9 @@ describe("transition", () => {
     ["open", "done", "done"],
     ["acknowledged", "done", "done"],
     ["done", "reopen", "open"],
+    ["open", "note", "open"],
+    ["acknowledged", "note", "acknowledged"],
+    ["done", "note", "done"],
   ] as const)("%s + %s → %s", (from, action, to) => {
     expect(transition(from, action)).toBe(to);
   });

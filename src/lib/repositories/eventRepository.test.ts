@@ -102,4 +102,32 @@ describe("event repository", () => {
     await expect(reviewEvent(row.id, "reopen", null, user.id)).rejects.toThrow();
     expect((await listEvents({ year: 2025 }))[0].status).toBe("open");
   });
+
+  it("accepts a note on any status without changing it, keyed by the note's own value", async () => {
+    const a = await prisma.company.create({ data: { name: "가", year: 2025 } });
+    const user = await prisma.user.create({ data: { email: "r@example.com", passwordHash: "x" } });
+    await upsertEvents([fresh({ companyId: a.id })]);
+    const [row] = await listEvents({ year: 2025 });
+
+    const noted = await reviewEvent(row.id, "note", "확인 중", user.id);
+    expect(noted).toMatchObject({ status: "open", note: "확인 중" });
+
+    const preserved = await reviewEvent(row.id, "note", null, user.id);
+    expect(preserved).toMatchObject({ status: "open", note: "확인 중" });
+
+    const cleared = await reviewEvent(row.id, "note", "", user.id);
+    expect(cleared).toMatchObject({ status: "open", note: null });
+  });
+
+  it("keeps an existing note when a status transition passes no note", async () => {
+    const a = await prisma.company.create({ data: { name: "가", year: 2025 } });
+    const user = await prisma.user.create({ data: { email: "r@example.com", passwordHash: "x" } });
+    await upsertEvents([fresh({ companyId: a.id })]);
+    const [row] = await listEvents({ year: 2025 });
+
+    await reviewEvent(row.id, "acknowledge", "초기 메모", user.id);
+    const after = await reviewEvent(row.id, "done", null, user.id);
+
+    expect(after).toMatchObject({ status: "done", note: "초기 메모" });
+  });
 });

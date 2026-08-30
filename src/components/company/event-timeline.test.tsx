@@ -27,6 +27,11 @@ describe("EventTimeline", () => {
     expect(within(screen.getAllByRole("listitem")[1]).getByRole("button", { name: "되돌리기" })).toBeInTheDocument();
   });
 
+  test("offers to save a note even on a done event", () => {
+    render(<EventTimeline events={ROWS} path="/companies/1" />);
+    expect(within(screen.getAllByRole("listitem")[1]).getByRole("button", { name: "메모 저장" })).toBeInTheDocument();
+  });
+
   test("says so when a company has no events", () => {
     render(<EventTimeline events={[]} path="/companies/1" />);
     expect(screen.getByText(/기록된 사건이 없습니다/)).toBeInTheDocument();

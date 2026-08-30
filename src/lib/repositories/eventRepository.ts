@@ -105,13 +105,14 @@ export async function latestEventAt(year: number): Promise<string | null> {
 
 /**
  * 담당자 조치를 기록한다. 불허 전이는 저장 전에 던진다.
+ * `note` 는 `null` 이면 기존 메모를 그대로 두고, 빈 문자열이면 지우고, 그 밖의 문자열이면 저장한다.
  */
 export async function reviewEvent(id: number, action: ReviewAction, note: string | null, userId: number): Promise<EventRow> {
   const current = await prisma.event.findUniqueOrThrow({ where: { id }, select: { status: true } });
   const status = transition(current.status as EventStatus, action);
   const row = await prisma.event.update({
     where: { id },
-    data: { status, note: note ?? undefined, reviewedAt: new Date(), reviewedBy: userId },
+    data: { status, note: note === null ? undefined : note === "" ? null : note, reviewedAt: new Date(), reviewedBy: userId },
     include: { company: { select: { name: true } } },
   });
   return toRow(row);
