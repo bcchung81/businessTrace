@@ -42,7 +42,7 @@ describe("BatchRunner", () => {
   });
 
   test("posts the options, then shows the stepper, per-company progress and log; the only primary action while running is 중단", async () => {
-    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) =>
+    const fetchImpl = vi.fn(async (_url: string, _init?: RequestInit) =>
       sse([
         { type: "batch_start", total: 1, stage: "full" },
         { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
