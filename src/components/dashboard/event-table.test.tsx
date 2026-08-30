@@ -1,9 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { EventTable } from "@/components/dashboard/event-table";
 import type { EventRow } from "@/lib/repositories/eventRepository";
-
-vi.mock("@/app/dashboard/actions", () => ({ reviewEventAction: vi.fn() }));
 
 const NOW = new Date("2026-08-30T00:00:00.000Z");
 
@@ -22,13 +20,22 @@ describe("EventTable", () => {
     expect(rows[1]).toHaveTextContent("미확인");
   });
 
-  test("offers acknowledge and done for open events and nothing for done ones", () => {
-    render(<EventTable events={[row({}), row({ id: 2, status: "done" })]} silence={[]} now={NOW} />);
-    const rows = screen.getAllByRole("row").slice(1);
+  test("has no action column — review happens on the company page", () => {
+    render(<EventTable events={[row({})]} silence={[]} now={NOW} />);
 
-    expect(within(rows[0]).getByRole("button", { name: "확인" })).toBeInTheDocument();
-    expect(within(rows[0]).getByRole("button", { name: "조치완료" })).toBeInTheDocument();
-    expect(within(rows[1]).queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "조치" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "확인" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "딥노이드" })).toHaveAttribute("href", "/companies/1");
+  });
+
+  test("shows ten rows per page by default", () => {
+    const events = Array.from({ length: 12 }, (_, index) => row({ id: index + 1, title: `사건 ${index + 1}` }));
+    render(<EventTable events={events} silence={[]} now={NOW} />);
+
+    expect(screen.getAllByRole("row").slice(1)).toHaveLength(10);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getAllByRole("row").slice(1)).toHaveLength(2);
   });
 
   test("filters to open only and by kind", () => {

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { EventReviewButtons } from "@/components/dashboard/event-review-buttons";
 import { SeverityMark, trustLabel } from "@/components/dashboard/severity-ui";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { KIND_LABEL, compareSeverity, type EventKind, type Severity } from "@/lib/services/eventRules";
@@ -12,7 +11,6 @@ import { kstMonthDay } from "@/lib/services/kst";
 
 const DAY_MS = 86_400_000;
 const PERIODS = [30, 90] as const;
-const DASHBOARD_PATH = "/dashboard";
 
 type Silence = { companyId: number; companyName: string; latest: string | null };
 type DisplayRow = { type: "event"; event: EventRow } | ({ type: "silence" } & Silence);
@@ -28,11 +26,12 @@ function dateOf(row: DisplayRow): string {
 /**
  * 90일치 사건을 받아 기본 30일로 자르고 종류·미확인 여부로 거른다.
  * 무보도 기업은 기간과 무관하게 정보 행으로 늘 섞는다 — 조용함도 살펴야 할 상태다.
+ * 확인·조치는 기업 상세의 타임라인에서만 한다 — 이 표는 훑어보는 화면이다.
  */
 export function EventTable({
   events,
   silence,
-  pageSize = 20,
+  pageSize = 10,
   lastEventAt = null,
   now = new Date(),
 }: {
@@ -146,7 +145,6 @@ export function EventTable({
                   <th scope="col" className="px-2 py-2 text-left font-semibold">근거</th>
                   <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">신뢰</th>
                   <th scope="col" className="w-[64px] whitespace-nowrap px-2 py-2 text-left font-semibold">상태</th>
-                  <th scope="col" className="px-2 py-2 text-left font-semibold">조치</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,9 +183,6 @@ export function EventTable({
                         <Badge variant="ink">{trustLabel(row.event.trust)}</Badge>
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5">{STATUS_LABEL[row.event.status]}</td>
-                      <td className="px-2 py-1.5">
-                        <EventReviewButtons id={row.event.id} status={row.event.status} path={DASHBOARD_PATH} allowReopen={false} />
-                      </td>
                     </tr>
                   ) : (
                     <tr key={`silence-${row.companyId}`} className="border-b border-hairline align-middle text-muted-foreground last:border-0">
@@ -205,7 +200,6 @@ export function EventTable({
                         {`무보도 — 최근 보도 ${row.latest ? kstMonthDay(row.latest) : "없음"}`}
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5">—</td>
-                      <td className="px-2 py-1.5" />
                     </tr>
                   ),
                 )}
