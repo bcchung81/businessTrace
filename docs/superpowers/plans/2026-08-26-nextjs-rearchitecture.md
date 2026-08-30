@@ -355,7 +355,7 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 - **커밋**: `feat: risk monitoring with alerts and review workflow`
 
 #### Task 12: 벤치마킹 랭킹 (산업별 루브릭)
-- **파일**: `src/lib/services/benchmarking.ts`, `config/rubrics.json`, `src/app/api/companies/benchmark/route.ts`, UI(TanStack Table), 테스트
+- **파일**: `src/lib/services/benchmarking.ts`, `src/lib/services/rubrics.json`(`config/` 는 새 최상위 디렉터리라 두지 않았다), `src/lib/repositories/benchmarkInputs.ts`, `src/lib/services/rankingExcel.ts`, `src/app/api/companies/benchmark/route.ts`, `src/app/ranking/page.tsx` + `src/components/ranking/ranking-table.tsx`(자체 표 — Segmented·Panel 재사용, TanStack 미채택), 테스트 — **완료 2026-08-30**, 실행 플랜 `docs/superpowers/plans/2026-08-30-benchmarking-ranking.md`
 - **내용**:
   - 지표: 뉴스 감성, 수상·투자 실적, 재무(정규화 비율), 검증상태(verified 가점), 리스크(확인된 것만 감점)
   - **산업별 가중치 루브릭**을 JSON 설정으로 분리 (ICT/제조/바이오 등 — startup-evaluator 패턴 차용), Company.industry 필드 기반 적용
