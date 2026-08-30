@@ -11,19 +11,19 @@ describe("Ribbon", () => {
     expect(screen.getByRole("img", { name: "검증 통과 31 · 검토 12 · 리스크 3" })).toBeInTheDocument();
   });
 
-  test("repeats the run three times so the drift loops seamlessly", () => {
+  test("prints every item exactly once — the strip stands still", () => {
     render(<Ribbon items={ITEMS} />);
 
-    expect(screen.getAllByText("리스크 3")).toHaveLength(3);
+    expect(screen.getAllByText("리스크 3")).toHaveLength(1);
+    expect(screen.getByRole("img", { name: /검증 통과 31/ }).querySelector(".ribbon-drift")).toBeNull();
   });
 
-  test("lies flat and drifts unless motion is reduced", () => {
+  test("is the primary strip in the display face", () => {
     render(<Ribbon items={ITEMS} />);
     const band = screen.getByRole("img", { name: /검증 통과 31/ });
 
-    expect(band).toHaveClass("bg-primary", "border-ink");
-    expect(band).not.toHaveClass("-rotate-1");
-    expect(band.firstElementChild).toHaveClass("ribbon-drift", "hover:[animation-play-state:paused]", "font-display", "uppercase");
+    expect(band).toHaveClass("bg-primary", "text-primary-foreground");
+    expect(band.firstElementChild).toHaveClass("font-display");
     expect(band.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
 });

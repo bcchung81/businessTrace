@@ -12,16 +12,16 @@ export function CompanyChips({
   empty: string;
 }) {
   if (items.length === 0) {
-    return <p className="p-3.5 text-[12.5px] text-muted-foreground">{empty}</p>;
+    return <p className="py-2 text-[12.5px] text-muted-foreground">{empty}</p>;
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5 p-3.5">
+    <div className="flex flex-wrap gap-2.5 py-1">
       {items.map((item) => (
         <Link key={item.id} href={`/companies/${item.id}`}>
-          <Badge variant="ink" className="gap-1.5">
+          <Badge variant="signal-outline" className="gap-2 py-1 pl-2.5 pr-0 text-[12.5px]">
             {item.name}
-            <span className="font-mono tabular-nums">{item.count}</span>
+            <span className="bg-ink px-1.5 font-mono text-[11px] tabular-nums text-background">{item.count}</span>
           </Badge>
         </Link>
       ))}

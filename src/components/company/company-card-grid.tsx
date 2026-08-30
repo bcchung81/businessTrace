@@ -25,7 +25,7 @@ export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
             <Button
               key={option}
               type="button"
-              variant={sort === option ? "hard" : "hard-outline"}
+              variant={sort === option ? "signal" : "signal-outline"}
               size="sm"
               aria-pressed={sort === option}
               onClick={() => setSort(option)}
@@ -64,7 +64,7 @@ export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
       </div>
 
       {visible.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border bg-background p-8 text-center">
+        <div className="border border-dashed border-hairline bg-background p-8 text-center">
           <p className="text-sm text-muted-foreground">조건에 맞는 기업이 없습니다.</p>
         </div>
       ) : (

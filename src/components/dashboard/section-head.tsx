@@ -17,17 +17,15 @@ export function SectionHead({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap items-baseline gap-2">
+      <div className="flex flex-wrap items-baseline gap-3">
         {index ? (
-          <span className="font-mono text-[11px] font-semibold text-primary">{index}</span>
+          <span className="font-display text-[24px] font-black leading-none tracking-[-0.03em] tabular-nums">{index}</span>
         ) : null}
-        <h2 className="text-[15px] font-bold tracking-[-0.025em]">{title}</h2>
+        <h2 className="font-display text-[18px] font-black tracking-[-0.02em]">{title}</h2>
         {tag ? (
           <span
-            className={`rounded-full border px-2 py-[1px] text-[10.5px] font-bold tracking-[0.08em] ${
-              tone === "fresh"
-                ? "border-verified/40 bg-verified-surface text-verified"
-                : "border-border bg-background text-muted-foreground"
+            className={`border-[1.5px] px-2 py-[1px] text-[10.5px] font-bold tracking-[0.12em] ${
+              tone === "fresh" ? "border-verified text-verified" : "border-ink text-foreground"
             }`}
           >
             {tag}

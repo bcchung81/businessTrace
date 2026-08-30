@@ -56,11 +56,11 @@ export function VerdictBoard({
   const share = (verdict: Verdict) => (total === 0 ? 0 : Math.round((counts[verdict] / total) * 100));
 
   return (
-    <div className="flex flex-col gap-4 p-5">
+    <div className="flex flex-col gap-5 py-5">
       <div
         role="img"
         aria-label={`판정 비율 — ${BOARD_ORDER.map((v) => `${VERDICT_LABEL[v]} ${counts[v]}`).join(", ")}`}
-        className="flex h-3.5 gap-0.5 overflow-hidden rounded-md"
+        className="flex h-4 gap-0.5 overflow-hidden"
       >
         {BOARD_ORDER.map((verdict) => (
           <div
@@ -78,9 +78,9 @@ export function VerdictBoard({
             aria-label={TITLE[verdict]}
             className={`flex flex-col gap-1 border-l-[3px] pl-3 ${EDGE[verdict]}`}
           >
-            <span className="text-[11.5px] font-semibold text-muted-foreground">{TITLE[verdict]}</span>
+            <span className="text-[13px] font-black text-foreground">{TITLE[verdict]}</span>
             <span className="flex items-baseline gap-1.5">
-              <span className="font-mono text-[30px] font-semibold leading-none tabular-nums">{counts[verdict]}</span>
+              <span className="font-display text-[44px] font-black leading-none tracking-[-0.04em] tabular-nums">{counts[verdict]}</span>
               <span className="font-mono text-[12px] text-muted-foreground tabular-nums">{share(verdict)}%</span>
             </span>
             <span className="text-[11.5px] text-muted-foreground">{note(verdict, averageCitations)}</span>

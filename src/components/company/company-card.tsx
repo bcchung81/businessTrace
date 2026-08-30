@@ -28,13 +28,13 @@ export function CompanyCard({ card }: { card: CompanyCardData }) {
   const latest = monthDay(card.latestArticle);
 
   return (
-    <Card variant="comic" className="gap-2.5 p-4">
+    <Card variant="signal" className="gap-2.5 p-4">
       <div className="flex items-center gap-1.5 text-[12px]">
         {card.worstSeverity ? <SeverityMark severity={card.worstSeverity} /> : null}
         <Link href={`/companies/${card.id}`} className="flex-1 truncate font-semibold underline-offset-2 hover:underline">
           {card.name}
         </Link>
-        {trust ? <Badge variant="ink">{trust}</Badge> : null}
+        {trust ? <Badge variant="signal">{trust}</Badge> : null}
       </div>
 
       <p className="text-[12px] text-muted-foreground">
@@ -53,7 +53,7 @@ export function CompanyCard({ card }: { card: CompanyCardData }) {
       {card.businessNo ? null : <p className="text-[11.5px] font-medium text-review">사업자번호 미확보</p>}
 
       {card.open > 0 ? (
-        <Badge variant="ink" className="self-start">
+        <Badge variant="signal" className="self-start">
           {`미확인 ${card.open}`}
         </Badge>
       ) : null}

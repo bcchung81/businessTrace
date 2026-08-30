@@ -29,7 +29,7 @@ export function RegisterDialog({
   return (
     <Dialog defaultOpen={Boolean(notice)}>
       <DialogTrigger asChild>
-        <Button variant="hard">기업 등록</Button>
+        <Button variant="signal">기업 등록</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
@@ -44,7 +44,7 @@ export function RegisterDialog({
               role="tab"
               aria-selected={tab === option}
               onClick={() => setTab(option)}
-              className="rounded-md px-3 py-1.5 text-[13px] font-semibold text-muted-foreground aria-selected:bg-accent aria-selected:text-accent-foreground"
+              className="border-b-2 border-transparent px-3 py-1.5 text-[13px] font-bold text-muted-foreground aria-selected:border-ink aria-selected:text-foreground"
             >
               {TAB_LABEL[option]}
             </button>

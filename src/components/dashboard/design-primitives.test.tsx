@@ -41,62 +41,54 @@ describe("status tokens", () => {
   });
 });
 
-describe("skin tokens", () => {
+describe("signal skin tokens", () => {
   const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 
-  test("defines ink, paper and hard shadows in light and dark", () => {
+  test("defines the band, ink and hairline in light and dark", () => {
     for (const selector of [":root", ".dark"]) {
       const block = cssBlock(css, selector);
-      for (const token of ["--ink", "--paper", "--paper-2", "--shadow-hard", "--shadow-hard-lg"]) {
-        expect(block, `${selector} ${token}`).toMatch(new RegExp(`${token}:\\s*\\S`));
-      }
-      if (selector === ":root") {
-        expect(block, `${selector} --shadow-hard-primary`).toMatch(/--shadow-hard-primary:\s*\S/);
+      for (const token of ["--band", "--band-foreground", "--ink", "--hairline", "--surface"]) {
+        expect(block, `${selector} ${token}`).toMatch(new RegExp(`${token}:\\s*#`));
       }
     }
   });
 
-  test("swaps the grey surface for cream paper", () => {
-    expect(cssBlock(css, ":root")).toContain("--surface: #faf8f2");
+  test("keeps the band one step darker than the dark background so the header still reads", () => {
+    const dark = cssBlock(css, ".dark");
+    expect(dark).toContain("--background: #0f1523");
+    expect(dark).toContain("--band: #060a14");
   });
 
-  test("exposes the skin as Tailwind theme keys", () => {
+  test("exposes the skin as Tailwind theme keys and drops the comic layer", () => {
     for (const line of [
+      "--color-band: var(--band);",
+      "--color-band-foreground: var(--band-foreground);",
       "--color-ink: var(--ink);",
-      "--color-paper: var(--paper);",
-      "--color-paper-2: var(--paper-2);",
-      "--shadow-hard: var(--shadow-hard);",
-      "--shadow-hard-lg: var(--shadow-hard-lg);",
-      "--shadow-hard-primary: var(--shadow-hard-primary);",
-      '--font-display: var(--font-anton), var(--font-hangul-display), "Pretendard Variable"',
+      "--color-hairline: var(--hairline);",
+      '--font-display: var(--font-gothic-a1), "Pretendard Variable"',
     ]) {
       expect(css).toContain(line);
     }
+    for (const gone of ["--shadow-hard", "--paper", ".paper-grain", ".cut-top", "ribbon-drift", "--font-hangul-display", "--font-anton"]) {
+      expect(css).not.toContain(gone);
+    }
   });
 
-  test("ships the grain, cut and ribbon utilities with reduced-motion off switch", () => {
-    for (const rule of [".paper-grain::after", ".cut-top", ".cut-top-rl", "@keyframes ribbon-drift", ".ribbon-drift"]) {
-      expect(css).toContain(rule);
-    }
-    expect(css).toMatch(/prefers-reduced-motion: reduce\)\s*\{\s*\.ribbon-drift\s*\{\s*animation:\s*none/);
-    const grainRule = cssBlock(css, ".paper-grain::after");
-    expect(grainRule).toContain("border-radius: inherit");
+  test("keeps the hatch for missing values", () => {
+    expect(css).toContain(".hatch {");
   });
 });
 
 describe("root layout font", () => {
   const layout = readFileSync(resolve(process.cwd(), "src/app/layout.tsx"), "utf8");
-  const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 
-  test("self-hosts Anton under --font-anton", () => {
+  test("self-hosts Gothic A1 under --font-gothic-a1 with the black weight for display", () => {
     expect(layout).toContain('from "next/font/google"');
-    expect(layout).toMatch(/Anton\(\{[^}]*variable:\s*"--font-anton"/);
-    expect(layout).toContain("anton.variable");
-  });
-
-  test("pairs Anton with a Hangul display face so Korean ribbon text keeps the same weight", () => {
-    expect(layout).toContain("fonts.googleapis.com/css2?family=Black+Han+Sans");
-    expect(cssBlock(css, ":root")).toContain('--font-hangul-display: "Black Han Sans"');
+    expect(layout).toMatch(/Gothic_A1\(\{[^}]*variable:\s*"--font-gothic-a1"/);
+    expect(layout).toMatch(/Gothic_A1\(\{[^}]*"900"/);
+    expect(layout).toContain("gothicA1.variable");
+    expect(layout).not.toContain("Anton");
+    expect(layout).not.toContain("Black+Han+Sans");
   });
 });
 
@@ -153,12 +145,13 @@ describe("Panel", () => {
     expect(screen.queryByTestId("panel-footer")).not.toBeInTheDocument();
   });
 
-  test("wears the ink border and hard shadow", () => {
+  test("opens with a thick top rule instead of a boxed card", () => {
     render(<Panel title="판정 현황"><p>본문</p></Panel>);
+    const section = screen.getByRole("heading", { level: 2, name: "판정 현황" }).closest("section");
     const card = screen.getByText("본문").parentElement?.parentElement;
 
-    expect(card).toHaveClass("border-2", "border-ink", "shadow-hard");
-    expect(card).not.toHaveClass("border-border");
+    expect(section).toHaveClass("border-t-4", "border-ink");
+    expect(card).not.toHaveClass("shadow-hard", "border-2");
   });
 });
 

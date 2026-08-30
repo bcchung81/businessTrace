@@ -7,7 +7,7 @@ describe("AppShell", () => {
     render(<AppShell>본문</AppShell>);
 
     expect(
-      within(screen.getByRole("banner")).getByText("성과돋보기"),
+      within(screen.getByRole("banner")).getByText("성과돋보기", { selector: ".sr-only" }),
     ).toBeInTheDocument();
   });
 

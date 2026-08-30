@@ -43,12 +43,12 @@ export function EventReviewButtons({
       {actions.length > 0 || children ? (
         <div className="flex gap-1">
           {actions.map(([action, label]) => (
-            <Button key={action} type="submit" name="action" value={action} variant="hard-outline" size="xs">
+            <Button key={action} type="submit" name="action" value={action} variant="signal-outline" size="xs">
               {label}
             </Button>
           ))}
           {children ? (
-            <Button type="submit" name="action" value="note" variant="hard-outline" size="xs">
+            <Button type="submit" name="action" value="note" variant="signal-outline" size="xs">
               메모 저장
             </Button>
           ) : null}

@@ -93,60 +93,63 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   });
 
   return (
-    <div className="flex flex-col gap-9">
-      <header className="flex flex-wrap items-end justify-between gap-6">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-            {year}년 우수기업 · 지난 30일 동향
-          </span>
-          <h1 className="text-[24px] font-extrabold leading-[1.15] tracking-[-0.035em]">이달의 동향</h1>
-          <p className="text-[11.5px] text-muted-foreground">
-            {companies.length}개사 중 <b className="text-foreground">{eventSummary.companiesWithEvents}개사</b>에 사건 · 주의{" "}
-            <b className="text-review">{eventSummary.bySeverity.notice}</b> · 경보 <b className="text-risk">{eventSummary.bySeverity.alert}</b> ·
-            홍보 후보 <b className="text-verified">{eventSummary.bySeverity.positive}</b> · 미확인{" "}
-            <b className="text-foreground">{eventSummary.open}</b>
-          </p>
-        </div>
-        <div className="flex flex-wrap items-stretch gap-2">
-          <dl className="flex flex-col gap-0.5 rounded-lg border border-border bg-background px-3 py-2">
-            <dt className="text-[10.5px] text-muted-foreground">연금 스냅샷</dt>
-            <dd className="font-mono text-[13px] font-semibold tabular-nums">{monthLabel(summary.months.at(-1))}</dd>
-          </dl>
-          <dl className="flex flex-col gap-0.5 rounded-lg border border-border bg-background px-3 py-2">
-            <dt className="text-[10.5px] text-muted-foreground">마지막 분석</dt>
-            <dd className="font-mono text-[13px] font-semibold tabular-nums">{formatRunTime(latestRun)}</dd>
-          </dl>
-          <details className="group relative flex items-center rounded-lg border border-border bg-background">
-            <summary className="cursor-pointer select-none px-3.5 py-2 text-[12.5px] font-semibold text-muted-foreground">
-              월간 문서 ▾
-            </summary>
-            <div className="absolute right-0 top-full z-10 mt-1 flex min-w-[7rem] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-md">
-              <a
-                href={`/api/reports/monthly?cohort=${year}&year=${thisMonth.year}&month=${thisMonth.month}`}
-                className="px-3.5 py-2 text-[12px] text-foreground hover:bg-surface"
+    <div className="flex flex-col gap-12">
+      <div className="-mt-8 mx-[calc(50%-50vw)] bg-band text-band-foreground">
+        <header className="mx-auto grid w-full max-w-5xl gap-10 px-5 pb-8 pt-9 md:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="flex flex-col">
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
+              {year}년 우수기업 · 지난 30일 동향
+            </span>
+            <h1 className="mb-3.5 mt-1.5 font-display text-[40px] md:text-[52px] font-black leading-[0.95] tracking-[-0.04em]">이달의 동향</h1>
+            <p className="text-[17px] md:text-[20px] font-medium leading-[1.35] tracking-[-0.01em] text-band-foreground/78">
+              {companies.length}개사 중 <b className="font-black text-band-foreground">{eventSummary.companiesWithEvents}개사</b>에 사건 · 주의{" "}
+              <b className="font-black text-[#FFB454]">{eventSummary.bySeverity.notice}</b> · 경보{" "}
+              <b className="font-black text-[#FF8080]">{eventSummary.bySeverity.alert}</b> · 홍보 후보{" "}
+              <b className="font-black text-[#49E57D]">{eventSummary.bySeverity.positive}</b> · 미확인{" "}
+              <b className="font-black text-band-foreground">{eventSummary.open}</b>
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 self-end">
+            <dl className="flex justify-between border-t border-band-foreground/25 py-1.5 text-[12px]">
+              <dt className="text-band-foreground/65">연금 스냅샷</dt>
+              <dd className="font-bold tabular-nums">{monthLabel(summary.months.at(-1))}</dd>
+            </dl>
+            <dl className="flex justify-between border-t border-band-foreground/25 py-1.5 text-[12px]">
+              <dt className="text-band-foreground/65">마지막 분석</dt>
+              <dd className="font-bold tabular-nums">{formatRunTime(latestRun)}</dd>
+            </dl>
+            <details className="group relative">
+              <summary className="flex cursor-pointer select-none items-center justify-center border border-band-foreground/40 px-3.5 py-2.5 text-[13px] font-bold">
+                월간 문서 ▾
+              </summary>
+              <div className="absolute left-0 right-0 top-full z-10 mt-1 flex flex-col overflow-hidden border border-band-foreground/40 bg-band">
+                <a
+                  href={`/api/reports/monthly?cohort=${year}&year=${thisMonth.year}&month=${thisMonth.month}`}
+                  className="px-3.5 py-2 text-[12px] hover:bg-band-foreground/10"
+                >
+                  이번 달
+                </a>
+                <a
+                  href={`/api/reports/monthly?cohort=${year}&year=${lastMonth.year}&month=${lastMonth.month}`}
+                  className="px-3.5 py-2 text-[12px] hover:bg-band-foreground/10"
+                >
+                  지난 달
+                </a>
+              </div>
+            </details>
+            {verdicts.counts.pending > 0 ? (
+              <Link
+                href={`/companies?year=${year}`}
+                className="flex items-center justify-center border border-primary bg-primary px-3.5 py-2.5 text-[13px] font-bold text-primary-foreground hover:bg-primary/90"
               >
-                이번 달
-              </a>
-              <a
-                href={`/api/reports/monthly?cohort=${year}&year=${lastMonth.year}&month=${lastMonth.month}`}
-                className="px-3.5 py-2 text-[12px] text-foreground hover:bg-surface"
-              >
-                지난 달
-              </a>
-            </div>
-          </details>
-          {verdicts.counts.pending > 0 ? (
-            <Link
-              href={`/companies?year=${year}`}
-              className="flex items-center rounded-lg bg-primary px-3.5 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              미분석 {verdicts.counts.pending}개사 보기
-            </Link>
-          ) : null}
-        </div>
-      </header>
+                미분석 {verdicts.counts.pending}개사 보기
+              </Link>
+            ) : null}
+          </div>
+        </header>
+      </div>
 
-      <Ribbon items={ribbon} className="-mt-5 -mb-4" />
+      <Ribbon items={ribbon} className="-mt-12" />
 
       <Panel index="01" title="이달의 사건" tag="실측" empty="등록된 기업이 없습니다.">
         {companies.length === 0 ? null : <EventTable events={events} silence={silence} lastEventAt={lastEventAt} now={now} />}

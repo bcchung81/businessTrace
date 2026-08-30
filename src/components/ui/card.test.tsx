@@ -10,16 +10,11 @@ describe("Card", () => {
     expect(screen.getByTestId("card")).not.toHaveClass("border-ink");
   });
 
-  test("comic variant draws the ink border and large hard shadow", () => {
-    render(<Card variant="comic" data-testid="card"><CardContent>본문</CardContent></Card>);
+  test("signal variant draws the ink border without a shadow", () => {
+    render(<Card variant="signal" data-testid="card"><CardContent>본문</CardContent></Card>);
 
-    expect(screen.getByTestId("card")).toHaveClass("border-2", "border-ink", "shadow-hard-lg");
-    expect(screen.getByTestId("card")).toHaveAttribute("data-variant", "comic");
-  });
-
-  test("paper variant sits on cream with grain", () => {
-    render(<Card variant="paper" data-testid="card"><CardContent>본문</CardContent></Card>);
-
-    expect(screen.getByTestId("card")).toHaveClass("bg-paper", "paper-grain", "shadow-hard");
+    expect(screen.getByTestId("card")).toHaveClass("border-[1.5px]", "border-ink", "rounded-none");
+    expect(screen.getByTestId("card")).not.toHaveClass("shadow-hard-lg");
+    expect(screen.getByTestId("card")).toHaveAttribute("data-variant", "signal");
   });
 });

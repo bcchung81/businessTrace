@@ -30,31 +30,32 @@ describe("Button", () => {
     expect(screen.getByRole("button", { name: "비활성" })).toBeDisabled();
   });
 
-  test("hard variant carries the ink border and hard shadow", () => {
-    render(<Button variant="hard">분석 실행</Button>);
+  test("signal variant is the square primary block without a shadow", () => {
+    render(<Button variant="signal">분석 실행</Button>);
     const button = screen.getByRole("button", { name: "분석 실행" });
 
-    expect(button).toHaveClass("border-2", "border-ink", "shadow-hard", "bg-primary");
-    expect(button).toHaveAttribute("data-variant", "hard");
+    expect(button).toHaveClass("rounded-none", "bg-primary");
+    expect(button).not.toHaveClass("shadow-hard");
+    expect(button).toHaveAttribute("data-variant", "signal");
   });
 
-  test("hard-outline variant keeps the background plain", () => {
-    render(<Button variant="hard-outline">목록으로</Button>);
+  test("signal-outline variant keeps the background plain", () => {
+    render(<Button variant="signal-outline">목록으로</Button>);
 
-    expect(screen.getByRole("button", { name: "목록으로" })).toHaveClass("border-ink", "shadow-hard", "bg-background");
+    expect(screen.getByRole("button", { name: "목록으로" })).toHaveClass("border-ink", "rounded-none", "bg-background");
   });
 
-  test("display size sets the display face in uppercase", () => {
-    render(<Button variant="hard" size="display">RUN</Button>);
+  test("display size sets the display face", () => {
+    render(<Button variant="signal" size="display">RUN</Button>);
 
-    expect(screen.getByRole("button", { name: "RUN" })).toHaveClass("font-display", "uppercase");
+    expect(screen.getByRole("button", { name: "RUN" })).toHaveClass("font-display");
   });
 
-  test("hard and hard-outline variants have visible focus indicators", () => {
+  test("signal and signal-outline variants have visible focus indicators", () => {
     render(
       <>
-        <Button variant="hard">분석 실행</Button>
-        <Button variant="hard-outline">목록으로</Button>
+        <Button variant="signal">분석 실행</Button>
+        <Button variant="signal-outline">목록으로</Button>
       </>,
     );
 

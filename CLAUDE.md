@@ -124,13 +124,15 @@ Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는
 
 ## 디자인
 
-**Montage(Wanted Design System)의 디자인 언어만 차용한다.** 구현은 shadcn/ui + Tailwind v4 그대로다.
+**방향 B「신호(Signal)」** — `docs/superpowers/specs/2026-08-30-visual-redesign-design.md` 가 원천이다. 구현은 shadcn/ui + Tailwind v4 그대로다. Montage 토큰과 코믹북 층(크림지·잉크 2px·하드 그림자·Anton 리본)은 걷어냈다 — 다시 들이지 않는다.
 
-- 런타임은 쓸 수 없다 — `@wanteddev/wds` 는 GitHub Packages 사설 레지스트리에 있고, MCP 서버(`montage.wanted.co.kr/mcp`)는 구글 OAuth 에 `hd=wantedlab.com` 이 걸려 사내 계정 전용이다. 저장소만 MIT 공개다
-- 색·간격 토큰은 `packages/wds-theme`(MIT) 값을 `src/app/globals.css` 의 CSS 변수로 옮겼다. primary `#0066FF`, label `#171719`, line `#E1E2E4`, status positive/cautionary/negative
-- 상태 색은 이 제품의 의미에 묶는다 — `verified`(검증 통과) · `review`(검토 필요) · `risk`(리스크). 장식으로 쓰지 않는다
-- 본문 폰트는 Pretendard(CDN, `layout.tsx` head). 숫자 열은 `tabular-nums` — 사업자번호·점수가 세로로 정렬돼야 스캔이 된다
-- **시그니처: 대조 가능성 표시.** 사업자번호가 없는 기업은 국세청·DART 와 대조할 수 없어 뉴스 외 근거가 없다. 빈칸이 아니라 경고로 다룬다
+- 토큰은 `src/app/globals.css` 세 곳(`:root` · `.dark` · `@theme inline`)에 있다. band `#0B1220`(헤더 밴드) · ink/foreground `#0B1220` · hairline `#E3E5EA` · primary `#2B6BFF` 하나. 다크는 밴드를 배경보다 한 단계 더 어둡게 둔다
+- 서체는 Pretendard 본문 + **Gothic A1 900** 디스플레이(`font-display` — H1·절 번호·절 제목·리본). Gothic A1 은 `next/font/google` 로 self-host 한다(`--font-gothic-a1`)
+- 절은 상자가 아니라 **4px 상단 괘선 + 큰 번호**(`Panel`·`SectionHead`)로 나뉜다. 배지·버튼·카드는 `signal`/`signal-outline` 변형 — 사각, 그림자 없음
+- 워드마크는 `src/components/layout/wordmark.tsx` 하나로 헤더·로그인에 쓴다. 브랜드색은 currentColor·primary 만
+- 상태 색은 이 제품의 의미에 묶는다 — `verified`(검증 통과) · `review`(검토 필요) · `risk`(리스크) · `pending`(미분석). 장식·리본·브랜드에 쓰지 않는다
+- 숫자 열은 `tabular-nums` — 사업자번호·점수가 세로로 정렬돼야 스캔이 된다
+- **시그니처: 대조 가능성 표시.** 사업자번호가 없는 기업은 국세청·DART 와 대조할 수 없어 뉴스 외 근거가 없다. 빈칸이 아니라 경고(review 톤)로 다룬다
 
 ## OSS 차용 원칙
 

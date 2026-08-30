@@ -16,9 +16,9 @@ export function StateLegend() {
       {STATES.map((state) => (
         <li
           key={state.label}
-          className="flex items-center gap-2 rounded-full border border-border px-2.5 py-1 text-[11.5px] text-muted-foreground"
+          className="flex items-center gap-2 border border-hairline px-2.5 py-1 text-[11.5px] text-muted-foreground"
         >
-          <span aria-hidden className={`h-3.5 w-3.5 flex-none rounded ${state.swatch}`} />
+          <span aria-hidden className={`h-3.5 w-3.5 flex-none ${state.swatch}`} />
           <b className="font-bold text-foreground">{state.label}</b>
           <span>{state.note}</span>
         </li>

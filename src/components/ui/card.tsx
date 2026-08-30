@@ -7,8 +7,7 @@ const cardVariants = cva("flex flex-col gap-6 rounded-xl bg-card text-card-foreg
   variants: {
     variant: {
       default: "border py-6 shadow-sm",
-      comic: "border-2 border-ink py-6 shadow-hard-lg",
-      paper: "border-2 border-ink bg-paper py-6 shadow-hard paper-grain",
+      signal: "rounded-none border-[1.5px] border-ink py-6",
     },
   },
   defaultVariants: { variant: "default" },
