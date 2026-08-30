@@ -1,7 +1,6 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { EventReviewButtons } from "@/components/dashboard/event-review-buttons";
 import { SEVERITY_CLASS, SeverityIcon, trustLabel } from "@/components/dashboard/severity-ui";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { KIND_LABEL } from "@/lib/services/eventRules";
@@ -9,10 +8,9 @@ import { STATUS_LABEL } from "@/lib/services/eventReview";
 import { kstDate } from "@/lib/services/kst";
 
 /**
- * 기업 상세의 사건 이력을 최신순 세로 타임라인으로 낸다.
- * 메모 입력을 조치 버튼과 같은 `form` 안에 둬 상태 전이와 메모 저장을 한 제출로 묶는다 — 메모만 저장하는 버튼은 두지 않는다.
+ * 기업 상세의 사건 이력을 최신순 세로 타임라인으로 낸다. 읽기 전용이다 — 확인·조치·메모는 두지 않는다.
  */
-export function EventTimeline({ events, path }: { events: EventRow[]; path: string }) {
+export function EventTimeline({ events }: { events: EventRow[] }) {
   if (events.length === 0) {
     return (
       <p className="p-6 text-center text-[13px] text-muted-foreground">
@@ -60,16 +58,6 @@ export function EventTimeline({ events, path }: { events: EventRow[]; path: stri
               )}
             </div>
           ) : null}
-
-          <EventReviewButtons id={event.id} status={event.status} path={path} allowReopen>
-            <textarea
-              name="note"
-              defaultValue={event.note ?? ""}
-              placeholder="메모"
-              rows={2}
-              className="w-full max-w-md border-[1.5px] border-hairline bg-background px-2.5 py-1.5 text-[12px] focus-visible:border-ink focus-visible:outline-none"
-            />
-          </EventReviewButtons>
         </li>
       ))}
     </ul>

@@ -63,10 +63,6 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         </div>
       </header>
 
-      <Panel title="사건 이력">
-        <EventTimeline events={events} path={`/companies/${company.id}`} />
-      </Panel>
-
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline gap-2">
           <h2 className="text-[13px] font-semibold">공식 원천 대조</h2>
@@ -145,6 +141,10 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         </div>
         <HeadcountTrend facets={summary.facets} />
       </section>
+
+      <Panel title="사건 이력" note="원천·분석에서 추출한 기록 · 최신순">
+        <EventTimeline events={events} />
+      </Panel>
     </div>
   );
 }
