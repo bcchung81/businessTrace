@@ -38,6 +38,7 @@ model Company {
   events       Event[]
   aliases      String?
   sourceDecisions SourceDecision[]
+  selections   SelectionRecord[]
 
   @@unique([name, year])
   @@index([year])
@@ -200,4 +201,21 @@ model SourceDecision {
   decidedBy Int
 
   @@unique([companyId, source])
+}
+
+model SelectionRecord {
+  id             Int      @id @default(autoincrement())
+  companyId      Int
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  year           Int
+  grade          String
+  total          Float
+  rank           Int?
+  metricsJson    String
+  formulaVersion String
+  decidedAt      DateTime @default(now())
+  decidedBy      Int
+
+  @@unique([companyId, year])
+  @@index([year])
 }
