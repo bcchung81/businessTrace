@@ -219,3 +219,14 @@ model SelectionRecord {
   @@unique([companyId, year])
   @@index([year])
 }
+
+model Submission {
+  id          Int      @id @default(autoincrement())
+  filename    String
+  storedPath  String
+  sha256      String
+  size        Int
+  note        String?
+  submittedAt DateTime @default(now())
+  submittedBy Int
+}
