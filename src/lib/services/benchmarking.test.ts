@@ -21,6 +21,9 @@ describe("rubrics", () => {
     expect(resolveRubric("SW", book).id).toBe("ict");
     expect(resolveRubric("의료/헬스케어", book).id).toBe("bio");
     expect(resolveRubric("첨단로봇", book).id).toBe("manufacturing");
+    expect(resolveRubric("응용 소프트웨어 개발 및 공급업", book).id).toBe("ict");
+    expect(resolveRubric("시스템 소프트웨어 개발 및 공급업", book).id).toBe("ict");
+    expect(resolveRubric("컴퓨터시스템 통합 자문 및 구축 서비스업", book).id).toBe("ict");
     expect(resolveRubric("ESG", book).id).toBe("default");
     expect(resolveRubric(null, book).id).toBe("default");
   });

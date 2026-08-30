@@ -11,7 +11,7 @@
     {
       "id": "ict",
       "name": "ICT",
-      "industries": ["SW", "데이터", "클라우드", "사이버보안", "블록체인", "양자", "IoT", "AI", "미디어콘텐츠"],
+      "industries": ["SW", "데이터", "클라우드", "사이버보안", "블록체인", "양자", "IoT", "AI", "미디어콘텐츠", "응용 소프트웨어 개발 및 공급업", "시스템 소프트웨어 개발 및 공급업", "컴퓨터시스템 통합 자문 및 구축 서비스업"],
       "weights": { "sentiment": 0.25, "award": 0.2, "investment": 0.25, "finance": 0.15, "verification": 0.15 },
       "riskPenalty": 0.15
     },
