@@ -11,9 +11,9 @@ const SORTS: CardSort[] = ["triage", "name", "news"];
 /**
  * 기업 목록 표 — 정렬 세그먼트와 필터 체크박스는 클라이언트 상태로 둔다. 기업 하나가 한 행이다.
  */
-export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
+export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyCardData[]; initialFilter?: CardFilter }) {
   const [sort, setSort] = useState<CardSort>("triage");
-  const [filter, setFilter] = useState<CardFilter>({});
+  const [filter, setFilter] = useState<CardFilter>(initialFilter);
 
   const visible = useMemo(() => sortCards(filterCards(cards, filter), sort), [cards, filter, sort]);
 
@@ -36,6 +36,15 @@ export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 text-[12.5px]">
+          <label className="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              aria-label="확인 필요만"
+              checked={filter.reviewOnly ?? false}
+              onChange={(event) => setFilter((prev) => ({ ...prev, reviewOnly: event.target.checked }))}
+            />
+            확인 필요만
+          </label>
           <label className="flex items-center gap-1.5">
             <input
               type="checkbox"

@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { CompanyRow, COMPANY_COLUMNS } from "@/components/company/company-row";
 import type { CompanyCardData } from "@/lib/services/companyCards";
 
-const CARD: CompanyCardData = { id: 1, name: "딥노이드", industry: "의료AI", businessNo: "1", headcount: { latest: 89, delta12m: 0.04 }, latestArticle: "2026-08-26T00:00:00.000Z", events30d: { alert: 0, notice: 0, positive: 1, info: 0 }, open: 1, worstSeverity: "positive", trust: "verified" };
+const CARD: CompanyCardData = { id: 1, name: "딥노이드", industry: "의료AI", businessNo: "1", headcount: { latest: 89, delta12m: 0.04 }, latestArticle: "2026-08-26T00:00:00.000Z", events30d: { alert: 0, notice: 0, positive: 1, info: 0 }, open: 1, worstSeverity: "positive", trust: "verified", needsReview: false };
 
 function renderRow(card: CompanyCardData) {
   render(

@@ -7,9 +7,10 @@ export type CompanyCardData = {
   id: number; name: string; industry: string | null; businessNo: string | null;
   headcount: { latest: number | null; delta12m: number | null }; latestArticle: string | null;
   events30d: Record<Severity, number>; open: number; worstSeverity: Severity | null; trust: Trust;
+  needsReview: boolean;
 };
 export type CardSort = "triage" | "name" | "news";
-export type CardFilter = { noticeOnly?: boolean; positiveOnly?: boolean; missingBusinessNo?: boolean };
+export type CardFilter = { noticeOnly?: boolean; positiveOnly?: boolean; missingBusinessNo?: boolean; reviewOnly?: boolean };
 
 function headcount(series: CompanySeries | undefined) {
   const measured = (series?.points ?? []).filter((p) => p.subscribers !== null);
@@ -26,10 +27,12 @@ function headcount(series: CompanySeries | undefined) {
 export function buildCompanyCards(input: {
   companies: Array<{ id: number; name: string; industry: string | null; businessNo: string | null }>;
   events: EventRow[]; series: CompanySeries[]; news: CompanyNews[]; verdicts: Array<{ companyId: number; verdict: Trust }>;
+  reviewIds?: Iterable<number>;
 }): CompanyCardData[] {
   const seriesById = new Map(input.series.map((s) => [s.companyId, s]));
   const newsById = new Map(input.news.map((n) => [n.companyId, n]));
   const trustById = new Map(input.verdicts.map((v) => [v.companyId, v.verdict]));
+  const reviewIds = new Set(input.reviewIds ?? []);
 
   return input.companies.map((company) => {
     const events = input.events.filter((e) => e.companyId === company.id);
@@ -40,6 +43,7 @@ export function buildCompanyCards(input: {
       id: company.id, name: company.name, industry: company.industry, businessNo: company.businessNo,
       headcount: headcount(seriesById.get(company.id)), latestArticle: newsById.get(company.id)?.latest ?? null,
       events30d, open: events.filter((e) => e.status === "open").length, worstSeverity: worst, trust: trustById.get(company.id) ?? null,
+      needsReview: reviewIds.has(company.id),
     };
   });
 }
@@ -60,6 +64,7 @@ export function filterCards(cards: CompanyCardData[], filter: CardFilter): Compa
   return cards.filter((c) =>
     (!filter.noticeOnly || c.events30d.alert + c.events30d.notice > 0) &&
     (!filter.positiveOnly || c.events30d.positive > 0) &&
-    (!filter.missingBusinessNo || !c.businessNo),
+    (!filter.missingBusinessNo || !c.businessNo) &&
+    (!filter.reviewOnly || c.needsReview),
   );
 }

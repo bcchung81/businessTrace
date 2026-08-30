@@ -7,6 +7,7 @@ import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listLatestVerifications } from "@/lib/repositories/verificationResult";
 import { buildCoMentions } from "@/lib/services/coMention";
 import { buildCompanyCards } from "@/lib/services/companyCards";
+import { countReviewCompanies } from "@/lib/repositories/pipelineRepo";
 import { buildNewsCoverage } from "@/lib/services/newsCoverage";
 import { BatchRunner } from "@/components/analysis/batch-runner";
 import { CompanyCardGrid } from "@/components/company/company-card-grid";
@@ -37,7 +38,9 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   const graph = buildCoMentions(await listMentionArticles(year), activeCompanies.map((company) => company.name));
   const news = buildNewsCoverage(activeCompanies, graph.articles, now);
   const verdicts = (await listLatestVerifications(year)).map((row) => ({ companyId: row.companyId, verdict: row.status }));
-  const cards = buildCompanyCards({ companies: activeCompanies, events, series, news: news.byCompany, verdicts });
+  const review = await countReviewCompanies(year);
+  const cards = buildCompanyCards({ companies: activeCompanies, events, series, news: news.byCompany, verdicts, reviewIds: review.ids });
+  const initialFilter = params.filter === "review" ? { reviewOnly: true } : {};
   const candidates = cards.map((card) => ({
     id: card.id,
     name: card.name,
@@ -108,7 +111,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
       </Panel>
 
       <Panel index="02" title="기업 목록" tag="실측">
-        <CompanyCardGrid cards={cards} />
+        <CompanyCardGrid cards={cards} initialFilter={initialFilter} />
       </Panel>
     </div>
   );

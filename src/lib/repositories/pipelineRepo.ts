@@ -73,7 +73,7 @@ export async function countReviewCompanies(year: number) {
       analysisRuns: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true, verification: { select: { status: true, reviewedAt: true } } } },
     },
   });
-  let count = 0;
+  const ids: number[] = [];
   let openAlertNotice = 0;
   let needsReview = 0;
   for (const company of companies) {
@@ -84,7 +84,7 @@ export async function countReviewCompanies(year: number) {
     const noNews = company.analysisRuns[0]?.status === "no_news";
     openAlertNotice += company.events.length;
     if (unreviewed) needsReview += 1;
-    if (!company.businessNo || conflicts > 0 || unreviewed || company.events.length > 0 || noNews) count += 1;
+    if (!company.businessNo || conflicts > 0 || unreviewed || company.events.length > 0 || noNews) ids.push(company.id);
   }
-  return { companies: count, openAlertNotice, needsReview };
+  return { companies: ids.length, ids, openAlertNotice, needsReview };
 }

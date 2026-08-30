@@ -46,4 +46,9 @@ describe("sortCards / filterCards", () => {
     expect(filterCards(cards, { positiveOnly: true }).map((c) => c.name)).toEqual(["딥노이드"]);
     expect(filterCards(cards, { missingBusinessNo: true }).map((c) => c.name)).toEqual(["알체라"]);
   });
+
+  it("filters review-only from the ids a person must settle", () => {
+    const flagged = cards.map((c) => ({ ...c, needsReview: c.name === "딥노이드" }));
+    expect(filterCards(flagged, { reviewOnly: true }).map((c) => c.name)).toEqual(["딥노이드"]);
+  });
 });

@@ -43,7 +43,8 @@ describe("pipelineRepo", () => {
     await prisma.event.create({ data: { companyId: clean.id, kind: "award", severity: "positive", status: "open", occurredAt: new Date(), title: "t", evidenceJson: "[]", evidenceKey: "2" } });
     const run = await prisma.analysisRun.create({ data: { companyId: clean.id, userId: user.id, model: "m", status: "completed", newsJson: "[]" } });
     await prisma.verificationResult.create({ data: { analysisRunId: run.id, status: "verified", unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" } });
-    expect(await countReviewCompanies(YEAR)).toEqual({ companies: 3, openAlertNotice: 1, needsReview: 0 });
-    expect(noBizno.id).toBeGreaterThan(0);
+    const review = await countReviewCompanies(YEAR);
+    expect(review).toMatchObject({ companies: 3, openAlertNotice: 1, needsReview: 0 });
+    expect(review.ids.sort()).toEqual([noBizno.id, conflict.id, openAlert.id].sort());
   });
 });

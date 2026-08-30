@@ -4,7 +4,7 @@ import type { CompanyCardData } from "@/lib/services/companyCards";
 import { buildMonthlyWorkbook, monthlyReportFileName, summaryParagraph } from "@/lib/services/monthlyReport";
 
 const EVENT: EventRow = { id: 1, companyId: 1, companyName: "한국첨단소재", kind: "negative_press", severity: "notice", occurredAt: "2026-08-28T00:00:00.000Z", title: "부정 보도 — 자본잠식", evidence: [{ label: "기사", link: "https://n/1" }], runId: 1, trust: "needs_review", status: "open", note: null, reviewedAt: null };
-const CARD: CompanyCardData = { id: 1, name: "한국첨단소재", industry: "소재", businessNo: "1", headcount: { latest: 40, delta12m: -0.1 }, latestArticle: "2026-08-28T00:00:00.000Z", events30d: { alert: 0, notice: 1, positive: 0, info: 0 }, open: 1, worstSeverity: "notice", trust: "needs_review" };
+const CARD: CompanyCardData = { id: 1, name: "한국첨단소재", industry: "소재", businessNo: "1", headcount: { latest: 40, delta12m: -0.1 }, latestArticle: "2026-08-28T00:00:00.000Z", events30d: { alert: 0, notice: 1, positive: 0, info: 0 }, open: 1, worstSeverity: "notice", trust: "needs_review", needsReview: false };
 const FRESH = { now: new Date("2026-09-01"), latestNewsAt: "2026-08-30T03:03:00.000Z", latestSourceAt: null, sourcesUpdatedToday: 0, sourcesTotal: 50, pensionYm: "202607", running: 0, openEvents: 1, stale: 0 };
 
 describe("summaryParagraph", () => {
