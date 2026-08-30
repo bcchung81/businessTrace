@@ -1,0 +1,126 @@
+import type { AnalysisResult, NewsAnalysis } from "@/lib/services/analyzer";
+import type { PensionPoint } from "@/lib/repositories/pensionSnapshot";
+import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
+import { STALE_DAYS } from "@/lib/services/newsCoverage";
+import { CONFLICT_STAGES, MATRIX_STAGES } from "@/lib/services/pipelineMatrix";
+
+export type EventKind =
+  | "award" | "investment" | "positive_press" | "negative_press"
+  | "headcount_up" | "headcount_down" | "closure" | "venture_expiry" | "source_conflict" | "silence";
+export type Severity = "alert" | "notice" | "positive" | "info";
+export type Trust = "verified" | "needs_review" | null;
+export type Evidence = { label: string; link?: string; ym?: [string, string]; source?: string };
+export type NewEvent = {
+  companyId: number; kind: EventKind; severity: Severity; occurredAt: Date; title: string;
+  evidenceKey: string; evidence: Evidence[]; runId: number | null; trust: Trust;
+};
+
+export const POSITIVE_PRESS_MIN = 6;
+export const NEGATIVE_PRESS_MAX = -4;
+export const HEADCOUNT_RATIO = 0.2;
+export const VENTURE_EXPIRY_DAYS = 60;
+export const SILENCE_DAYS = STALE_DAYS;
+
+export const SEVERITY_ORDER: Severity[] = ["alert", "notice", "positive", "info"];
+export const SEVERITY_LABEL: Record<Severity, string> = { alert: "경보", notice: "주의", positive: "긍정", info: "정보" };
+export const KIND_LABEL: Record<EventKind, string> = {
+  award: "수상", investment: "투자", positive_press: "긍정 보도", negative_press: "부정 보도",
+  headcount_up: "인원 증가", headcount_down: "인원 감소", closure: "휴·폐업", venture_expiry: "벤처확인 만료",
+  source_conflict: "동명 타사 충돌", silence: "무보도",
+};
+
+const DAY_MS = 86_400_000;
+const STAGE_SHORT = new Map(MATRIX_STAGES.map((stage) => [stage.key, stage.short]));
+
+export function compareSeverity(a: Severity, b: Severity) {
+  return SEVERITY_ORDER.indexOf(a) - SEVERITY_ORDER.indexOf(b);
+}
+
+function articleEvent(companyId: number, runId: number, trust: Trust, analysis: NewsAnalysis, kind: EventKind, severity: Severity, title: string, label: string): NewEvent {
+  return {
+    companyId, kind, severity, runId, trust, title,
+    occurredAt: new Date(analysis.news.published),
+    evidenceKey: analysis.news.link,
+    evidence: [{ label, link: analysis.news.link }],
+  };
+}
+
+/**
+ * 분석 결과에서 수상·투자·긍정/부정 보도 사건을 뽑는다. 회사가 주제인 기사만 본다.
+ * 한 기사가 여러 사건을 낼 수 있다 — 종류마다 키 공간이 다르다.
+ */
+export function extractAnalysisEvents(input: { companyId: number; runId: number; result: AnalysisResult; trust: Trust }): NewEvent[] {
+  const events: NewEvent[] = [];
+  for (const analysis of input.result.analyses) {
+    if (!analysis.isAboutCompany) continue;
+    const make = (kind: EventKind, severity: Severity, title: string, label: string) =>
+      events.push(articleEvent(input.companyId, input.runId, input.trust, analysis, kind, severity, title, label));
+
+    if (analysis.award.is_award_related === "Y") make("award", "positive", `수상 — ${analysis.award.award_name}`, analysis.award.award_name);
+    if (analysis.investment.is_investment_related === "Y") make("investment", "positive", `투자 — ${analysis.investment.investment_name}`, analysis.investment.investment_name);
+    if (analysis.trend.sentiment_score >= POSITIVE_PRESS_MIN) make("positive_press", "positive", `긍정 보도 — ${analysis.news.title}`, analysis.news.title);
+    if (analysis.trend.sentiment_score <= NEGATIVE_PRESS_MAX) make("negative_press", "notice", `부정 보도 — ${analysis.news.title}`, analysis.news.title);
+  }
+  return events;
+}
+
+function endOfMonth(ym: string) {
+  return new Date(Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(4, 6)), 0));
+}
+
+function ratioEvent(companyId: number, from: PensionPoint, to: PensionPoint): NewEvent | null {
+  if (from.subscribers === null || to.subscribers === null || from.subscribers === 0) return null;
+  const ratio = (to.subscribers - from.subscribers) / from.subscribers;
+  if (Math.abs(ratio) < HEADCOUNT_RATIO) return null;
+  const pct = `${ratio > 0 ? "+" : "−"}${Math.round(Math.abs(ratio) * 100)}%`;
+  return {
+    companyId, kind: ratio > 0 ? "headcount_up" : "headcount_down", severity: ratio > 0 ? "positive" : "notice",
+    occurredAt: endOfMonth(to.ym), title: `인원 ${from.subscribers} → ${to.subscribers}명 (${pct})`,
+    evidenceKey: to.ym, evidence: [{ label: `${from.subscribers} → ${to.subscribers}명`, ym: [from.ym, to.ym] }],
+    runId: null, trust: null,
+  };
+}
+
+/**
+ * 최신 달을 직전 달·12개월 전과 비교해 ±20% 이상이면 인원 사건을 낸다. 둘 다 걸려도 하나만 낸다.
+ */
+export function extractPensionEvents(input: { companyId: number; points: PensionPoint[] }): NewEvent[] {
+  const points = [...input.points].sort((a, b) => a.ym.localeCompare(b.ym));
+  const latest = points.at(-1);
+  if (!latest) return [];
+  const previous = points.at(-2);
+  const yearAgo = points.find((p) => p.ym === `${Number(latest.ym.slice(0, 4)) - 1}${latest.ym.slice(4)}`);
+  const hit = (previous && ratioEvent(input.companyId, previous, latest)) || (yearAgo && ratioEvent(input.companyId, yearAgo, latest)) || null;
+  return hit ? [hit] : [];
+}
+
+/**
+ * 원천 스냅샷에서 휴·폐업, 벤처확인 만료, 동명 타사 충돌을 뽑는다.
+ */
+export function extractSourceEvents(input: { companyId: number; snapshots: StoredSnapshot[]; now: Date }): NewEvent[] {
+  const events: NewEvent[] = [];
+  for (const snap of input.snapshots) {
+    const base = { companyId: input.companyId, occurredAt: snap.fetchedAt, runId: null, trust: null } as const;
+
+    if (snap.source === "nts" && /^(폐업|휴업)/.test(snap.summary)) {
+      const state = snap.summary.split(" · ")[0];
+      events.push({ ...base, kind: "closure", severity: "alert", title: `휴·폐업 — ${snap.summary}`, evidenceKey: `nts:${state}`, evidence: [{ label: snap.summary, source: "nts" }] });
+    }
+
+    if (snap.source === "venture" && snap.status === "found") {
+      const validUntil = (snap.payload as { validUntil?: string } | null)?.validUntil;
+      if (validUntil) {
+        const daysLeft = (Date.parse(validUntil) - input.now.getTime()) / DAY_MS;
+        if (daysLeft <= VENTURE_EXPIRY_DAYS) {
+          const title = daysLeft < 0 ? `벤처확인 만료 — ${validUntil}` : `벤처확인 만료 임박 — ${validUntil} 까지`;
+          events.push({ ...base, kind: "venture_expiry", severity: "notice", title, evidenceKey: `venture:${validUntil}`, evidence: [{ label: `유효기간 ${validUntil} 까지`, source: "venture" }] });
+        }
+      }
+    }
+
+    if (snap.status === "conflict" && (CONFLICT_STAGES as readonly string[]).includes(snap.source)) {
+      events.push({ ...base, kind: "source_conflict", severity: "notice", title: `동명 타사 충돌 — ${STAGE_SHORT.get(snap.source) ?? snap.source}`, evidenceKey: `${snap.source}:conflict`, evidence: [{ label: snap.summary, source: snap.source }] });
+    }
+  }
+  return events;
+}
