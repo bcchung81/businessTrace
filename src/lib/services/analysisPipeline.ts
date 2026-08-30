@@ -2,7 +2,7 @@ import { completeRun, createRun, failRun } from "@/lib/repositories/analysisRun"
 import { upsertEvents } from "@/lib/repositories/eventRepository";
 import { saveVerification } from "@/lib/repositories/verificationResult";
 import { analyzeCompany, type AnalysisResult, type AnalyzeEvent } from "@/lib/services/analyzer";
-import { extractAnalysisEvents } from "@/lib/services/eventRules";
+import { extractAnalysisEvents, type NewEvent } from "@/lib/services/eventRules";
 import { defaultLlmClient, resolveModel, type Usage } from "@/lib/services/llm";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import { verifyAnalysis, type VerificationOutput } from "@/lib/services/verification";
@@ -11,12 +11,14 @@ export type PipelineEvent =
   | AnalyzeEvent
   | { type: "verifying"; runId: number }
   | { type: "verified"; runId: number; verification: VerificationOutput }
-  | { type: "verification_failed"; runId: number; message: string };
+  | { type: "verification_failed"; runId: number; message: string }
+  | { type: "events_failed"; runId: number; message: string };
 
 export type PipelineDeps = {
   model: string;
   analyze: (name: string, news: NewsItem[], deps: { model: string }) => AsyncGenerator<AnalyzeEvent>;
   verify: (result: AnalysisResult) => Promise<VerificationOutput>;
+  persistEvents?: (events: NewEvent[]) => Promise<unknown>;
   onEvent?: (event: PipelineEvent) => void;
   isOpen?: () => boolean;
 };
@@ -47,6 +49,7 @@ export function defaultPipelineDeps(model = resolveModel()): PipelineDeps {
     model,
     analyze: (name, news, deps) => analyzeCompany(name, news, { llm, model: deps.model }),
     verify: (result) => verifyAnalysis(result, { llm }),
+    persistEvents: upsertEvents,
   };
 }
 
@@ -72,6 +75,7 @@ export async function runCompanyAnalysis(
   const run = await createRun({ companyId: input.company.id, userId: input.userId, model: deps.model, news: input.news });
   const emit = (event: PipelineEvent) => deps.onEvent?.(event);
   const open = () => deps.isOpen?.() ?? true;
+  const persistEvents = deps.persistEvents ?? upsertEvents;
   let usage = NO_USAGE;
 
   const primary = input.news.filter((item) => item.relevance === "primary");
@@ -99,18 +103,27 @@ export async function runCompanyAnalysis(
       if (event.result.stats.scoredNews === 0) return { runId: run.id, status: "no_news", usage };
 
       emit({ type: "verifying", runId: run.id });
+      let verification: VerificationOutput;
       try {
-        const verification = await deps.verify(event.result);
+        verification = await deps.verify(event.result);
         await saveVerification(run.id, verification);
-        await upsertEvents(extractAnalysisEvents({ companyId: input.company.id, runId: run.id, result: event.result, trust: verification.status }));
         usage = addUsage(usage, verification.usage);
-        emit({ type: "verified", runId: run.id, verification });
-        return { runId: run.id, status: verification.status, usage };
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : "알 수 없는 오류";
         emit({ type: "verification_failed", runId: run.id, message });
         return { runId: run.id, status: "verification_failed", message, usage };
       }
+
+      emit({ type: "verified", runId: run.id, verification });
+
+      try {
+        await persistEvents(extractAnalysisEvents({ companyId: input.company.id, runId: run.id, result: event.result, trust: verification.status }));
+      } catch (caught) {
+        const message = caught instanceof Error ? caught.message : "알 수 없는 오류";
+        emit({ type: "events_failed", runId: run.id, message });
+      }
+
+      return { runId: run.id, status: verification.status, usage };
     }
     await failRun(run.id, "분석이 결과 없이 끝났습니다.");
     return { runId: run.id, status: "failed", message: "분석이 결과 없이 끝났습니다.", usage };

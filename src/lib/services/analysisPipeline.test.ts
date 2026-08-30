@@ -190,4 +190,22 @@ describe("runCompanyAnalysis — events", () => {
 
     expect(await listEvents({ year: 2025, companyId: company.id })).toEqual([]);
   });
+
+  it("keeps the run verified when event extraction fails after the verification is saved", async () => {
+    const { company, user } = await seed();
+    const types: string[] = [];
+
+    const outcome = await runCompanyAnalysis(
+      { company, userId: user.id, news: NEWS },
+      deps({
+        persistEvents: async () => { throw new Error("event extraction down"); },
+        onEvent: (event) => types.push(event.type),
+      }),
+    );
+
+    const run = await prisma.analysisRun.findUniqueOrThrow({ where: { id: outcome.runId }, include: { verification: true } });
+    expect(run.verification?.status).toBe("verified");
+    expect(outcome).toMatchObject({ status: "verified" });
+    expect(types).toEqual(["progress", "complete", "verifying", "verified", "events_failed"]);
+  });
 });
