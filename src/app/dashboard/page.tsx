@@ -94,8 +94,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   return (
     <div className="flex flex-col gap-12">
-      <div className="-mt-8 mx-[calc(50%-50vw)] bg-band text-band-foreground">
-        <header className="mx-auto grid w-full max-w-5xl gap-10 px-5 pb-8 pt-9 md:grid-cols-[minmax(0,1fr)_260px]">
+      <div className="bg-band text-band-foreground">
+        <header className="grid gap-10 px-6 pb-8 pt-8 md:grid-cols-[minmax(0,1fr)_260px]">
           <div className="flex flex-col">
             <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
               {year}년 우수기업 · 지난 30일 동향
