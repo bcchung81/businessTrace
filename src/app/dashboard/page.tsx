@@ -52,6 +52,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * DAY_MS);
   const since90 = new Date(now.getTime() - 90 * DAY_MS);
+  const thisMonth = { year: now.getFullYear(), month: now.getMonth() + 1 };
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonth = { year: lastMonthDate.getFullYear(), month: lastMonthDate.getMonth() + 1 };
 
   const companies = await listCompanies({ year });
   const registry = companies.map((company) => ({ id: company.id, name: company.name, businessNo: company.businessNo ?? null }));
@@ -111,6 +114,25 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <dt className="text-[10.5px] text-muted-foreground">마지막 분석</dt>
             <dd className="font-mono text-[13px] font-semibold tabular-nums">{formatRunTime(latestRun)}</dd>
           </dl>
+          <details className="group relative flex items-center rounded-lg border border-border bg-background">
+            <summary className="cursor-pointer select-none px-3.5 py-2 text-[12.5px] font-semibold text-muted-foreground">
+              월간 문서 ▾
+            </summary>
+            <div className="absolute right-0 top-full z-10 mt-1 flex min-w-[7rem] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-md">
+              <a
+                href={`/api/reports/monthly?year=${thisMonth.year}&month=${thisMonth.month}`}
+                className="px-3.5 py-2 text-[12px] text-foreground hover:bg-surface"
+              >
+                이번 달
+              </a>
+              <a
+                href={`/api/reports/monthly?year=${lastMonth.year}&month=${lastMonth.month}`}
+                className="px-3.5 py-2 text-[12px] text-foreground hover:bg-surface"
+              >
+                지난 달
+              </a>
+            </div>
+          </details>
           {verdicts.counts.pending > 0 ? (
             <Link
               href={`/companies?year=${year}`}

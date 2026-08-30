@@ -7,10 +7,10 @@ import {
   SOURCE_COVERAGE_THRESHOLD,
 } from "@/lib/services/verificationScores";
 
-const HEADER_FILL = "366092";
-const TITLE_FILL = "2E86AB";
-const SECTION_FILL = "A23B72";
-const CAUTION_FILL = "FFF6E8";
+export const HEADER_FILL = "366092";
+export const TITLE_FILL = "2E86AB";
+export const SECTION_FILL = "A23B72";
+export const CAUTION_FILL = "FFF6E8";
 
 const NEWS_HEADERS = [
   "분석소스",
@@ -46,7 +46,7 @@ function sourceCode(analysis: NewsAnalysis) {
   return analysis.news.provider === "naver" ? "N" : "G";
 }
 
-function fitColumns(sheet: ExcelJS.Worksheet, max = 50) {
+export function fitColumns(sheet: ExcelJS.Worksheet, max = 50) {
   sheet.columns.forEach((column) => {
     let longest = 10;
     column.eachCell?.({ includeEmpty: false }, (cell) => {
