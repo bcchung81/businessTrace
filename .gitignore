@@ -52,4 +52,5 @@ next-env.d.ts
 /data/*.json
 
 /data/*.xlsx
+/data/submissions/
 /outcome/
