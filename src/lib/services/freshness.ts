@@ -8,7 +8,7 @@ export type FreshnessInput = {
   sourcesTotal: number;
   pensionYm: string | undefined;
   running: number;
-  todo: number;
+  openEvents: number;
   stale: number;
 };
 
@@ -38,6 +38,6 @@ export function buildFreshnessItems(input: FreshnessInput): string[] {
     `연금 ${monthLabel(input.pensionYm)} · 다음 ${nextPensionDate(input.pensionYm)}`,
   ];
   if (input.running > 0) items.push(`실행 중 ${input.running}`);
-  items.push(`조치 ${input.todo}`, `낡은 근거 ${input.stale}`);
+  items.push(`미확인 사건 ${input.openEvents}`, `낡은 근거 ${input.stale}`);
   return items;
 }

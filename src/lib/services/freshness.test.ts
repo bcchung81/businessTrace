@@ -23,7 +23,7 @@ describe("buildFreshnessItems", () => {
     sourcesTotal: 50,
     pensionYm: "202607",
     running: 0,
-    todo: 4,
+    openEvents: 4,
     stale: 30,
   };
 
@@ -40,10 +40,10 @@ describe("buildFreshnessItems", () => {
     expect(buildFreshnessItems({ ...base, running: 3 })).toContain("실행 중 3");
   });
 
-  it("ends with today's todo and stale counts", () => {
+  it("ends with today's open-event and stale counts", () => {
     const items = buildFreshnessItems(base);
 
-    expect(items.at(-2)).toBe("조치 4");
+    expect(items.at(-2)).toBe("미확인 사건 4");
     expect(items.at(-1)).toBe("낡은 근거 30");
   });
 
