@@ -5,6 +5,7 @@ import { listBenchmarkInputs } from "@/lib/repositories/benchmarkInputs";
 import { loadRubrics, rankCompanies, weightLabel } from "@/lib/services/benchmarking";
 import { rollupVerdicts } from "@/lib/services/verdictRollup";
 import { Panel } from "@/components/dashboard/panel";
+import { ConfirmSelection } from "@/components/ranking/confirm-selection";
 import { RankingTable, type RankingRow } from "@/components/ranking/ranking-table";
 
 export default async function RankingPage({ searchParams }: PageProps<"/ranking">) {
@@ -63,12 +64,15 @@ export default async function RankingPage({ searchParams }: PageProps<"/ranking"
               </a>
             ))}
           </nav>
-          <a
-            href={exportHref}
-            className="flex items-center border border-primary bg-primary px-3.5 py-2 text-[12.5px] font-bold text-primary-foreground hover:bg-primary/90"
-          >
-            엑셀 내보내기
-          </a>
+          <div className="flex items-center gap-2">
+            <ConfirmSelection year={year} rubricId={rubric.id} count={rows.filter((row) => row.total !== null).length} formulaVersion={book.formulaVersion} />
+            <a
+              href={exportHref}
+              className="flex items-center border border-primary bg-primary px-3.5 py-2 text-[12.5px] font-bold text-primary-foreground hover:bg-primary/90"
+            >
+              엑셀 내보내기
+            </a>
+          </div>
         </div>
       </header>
 

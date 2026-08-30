@@ -5,6 +5,7 @@ import { resetDatabase } from "@/lib/test-support/db";
 import RankingPage from "@/app/ranking/page";
 
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+vi.mock("@/auth", () => ({ auth: vi.fn(async () => ({ user: { id: "1" } })) }));
 
 describe("/ranking", () => {
   beforeEach(resetDatabase);
