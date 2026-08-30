@@ -35,6 +35,7 @@ export function VerificationPanel({ layers }: { layers: VerificationLayers | nul
       <button
         type="button"
         aria-label="검증 근거 열기"
+        id="verification"
         onClick={() => setOpen(true)}
         className="inline-flex items-center gap-2 border-[1.5px] border-ink px-2 py-1 text-[11px] font-bold hover:bg-secondary"
       >

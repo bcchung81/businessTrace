@@ -26,6 +26,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   const year = Number.isInteger(requested) ? requested : (years[0] ?? currentYear());
   const notice = typeof params.notice === "string" ? params.notice : undefined;
   const preselected = typeof params.run === "string" ? params.run.split(",").map(Number).filter(Number.isInteger) : [];
+  const initialStage = params.stage === "news" || params.stage === "sources" ? params.stage : "full";
   const companies = await listCompanies({ year, includeInactive: true });
   const active = companies.filter((company) => company.isActive).length;
 
@@ -103,7 +104,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
       ) : null}
 
       <Panel index="01" title="일괄 분석 실행" tag="실측" note="대상을 고르고 실행 — 진행은 4단 스테퍼로, 상단 밴드에도 표시된다" className="scroll-mt-20" empty="등록된 기업이 없습니다.">
-        {candidates.length === 0 ? null : <BatchRunner key={preselected.join(",")} candidates={candidates} preselected={preselected} />}
+        {candidates.length === 0 ? null : <BatchRunner key={`${preselected.join(",")}-${initialStage}`} candidates={candidates} preselected={preselected} initialStage={initialStage} />}
       </Panel>
 
       <Panel index="02" title="기업 목록" tag="실측">

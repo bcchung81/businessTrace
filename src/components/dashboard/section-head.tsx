@@ -12,7 +12,7 @@ export function SectionHead({
   index?: string;
   title: string;
   tag?: string;
-  tone?: "plain" | "fresh";
+  tone?: "plain" | "fresh" | "review";
   note?: string;
 }) {
   return (
@@ -25,7 +25,7 @@ export function SectionHead({
         {tag ? (
           <span
             className={`border-[1.5px] px-2 py-[1px] text-[10.5px] font-bold tracking-[0.12em] ${
-              tone === "fresh" ? "border-verified text-verified" : "border-ink text-foreground"
+              tone === "fresh" ? "border-verified text-verified" : tone === "review" ? "border-review text-review" : "border-ink text-foreground"
             }`}
           >
             {tag}

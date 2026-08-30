@@ -20,14 +20,16 @@ const LIMITS = [10, 20, 50, 100];
 export function BatchRunner({
   candidates,
   preselected = [],
+  initialStage = "full",
   fetchImpl = fetch,
 }: {
   candidates: BatchCandidate[];
   preselected?: number[];
+  initialStage?: BatchStage;
   fetchImpl?: typeof fetch;
 }) {
   const [selected, setSelected] = useState<Set<number>>(() => new Set(preselected));
-  const [stage, setStage] = useState<BatchStage>("full");
+  const [stage, setStage] = useState<BatchStage>(initialStage);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [limit, setLimit] = useState(20);

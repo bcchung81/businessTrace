@@ -20,7 +20,7 @@ export function Panel({
   index?: string;
   title: string;
   tag?: string;
-  tone?: "plain" | "fresh";
+  tone?: "plain" | "fresh" | "review";
   note?: string;
   aside?: ReactNode;
   footer?: ReactNode;

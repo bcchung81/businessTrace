@@ -5,6 +5,9 @@ import { listEvents } from "@/lib/repositories/eventRepository";
 import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { buildExplanation } from "@/lib/repositories/explainInputs";
+import { buildReviewItems } from "@/lib/repositories/reviewItems";
+import { ReviewBlock } from "@/components/company/review-block";
+import { confirmEventsAction, decideDartAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction } from "@/app/companies/[id]/actions";
 import { buildDashboard } from "@/lib/services/dashboardSummary";
 import { ContributionBars } from "@/components/company/contribution-bars";
 import { OpinionCitations } from "@/components/company/opinion-citations";
@@ -31,6 +34,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
   const businessNo = formatBusinessNo(company.businessNo);
   const events = await listEvents({ year: company.year, companyId: company.id });
   const explanation = await buildExplanation(company.id);
+  const review = await buildReviewItems(company.id);
 
   return (
     <div className="flex flex-col gap-8">
@@ -65,7 +69,25 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         </div>
       </header>
 
+      {review ? (
+        <ReviewBlock
+          companyId={company.id}
+          year={company.year}
+          summary={review}
+          actions={{
+            decideNps: decideNpsAction,
+            holdNps: holdNpsAction,
+            decideDart: decideDartAction,
+            reviewVerification: reviewVerificationAction,
+            confirmEvents: confirmEventsAction,
+            saveAliases: saveAliasesAction,
+            saveBusinessNo: saveBusinessNoAction,
+          }}
+        />
+      ) : null}
+
       <Panel
+        index="01"
         title="기여도 · 인용 근거"
         tag="분석 산출"
         note="감점 전 점수를 100% 로 나눈 몫 · 문장에 올리면 일치 기사 단락"
@@ -120,7 +142,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         ) : null}
       </Panel>
 
-      <Panel title="사건 이력" note="원천·분석에서 추출한 기록 · 최신순">
+      <Panel index="02" title="사건 이력" note="원천·분석에서 추출한 기록 · 최신순">
         <EventTimeline events={events} />
       </Panel>
     </div>
