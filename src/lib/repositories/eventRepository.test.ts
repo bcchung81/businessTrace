@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
-import { upsertEvents, listEvents, reviewEvent, summariseEvents } from "@/lib/repositories/eventRepository";
+import { upsertEvents, listEvents, latestEventAt, reviewEvent, summariseEvents } from "@/lib/repositories/eventRepository";
 import type { NewEvent } from "@/lib/services/eventRules";
 
 describe("Event schema", () => {
@@ -68,6 +68,16 @@ describe("event repository", () => {
 
     expect((await listEvents({ year: 2025, kinds: ["award"] })).map((r) => r.kind)).toHaveLength(1);
     expect(await listEvents({ year: 2025, status: ["done"] })).toEqual([]);
+  });
+
+  it("reports the newest event's date, not the most severe one's", async () => {
+    const a = await prisma.company.create({ data: { name: "가", year: 2025 } });
+    await upsertEvents([
+      fresh({ companyId: a.id, kind: "closure", severity: "alert", evidenceKey: "june", occurredAt: new Date("2026-06-01T00:00:00.000Z") }),
+      fresh({ companyId: a.id, kind: "award", severity: "positive", evidenceKey: "august", occurredAt: new Date("2026-08-20T00:00:00.000Z") }),
+    ]);
+
+    expect(await latestEventAt(2025)).toBe("2026-08-20T00:00:00.000Z");
   });
 
   it("summarises the window for the header sentence", async () => {

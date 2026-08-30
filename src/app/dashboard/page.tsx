@@ -2,7 +2,7 @@ import Link from "next/link";
 import { listCompanies, listYears } from "@/lib/repositories/companyRepository";
 import { listMentionArticles } from "@/lib/repositories/mentionArticles";
 import { listCompanyPipeline } from "@/lib/repositories/companyPipeline";
-import { listEvents, summariseEvents } from "@/lib/repositories/eventRepository";
+import { latestEventAt, listEvents, summariseEvents } from "@/lib/repositories/eventRepository";
 import { listLatestVerifications } from "@/lib/repositories/verificationResult";
 import { summariseRunActivity } from "@/lib/repositories/analysisRun";
 import { summariseSourceFreshness } from "@/lib/repositories/sourceSnapshot";
@@ -71,7 +71,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   const events = await listEvents({ year, since: since90 });
   const eventSummary = await summariseEvents(year, since30);
-  const latestEvent = (await listEvents({ year }))[0] ?? null;
+  const lastEventAt = await latestEventAt(year);
   const events30 = events.filter((event) => Date.parse(event.occurredAt) >= since30.getTime());
   const silence = news.byCompany
     .filter((row) => isStale(row.latest, now))
@@ -149,7 +149,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       <Ribbon items={ribbon} className="-mt-5 -mb-4" />
 
       <Panel index="01" title="이달의 사건" tag="실측" empty="등록된 기업이 없습니다.">
-        {companies.length === 0 ? null : <EventTable events={events} silence={silence} lastEventAt={latestEvent?.occurredAt ?? null} now={now} />}
+        {companies.length === 0 ? null : <EventTable events={events} silence={silence} lastEventAt={lastEventAt} now={now} />}
       </Panel>
 
       <div className="grid items-stretch gap-5 lg:grid-cols-2">

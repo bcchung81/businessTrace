@@ -91,6 +91,19 @@ export async function listEvents(input: { year: number; since?: Date; until?: Da
 }
 
 /**
+ * 연도 활성 기업의 가장 최근 사건 발생일을 낸다.
+ * listEvents 는 심각도 우선 정렬이라 "마지막 사건"에 쓸 수 없다 — 여기는 occurredAt 만으로 정렬한다.
+ */
+export async function latestEventAt(year: number): Promise<string | null> {
+  const row = await prisma.event.findFirst({
+    where: { company: { year, isActive: true } },
+    orderBy: { occurredAt: "desc" },
+    select: { occurredAt: true },
+  });
+  return row?.occurredAt.toISOString() ?? null;
+}
+
+/**
  * 담당자 조치를 기록한다. 불허 전이는 저장 전에 던진다.
  */
 export async function reviewEvent(id: number, action: ReviewAction, note: string | null, userId: number): Promise<EventRow> {
