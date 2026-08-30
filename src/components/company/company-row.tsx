@@ -1,0 +1,49 @@
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { SeverityMark, trustLabel } from "@/components/dashboard/severity-ui";
+import { kstMonthDay } from "@/lib/services/kst";
+import type { CompanyCardData } from "@/lib/services/companyCards";
+
+export const COMPANY_COLUMNS = ["심각도", "기업", "신뢰", "업종", "가입자", "수상·투자·긍정", "주의", "최근 보도", "미확인"] as const;
+
+function deltaLabel(delta: number | null) {
+  if (delta === null) return null;
+  return `${delta >= 0 ? "▲" : "▼"}${Math.round(Math.abs(delta) * 100)}%`;
+}
+
+/**
+ * 기업 한 곳이 표 한 행이다 — 카드에 있던 필드를 열로 편다. 0 은 0 으로 남기고 빈칸은 "—" 다.
+ */
+export function CompanyRow({ card }: { card: CompanyCardData }) {
+  const trust = trustLabel(card.trust, { measuredLabel: null });
+  const warn = card.events30d.notice + card.events30d.alert;
+  const delta = deltaLabel(card.headcount.delta12m);
+
+  return (
+    <tr className="border-b border-hairline align-middle last:border-0">
+      <td className="whitespace-nowrap px-2 py-1.5">
+        {card.worstSeverity ? <SeverityMark severity={card.worstSeverity} /> : <span className="text-muted-foreground/45">—</span>}
+      </td>
+      <td className="px-2 py-1.5">
+        <div className="flex flex-col gap-0.5">
+          <Link href={`/companies/${card.id}`} className="font-semibold underline-offset-2 hover:underline">
+            {card.name}
+          </Link>
+          {card.businessNo ? null : <span className="text-[11px] font-semibold text-review">사업자번호 미확보</span>}
+        </div>
+      </td>
+      <td className="whitespace-nowrap px-2 py-1.5">{trust ? <Badge variant="signal">{trust}</Badge> : <span className="text-muted-foreground/45">—</span>}</td>
+      <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{card.industry ?? "미분류"}</td>
+      <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono tabular-nums">
+        {card.headcount.latest === null ? <span className="text-muted-foreground">미확보</span> : card.headcount.latest}
+        {delta ? <span className="ml-1 text-[11px] text-muted-foreground">{delta}</span> : null}
+      </td>
+      <td className="px-2 py-1.5 text-right font-mono tabular-nums">{card.events30d.positive}</td>
+      <td className="px-2 py-1.5 text-right font-mono tabular-nums">{warn}</td>
+      <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+        {card.latestArticle ? kstMonthDay(card.latestArticle) : "없음"}
+      </td>
+      <td className="px-2 py-1.5 text-right font-mono tabular-nums">{card.open}</td>
+    </tr>
+  );
+}

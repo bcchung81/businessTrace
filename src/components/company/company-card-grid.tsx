@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CompanyCard } from "@/components/company/company-card";
+import { COMPANY_COLUMNS, CompanyRow } from "@/components/company/company-row";
 import { Button } from "@/components/ui/button";
 import { filterCards, sortCards, type CardFilter, type CardSort, type CompanyCardData } from "@/lib/services/companyCards";
 
@@ -9,7 +9,7 @@ const SORT_LABEL: Record<CardSort, string> = { triage: "긴급도순", name: "�
 const SORTS: CardSort[] = ["triage", "name", "news"];
 
 /**
- * 기업 카드 목록 — 정렬 세그먼트와 필터 체크박스는 클라이언트 상태로 둔다.
+ * 기업 목록 표 — 정렬 세그먼트와 필터 체크박스는 클라이언트 상태로 둔다. 기업 하나가 한 행이다.
  */
 export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
   const [sort, setSort] = useState<CardSort>("triage");
@@ -68,10 +68,24 @@ export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
           <p className="text-sm text-muted-foreground">조건에 맞는 기업이 없습니다.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map((card) => (
-            <CompanyCard key={card.id} card={card} />
-          ))}
+        <div className="overflow-x-auto border-t-2 border-ink">
+          <table className="w-full text-[12px]">
+            <caption className="sr-only">기업 목록</caption>
+            <thead>
+              <tr className="border-b-2 border-ink text-[11px] font-bold tracking-[0.06em]">
+                {COMPANY_COLUMNS.map((column, index) => (
+                  <th key={column} scope="col" className={`whitespace-nowrap px-2 py-2 ${index >= 4 && index !== 7 ? "text-right" : "text-left"}`}>
+                    {column}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((card) => (
+                <CompanyRow key={card.id} card={card} />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
