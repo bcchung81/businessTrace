@@ -18,6 +18,9 @@ describe("EventTable", () => {
     expect(rows[0]).toHaveTextContent("확인 필요");
     expect(rows[1]).toHaveTextContent("근거 확인");
     expect(screen.queryByRole("columnheader", { name: "상태" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "신뢰" })).not.toBeInTheDocument();
+    expect(within(rows[1]).getAllByRole("cell")[2]).toHaveTextContent("근거 확인");
+    expect(within(rows[0]).getAllByRole("cell")[0]).toHaveClass("whitespace-nowrap");
   });
 
   test("has no action column — review happens on the company page", () => {

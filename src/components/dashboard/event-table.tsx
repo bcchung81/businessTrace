@@ -138,25 +138,27 @@ export function EventTable({
                 <tr className="border-b border-border bg-surface text-[11px] text-muted-foreground">
                   <th scope="col" className="px-2 py-2 text-left font-semibold">날짜</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">기업</th>
-                  <th scope="col" className="w-[72px] whitespace-nowrap px-2 py-2 text-left font-semibold">심각도</th>
+                  <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">심각도</th>
                   <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">종류</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">사건</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">근거</th>
-                  <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">신뢰</th>
                 </tr>
               </thead>
               <tbody>
                 {pageRows.map((row) =>
                   row.type === "event" ? (
                     <tr key={`event-${row.event.id}`} className="border-b border-hairline align-middle last:border-0">
-                      <td className="px-2 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">{kstMonthDay(row.event.occurredAt)}</td>
+                      <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">{kstMonthDay(row.event.occurredAt)}</td>
                       <td className="px-2 py-1.5">
                         <Link href={`/companies/${row.event.companyId}`} className="font-semibold hover:underline">
                           {row.event.companyName}
                         </Link>
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5">
-                        <SeverityMark severity={row.event.severity} />
+                        <div className="flex items-center gap-1.5">
+                          <SeverityMark severity={row.event.severity} />
+                          <Badge variant="ink">{trustLabel(row.event.trust)}</Badge>
+                        </div>
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{KIND_LABEL[row.event.kind]}</td>
                       <td className="px-2 py-1.5">{row.event.title}</td>
@@ -177,13 +179,10 @@ export function EventTable({
                           </div>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-2 py-1.5">
-                        <Badge variant="ink">{trustLabel(row.event.trust)}</Badge>
-                      </td>
                     </tr>
                   ) : (
                     <tr key={`silence-${row.companyId}`} className="border-b border-hairline align-middle text-muted-foreground last:border-0">
-                      <td className="px-2 py-1.5 font-mono text-[11px] tabular-nums">{row.latest ? kstMonthDay(row.latest) : "—"}</td>
+                      <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums">{row.latest ? kstMonthDay(row.latest) : "—"}</td>
                       <td className="px-2 py-1.5">
                         <Link href={`/companies/${row.companyId}`} className="font-semibold text-foreground hover:underline">
                           {row.companyName}
@@ -193,7 +192,7 @@ export function EventTable({
                         <SeverityMark severity="info" />
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5">{KIND_LABEL.silence}</td>
-                      <td className="px-2 py-1.5" colSpan={3}>
+                      <td className="px-2 py-1.5" colSpan={2}>
                         {`무보도 — 최근 보도 ${row.latest ? kstMonthDay(row.latest) : "없음"}`}
                       </td>
                     </tr>
