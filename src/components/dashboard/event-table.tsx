@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { EventReviewButtons } from "@/components/dashboard/event-review-buttons";
+import { SeverityMark, trustLabel } from "@/components/dashboard/severity-ui";
 import type { EventRow } from "@/lib/repositories/eventRepository";
-import { KIND_LABEL, SEVERITY_LABEL, compareSeverity, type EventKind, type Severity, type Trust } from "@/lib/services/eventRules";
+import { KIND_LABEL, compareSeverity, type EventKind, type Severity } from "@/lib/services/eventRules";
 import { STATUS_LABEL } from "@/lib/services/eventReview";
 import { kstMonthDay } from "@/lib/services/kst";
 
@@ -16,39 +17,12 @@ const DASHBOARD_PATH = "/dashboard";
 type Silence = { companyId: number; companyName: string; latest: string | null };
 type DisplayRow = { type: "event"; event: EventRow } | ({ type: "silence" } & Silence);
 
-const SEVERITY_CLASS: Record<Severity, string> = {
-  alert: "text-risk",
-  notice: "text-review",
-  positive: "text-verified",
-  info: "text-muted-foreground",
-};
-
-function trustLabel(trust: Trust) {
-  if (trust === "verified") return "근거 확인";
-  if (trust === "needs_review") return "확인 필요";
-  return "실측";
-}
-
 function severityOf(row: DisplayRow): Severity {
   return row.type === "event" ? row.event.severity : "info";
 }
 
 function dateOf(row: DisplayRow): string {
   return row.type === "event" ? row.event.occurredAt : (row.latest ?? "");
-}
-
-function SeverityIcon({ severity }: { severity: Severity }) {
-  const common = { viewBox: "0 0 12 12", fill: "none" as const, stroke: "currentColor", strokeWidth: 1.6, "aria-hidden": true, className: "h-3 w-3 flex-none" };
-  switch (severity) {
-    case "alert":
-      return <svg {...common}><path d="M6 1.5 11 10.5H1z" /><path d="M6 5v2.5" /></svg>;
-    case "notice":
-      return <svg {...common}><circle cx="6" cy="6" r="4.5" /><path d="M6 3.5v3l2 1" /></svg>;
-    case "positive":
-      return <svg {...common} strokeWidth={1.8}><path d="M2.5 6.5 5 9l4.5-6" /></svg>;
-    default:
-      return <svg {...common}><circle cx="6" cy="6" r="4.5" strokeDasharray="2 2" /></svg>;
-  }
 }
 
 /**
@@ -186,10 +160,7 @@ export function EventTable({
                         </Link>
                       </td>
                       <td className="px-2 py-1.5">
-                        <span className={`flex items-center gap-1 font-semibold ${SEVERITY_CLASS[row.event.severity]}`}>
-                          <SeverityIcon severity={row.event.severity} />
-                          {SEVERITY_LABEL[row.event.severity]}
-                        </span>
+                        <SeverityMark severity={row.event.severity} />
                       </td>
                       <td className="px-2 py-1.5 text-muted-foreground">{KIND_LABEL[row.event.kind]}</td>
                       <td className="px-2 py-1.5">{row.event.title}</td>
@@ -227,10 +198,7 @@ export function EventTable({
                         </Link>
                       </td>
                       <td className="px-2 py-1.5">
-                        <span className="flex items-center gap-1 font-semibold">
-                          <SeverityIcon severity="info" />
-                          {SEVERITY_LABEL.info}
-                        </span>
+                        <SeverityMark severity="info" />
                       </td>
                       <td className="px-2 py-1.5">{KIND_LABEL.silence}</td>
                       <td className="px-2 py-1.5" colSpan={3}>

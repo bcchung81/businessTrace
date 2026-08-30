@@ -2,37 +2,11 @@
 
 import { Badge } from "@/components/ui/badge";
 import { EventReviewButtons } from "@/components/dashboard/event-review-buttons";
+import { SEVERITY_CLASS, SeverityIcon, trustLabel } from "@/components/dashboard/severity-ui";
 import type { EventRow } from "@/lib/repositories/eventRepository";
-import { KIND_LABEL, type Severity, type Trust } from "@/lib/services/eventRules";
+import { KIND_LABEL } from "@/lib/services/eventRules";
 import { STATUS_LABEL } from "@/lib/services/eventReview";
 import { kstDate } from "@/lib/services/kst";
-
-const SEVERITY_CLASS: Record<Severity, string> = {
-  alert: "text-risk",
-  notice: "text-review",
-  positive: "text-verified",
-  info: "text-muted-foreground",
-};
-
-function trustLabel(trust: Trust) {
-  if (trust === "verified") return "근거 확인";
-  if (trust === "needs_review") return "확인 필요";
-  return "실측";
-}
-
-function SeverityIcon({ severity }: { severity: Severity }) {
-  const common = { viewBox: "0 0 12 12", fill: "none" as const, stroke: "currentColor", strokeWidth: 1.6, "aria-hidden": true, className: "h-3 w-3 flex-none" };
-  switch (severity) {
-    case "alert":
-      return <svg {...common}><path d="M6 1.5 11 10.5H1z" /><path d="M6 5v2.5" /></svg>;
-    case "notice":
-      return <svg {...common}><circle cx="6" cy="6" r="4.5" /><path d="M6 3.5v3l2 1" /></svg>;
-    case "positive":
-      return <svg {...common} strokeWidth={1.8}><path d="M2.5 6.5 5 9l4.5-6" /></svg>;
-    default:
-      return <svg {...common}><circle cx="6" cy="6" r="4.5" strokeDasharray="2 2" /></svg>;
-  }
-}
 
 /**
  * 기업 상세의 사건 이력을 최신순 세로 타임라인으로 낸다.
