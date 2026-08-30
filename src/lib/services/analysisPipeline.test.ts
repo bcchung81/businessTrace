@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
+import { listEvents } from "@/lib/repositories/eventRepository";
 import type { AnalysisResult, AnalyzeEvent } from "@/lib/services/analyzer";
 import { runCompanyAnalysis, type PipelineDeps } from "@/lib/services/analysisPipeline";
 import type { NewsItem } from "@/lib/services/newsTypes";
@@ -165,5 +166,28 @@ describe("runCompanyAnalysis — relevance filter", () => {
     expect(called).toBe(false);
     expect(outcome.status).toBe("no_news");
     expect(run.status).toBe("no_news");
+  });
+});
+
+describe("runCompanyAnalysis — events", () => {
+  beforeEach(resetDatabase);
+
+  it("records award and press events with the verification trust after a verified run", async () => {
+    const { company, user } = await seed();
+    const awarded: AnalysisResult = { ...result(), analyses: [
+      { news: NEWS[0], isAboutCompany: true, trend: { is_about_company: "Y", news_trend_summary: "요약", sentiment_score: 7, sentiment_label: "긍정적" }, award: { is_award_related: "Y", award_name: "대상", award_reason: "" }, investment: { is_investment_related: "N", investment_name: "", investment_reason: "" } },
+    ] };
+
+    await runCompanyAnalysis({ company, userId: user.id, news: NEWS }, deps({ analyze: () => completes(awarded) }));
+
+    const events = await listEvents({ year: 2025, companyId: company.id });
+    expect(events.map((e) => [e.kind, e.trust]).sort()).toEqual([["award", "verified"], ["positive_press", "verified"]]);
+  });
+
+  it("records nothing when verification failed", async () => {
+    const { company, user } = await seed();
+    await runCompanyAnalysis({ company, userId: user.id, news: NEWS }, deps({ verify: async () => { throw new Error("judge down"); } }));
+
+    expect(await listEvents({ year: 2025, companyId: company.id })).toEqual([]);
   });
 });

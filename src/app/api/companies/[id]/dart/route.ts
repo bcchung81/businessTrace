@@ -1,9 +1,11 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { updateCompany } from "@/lib/repositories/companyRepository";
-import { saveSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
+import { upsertEvents } from "@/lib/repositories/eventRepository";
+import { listSourceSnapshots, saveSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { collectEvidence } from "@/lib/services/collectEvidence";
 import { refreshCorpCodes } from "@/lib/services/dartCorpCode";
+import { extractSourceEvents } from "@/lib/services/eventRules";
 import { toSnapshots } from "@/lib/services/sourceEvidence";
 
 export async function POST(_request: Request, context: RouteContext<"/api/companies/[id]/dart">) {
@@ -18,6 +20,7 @@ export async function POST(_request: Request, context: RouteContext<"/api/compan
   const { evidence, businessNo, businessNoSource } = await collectEvidence(company);
   const snapshots = toSnapshots(evidence);
   await saveSourceSnapshots(company.id, snapshots);
+  await upsertEvents(extractSourceEvents({ companyId: company.id, snapshots: await listSourceSnapshots(company.id), now: new Date() }));
 
   const updated = await updateCompany(company.id, {
     businessNo: businessNo ?? company.businessNo,

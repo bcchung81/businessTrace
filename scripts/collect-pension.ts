@@ -1,6 +1,8 @@
 import { config } from "dotenv";
 import { prisma } from "@/lib/db";
-import { savePensionSeries } from "@/lib/repositories/pensionSnapshot";
+import { upsertEvents } from "@/lib/repositories/eventRepository";
+import { listPensionSeries, savePensionSeries } from "@/lib/repositories/pensionSnapshot";
+import { extractPensionEvents } from "@/lib/services/eventRules";
 import { lookupWorkplace } from "@/lib/services/nps";
 
 config({ quiet: true });
@@ -49,6 +51,9 @@ async function main() {
         `사업장 ${workplace.workplaceCount ?? 1}곳 (${workplace.businessNoPrefix ?? "번호 없음"})`,
     );
   }
+
+  const { created } = await upsertEvents((await listPensionSeries(year)).flatMap((series) => extractPensionEvents({ companyId: series.companyId, points: series.points })));
+  console.log(`인원 사건 ${created}건 신규`);
 }
 
 main()

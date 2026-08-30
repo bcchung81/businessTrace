@@ -1,8 +1,10 @@
 import { config } from "dotenv";
 import { prisma } from "@/lib/db";
-import { saveSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
+import { upsertEvents } from "@/lib/repositories/eventRepository";
+import { listSourceSnapshots, saveSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { collectEvidence } from "@/lib/services/collectEvidence";
 import { refreshCorpCodes } from "@/lib/services/dartCorpCode";
+import { extractSourceEvents } from "@/lib/services/eventRules";
 import { toSnapshots } from "@/lib/services/sourceEvidence";
 
 config({ quiet: true });
@@ -33,6 +35,7 @@ async function main() {
     const { evidence, businessNoSource } = await collectEvidence(company);
     const snapshots = toSnapshots(evidence);
     await saveSourceSnapshots(company.id, snapshots);
+    await upsertEvents(extractSourceEvents({ companyId: company.id, snapshots: await listSourceSnapshots(company.id), now: new Date() }));
 
     for (const snapshot of snapshots) {
       const key = `${snapshot.source}:${snapshot.status}`;

@@ -1,6 +1,8 @@
 import { completeRun, createRun, failRun } from "@/lib/repositories/analysisRun";
+import { upsertEvents } from "@/lib/repositories/eventRepository";
 import { saveVerification } from "@/lib/repositories/verificationResult";
 import { analyzeCompany, type AnalysisResult, type AnalyzeEvent } from "@/lib/services/analyzer";
+import { extractAnalysisEvents } from "@/lib/services/eventRules";
 import { defaultLlmClient, resolveModel, type Usage } from "@/lib/services/llm";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import { verifyAnalysis, type VerificationOutput } from "@/lib/services/verification";
@@ -100,6 +102,7 @@ export async function runCompanyAnalysis(
       try {
         const verification = await deps.verify(event.result);
         await saveVerification(run.id, verification);
+        await upsertEvents(extractAnalysisEvents({ companyId: input.company.id, runId: run.id, result: event.result, trust: verification.status }));
         usage = addUsage(usage, verification.usage);
         emit({ type: "verified", runId: run.id, verification });
         return { runId: run.id, status: verification.status, usage };
