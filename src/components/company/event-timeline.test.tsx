@@ -10,14 +10,24 @@ const ROWS: EventRow[] = [
 ];
 
 describe("EventTimeline", () => {
-  test("lists events newest first with evidence link, trust and status", () => {
+  test("puts each event on one table row, newest first, with date, kind, trust, status, title and evidence", () => {
     render(<EventTimeline events={ROWS} />);
-    const items = screen.getAllByRole("listitem");
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers).toEqual(["날짜", "심각도", "종류", "신뢰", "상태", "사건", "근거"]);
 
-    expect(items[0]).toHaveTextContent("2026-08-28");
-    expect(within(items[0]).getByRole("link", { name: "기사" })).toHaveAttribute("href", "https://n/1");
-    expect(items[0]).toHaveTextContent("확인 필요");
-    expect(items[1]).toHaveTextContent("조치완료");
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(2);
+    const cells = within(rows[0]).getAllByRole("cell");
+    expect(cells).toHaveLength(7);
+    expect(cells[0]).toHaveTextContent("2026-08-28");
+    expect(cells[1]).toHaveTextContent("주의");
+    expect(cells[2]).toHaveTextContent("부정 보도");
+    expect(cells[3]).toHaveTextContent("확인 필요");
+    expect(cells[4]).toHaveTextContent("미확인");
+    expect(cells[5]).toHaveTextContent("부정 보도 — 자본잠식");
+    expect(within(cells[6]).getByRole("link", { name: "기사" })).toHaveAttribute("href", "https://n/1");
+    expect(within(rows[1]).getAllByRole("cell")[4]).toHaveTextContent("조치완료");
+    expect(within(rows[1]).getAllByRole("cell")[6]).toHaveTextContent("—");
   });
 
   test("is read-only — no review buttons, no note field", () => {
