@@ -12,11 +12,11 @@ export function CompanyChips({
   empty: string;
 }) {
   if (items.length === 0) {
-    return <p className="text-[12.5px] text-muted-foreground">{empty}</p>;
+    return <p className="p-3.5 text-[12.5px] text-muted-foreground">{empty}</p>;
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1.5 p-3.5">
       {items.map((item) => (
         <Link key={item.id} href={`/companies/${item.id}`}>
           <Badge variant="ink" className="gap-1.5">
