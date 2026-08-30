@@ -140,12 +140,12 @@ export function EventTable({
                 <tr className="border-b border-border bg-surface text-[11px] text-muted-foreground">
                   <th scope="col" className="px-2 py-2 text-left font-semibold">날짜</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">기업</th>
-                  <th scope="col" className="px-2 py-2 text-left font-semibold">심각도</th>
-                  <th scope="col" className="px-2 py-2 text-left font-semibold">종류</th>
+                  <th scope="col" className="w-[72px] whitespace-nowrap px-2 py-2 text-left font-semibold">심각도</th>
+                  <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">종류</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">사건</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">근거</th>
-                  <th scope="col" className="px-2 py-2 text-left font-semibold">신뢰</th>
-                  <th scope="col" className="px-2 py-2 text-left font-semibold">상태</th>
+                  <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">신뢰</th>
+                  <th scope="col" className="w-[64px] whitespace-nowrap px-2 py-2 text-left font-semibold">상태</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">조치</th>
                 </tr>
               </thead>
@@ -159,10 +159,10 @@ export function EventTable({
                           {row.event.companyName}
                         </Link>
                       </td>
-                      <td className="px-2 py-1.5">
+                      <td className="whitespace-nowrap px-2 py-1.5">
                         <SeverityMark severity={row.event.severity} />
                       </td>
-                      <td className="px-2 py-1.5 text-muted-foreground">{KIND_LABEL[row.event.kind]}</td>
+                      <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{KIND_LABEL[row.event.kind]}</td>
                       <td className="px-2 py-1.5">{row.event.title}</td>
                       <td className="px-2 py-1.5">
                         {row.event.evidence.length === 0 ? (
@@ -181,10 +181,10 @@ export function EventTable({
                           </div>
                         )}
                       </td>
-                      <td className="px-2 py-1.5">
+                      <td className="whitespace-nowrap px-2 py-1.5">
                         <Badge variant="ink">{trustLabel(row.event.trust)}</Badge>
                       </td>
-                      <td className="px-2 py-1.5">{STATUS_LABEL[row.event.status]}</td>
+                      <td className="whitespace-nowrap px-2 py-1.5">{STATUS_LABEL[row.event.status]}</td>
                       <td className="px-2 py-1.5">
                         <EventReviewButtons id={row.event.id} status={row.event.status} path={DASHBOARD_PATH} allowReopen={false} />
                       </td>
@@ -197,14 +197,14 @@ export function EventTable({
                           {row.companyName}
                         </Link>
                       </td>
-                      <td className="px-2 py-1.5">
+                      <td className="whitespace-nowrap px-2 py-1.5">
                         <SeverityMark severity="info" />
                       </td>
-                      <td className="px-2 py-1.5">{KIND_LABEL.silence}</td>
+                      <td className="whitespace-nowrap px-2 py-1.5">{KIND_LABEL.silence}</td>
                       <td className="px-2 py-1.5" colSpan={3}>
                         {`무보도 — 최근 보도 ${row.latest ? kstMonthDay(row.latest) : "없음"}`}
                       </td>
-                      <td className="px-2 py-1.5">—</td>
+                      <td className="whitespace-nowrap px-2 py-1.5">—</td>
                       <td className="px-2 py-1.5" />
                     </tr>
                   ),
