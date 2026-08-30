@@ -93,3 +93,46 @@ export async function summariseRunActivity(year: number) {
   ]);
   return { latestAt: latest?.createdAt.toISOString() ?? null, running };
 }
+
+export type RunHistoryRow = {
+  id: number;
+  companyId: number;
+  companyName: string;
+  status: string;
+  articleCount: number;
+  verdict: "verified" | "needs_review" | "risk" | null;
+  usage: { inputTokens: number; outputTokens: number } | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+/**
+ * 실행 이력을 최신순으로 낸다 — 기사 수는 newsJson 길이, 판정은 검증 결과에서 읽는다.
+ */
+export async function listRunHistory(input: { year: number; limit?: number }): Promise<RunHistoryRow[]> {
+  const rows = await prisma.analysisRun.findMany({
+    where: { company: { year: input.year, isActive: true } },
+    orderBy: { createdAt: "desc" },
+    take: input.limit ?? 100,
+    include: { company: { select: { name: true } }, verification: { select: { status: true } } },
+  });
+  return rows.map((row) => {
+    const news = JSON.parse(row.newsJson) as unknown[];
+    const usage = row.usageJson ? (JSON.parse(row.usageJson) as { inputTokens?: number; outputTokens?: number }) : null;
+    return {
+      id: row.id,
+      companyId: row.companyId,
+      companyName: row.company.name,
+      status: row.status,
+      articleCount: Array.isArray(news) ? news.length : 0,
+      verdict: (row.verification?.status as RunHistoryRow["verdict"]) ?? null,
+      usage: usage ? { inputTokens: usage.inputTokens ?? 0, outputTokens: usage.outputTokens ?? 0 } : null,
+      periodStart: row.periodStart?.toISOString() ?? null,
+      periodEnd: row.periodEnd?.toISOString() ?? null,
+      createdAt: row.createdAt.toISOString(),
+      completedAt: row.completedAt?.toISOString() ?? null,
+    };
+  });
+}

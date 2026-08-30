@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
-import { createCollectionRun, summariseRunActivity } from "@/lib/repositories/analysisRun";
+import { createCollectionRun, listRunHistory, summariseRunActivity } from "@/lib/repositories/analysisRun";
 
 async function seedCompanyAndUser() {
   const company = await prisma.company.create({ data: { name: "크립토랩", year: 2024 } });
@@ -138,5 +138,44 @@ describe("summariseRunActivity", () => {
 
   it("returns nulls and zero for a year with no runs", async () => {
     expect(await summariseRunActivity(1999)).toEqual({ latestAt: null, running: 0 });
+  });
+});
+
+describe("listRunHistory", () => {
+  beforeEach(resetDatabase);
+
+  it("lists runs newest first with article counts, verdict and token usage", async () => {
+    const { company, user } = await seedCompanyAndUser();
+    const done = await prisma.analysisRun.create({
+      data: {
+        companyId: company.id, userId: user.id, model: "m", status: "completed",
+        newsJson: JSON.stringify([{ title: "a" }, { title: "b" }]),
+        usageJson: JSON.stringify({ inputTokens: 100, outputTokens: 20 }),
+        completedAt: new Date("2026-08-30T00:00:00.000Z"),
+      },
+    });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: done.id, status: "verified", faithfulness: 1, unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" },
+    });
+    await prisma.analysisRun.create({ data: { companyId: company.id, userId: user.id, model: "m", newsJson: "[]" } });
+
+    const rows = await listRunHistory({ year: company.year });
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ companyName: "크립토랩", status: "running", articleCount: 0, verdict: null, usage: null });
+    expect(rows[1]).toMatchObject({
+      companyName: "크립토랩", status: "completed", articleCount: 2, verdict: "verified",
+      usage: { inputTokens: 100, outputTokens: 20 }, completedAt: "2026-08-30T00:00:00.000Z",
+    });
+  });
+
+  it("honours the limit and stays inside the asked year", async () => {
+    const { company, user } = await seedCompanyAndUser();
+    for (let index = 0; index < 3; index += 1) {
+      await prisma.analysisRun.create({ data: { companyId: company.id, userId: user.id, model: "m", newsJson: "[]" } });
+    }
+
+    expect(await listRunHistory({ year: company.year, limit: 2 })).toHaveLength(2);
+    expect(await listRunHistory({ year: 1999 })).toEqual([]);
   });
 });
