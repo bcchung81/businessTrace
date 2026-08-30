@@ -7,6 +7,7 @@ import type { CellState, PipelineCell } from "@/lib/repositories/companyPipeline
 import { MATRIX_COLUMNS, sortMatrixRows, type MatrixRow, type MatrixSort } from "@/lib/services/matrixRows";
 import { isStale } from "@/lib/services/newsCoverage";
 import { MATRIX_STAGES } from "@/lib/services/pipelineMatrix";
+import { kstMonthDay } from "@/lib/services/kst";
 
 const STAGES = MATRIX_STAGES.filter((stage) => (MATRIX_COLUMNS as readonly string[]).includes(stage.key));
 
@@ -90,7 +91,7 @@ export function compactValue(stageKey: string, cell: PipelineCell) {
 }
 
 function monthDay(iso: string | null) {
-  return iso ? iso.slice(5, 10) : "—";
+  return iso ? kstMonthDay(iso) : "—";
 }
 
 function score(value: number | null, verdict: MatrixRow["verdict"]) {

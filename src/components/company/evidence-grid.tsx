@@ -1,6 +1,7 @@
 import { StateLegend } from "@/components/dashboard/state-legend";
 import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
 import type { SourceKey, SourceStatus } from "@/lib/services/sourceEvidence";
+import { kstDate } from "@/lib/services/kst";
 
 const SOURCE_LABEL: Record<SourceKey, { name: string; org: string }> = {
   dart: { name: "DART 기업개황", org: "금융감독원" },
@@ -29,7 +30,7 @@ const STATUS_CLASS: Record<SourceStatus, string> = {
 };
 
 function day(at: Date) {
-  return at.toISOString().slice(0, 10);
+  return kstDate(at.toISOString());
 }
 
 /**

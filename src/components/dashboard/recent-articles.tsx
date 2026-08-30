@@ -1,4 +1,5 @@
 import type { MentionedArticle } from "@/lib/services/coMention";
+import { kstMonthDay } from "@/lib/services/kst";
 
 const DAY_MS = 86_400_000;
 const GROUPS = [
@@ -8,7 +9,7 @@ const GROUPS = [
 ];
 
 function monthDay(published: string) {
-  return published.slice(5, 10);
+  return kstMonthDay(published);
 }
 
 function groupOf(published: string, now: Date) {
