@@ -4,6 +4,27 @@
 
 범례 — 활용처 약어: **요약**=원천 카드/스트립 요약문(`sourceEvidence.ts`) · **매트릭스**=홈 근거 매트릭스 셀 · **사건**=사건 추출(`eventRules.ts`) · **랭킹**=벤치마킹 지표(`benchmarkInputs.ts`) · **기여도**=기업 상세 근거 요약(`explainer.ts`) · **고용**=고용 규모 12개월(`dashboardSummary.ts`) · **식별**=사업자번호 확보/동명 대조(`collectEvidence.ts`)
 
+## 요약 — API 별 활용 / 미활용 컬럼
+
+| API | 활용 컬럼 | 미활용 컬럼 |
+|---|---|---|
+| **OpenDART 기업개황** `company.json` | `corp_name`(요약·상호 대조) · `bizr_no`(사업자번호 확보·대조) | `jurir_no` · `ceo_nm` · `induty_code`(파싱만, 단건 조회 시 코드가 업종에 잘못 들어감) · `adres` · `hm_url` · `phn_no` · `est_dt` · `acc_mt`(파싱 안 함) |
+| **OpenDART 고유번호** `corpCode.xml` | `corp_code` · `corp_name`(상호→코드 매핑) | `stock_code`(상장 여부) · `modify_date` |
+| **OpenDART 재무** `fnlttSinglAcnt.json` | `매출액`(랭킹·기여도·요약) · `영업이익` · `당기순이익`(기여도) · `bsns_year` | `자산총계`(파싱만) · `frmtrm_amount`/`bfefrmtrm_amount` 전기값 · `부채총계` · `자본총계`(파싱 안 함) |
+| **국세청 휴폐업** `status` | `b_stt_cd`(휴·폐업 사건·매트릭스) · `b_stt` · `tax_type`(요약) · `end_dt`(요약 문구에만 — 사건 날짜로는 미사용) | `utcc_yn` · `tax_type_change_dt` · `invoice_apply_dt` · `rbf_tax_type` |
+| **나라장터 조달업체** `getPrcrmntCorpBasicInfo02` | `emplyeNum`(요약 문구에만) · 조회 성공 여부(매트릭스 "조달 등록") | `corpNm` · `ceoNm` · `adrs` · `telNo` · `hmpgAdrs` · `opbizDt` · `corpBsnsDivNm` · `mnfctDivNm`(전부 파싱만) |
+| **나라장터 낙찰·계약** | 없음(개통만, 프로덕션 미연결) | 전체(`bidwinnrBizno` `bidwinnrNm` 낙찰금액·계약금액 등 — 실험 스크립트만) |
+| **벤처확인 명단** `odcloud 15084581` | `벤처확인유형`(요약) · `벤처유효종료일`(요약·만료 사건) · 기업명(매칭) | `벤처유효시작일` · `업종명(11차)`(파싱만) · 소재지 · 대표자(파싱 안 함) |
+| **국민연금 가입 사업장** `NpsBplcInfoInqireServiceV2` | `jnngpCnt`(고용 추이·사건·목록·요약) · `bzowrRgstNo` 앞 6자리(동명 대조·법인 합산) · `wkplNm` · `wkplRoadNmDtlAddr`(후보 점수·지오코딩) · `wkplJnngStcd`(후보 점수) · `dataCrtYm` · `seq`(조회 키) | `vldtVlKrnNm` · `wkplIntpCd`(업종) · `adptDt` · `scsnDt`(등록·탈퇴일) · `crrmmNtcAmt`(고지금액→기준소득·인건비) · `nwAcqzrCnt` · `lssJnngpCnt`(입·퇴사) — 전부 파싱만 |
+| **금융위 기업기본정보** `getCorpOutline_V2` | `corpNm`(매칭) · `bzno`(번호 없을 때만 확보; 번호를 알면 호출 자체 생략) | `crno` · `enpEstbDt` · `enpEmpeCnt` · `enpMainBizNm` · `enpBsadr` · `smenpYn`(전부 파싱만) |
+| **네이버 뉴스 / 구글 RSS** | `title` · `link`/`originallink` · `description` · 원문 본문 · `pubDate` · 언론사(도메인) — 전부 활용 | 없음(네이버 `similarity`·구글 `guid` 등은 애초에 안 받음) |
+| **Anthropic Messages** | `sentiment_score`·`sentiment_label`·`news_trend_summary` · `is_award_related`·`award_name` · `is_investment_related`·`investment_name` · 종합의견 · judge `claims[]`·`counter_evidence[]` | `award_reason` · `investment_reason`(엑셀에만) · `usage` 토큰(저장만, 화면 없음) |
+| **네이버 지오코딩** | `x` · `y` · `roadAddress`(저장) | 저장은 되지만 지도가 현재 화면에서 빠져 화면 활용 0 · `addressElements` · `jibunAddress`(파싱 안 함) |
+| **SGIS 행정구역** | `adm_cd` · `adm_nm`(스크립트로 이름표 생성) | 화면 미사용(지역 그리드 제거됨) |
+| **Tavily** | 없음 | 전체(키만 보유) |
+
+활용률이 낮은 원천은 조달업체(1/9) · 금융위(2/8) · 국민연금(6/13) · DART 기업개황(2/10) 이고, 뉴스와 LLM 응답은 거의 다 쓴다. 아래 절은 각 컬럼의 활용처와 미활용 컬럼을 어디에 쓸 수 있는지의 상세다.
+
 ## 1. OpenDART 기업개황 `company.json` (`dart.ts`)
 
 | 원본 키 | 파싱 필드 | 활용 | 비고 |
