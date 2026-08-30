@@ -25,18 +25,29 @@ describe("AppShell", () => {
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
 
     expect(within(nav).getAllByRole("link")).toHaveLength(3);
-    expect(within(nav).getByRole("link", { name: "동향" })).toHaveAttribute("href", "/dashboard");
-    expect(within(nav).getByRole("link", { name: "기업" })).toHaveAttribute("href", "/companies");
-    expect(within(nav).getByRole("link", { name: "랭킹" })).toHaveAttribute("href", "/ranking");
-    expect(within(nav).getByRole("link", { name: "동향" })).toHaveClass("sm:[writing-mode:vertical-rl]");
+    expect(within(nav).getByRole("link", { name: /동향/ })).toHaveAttribute("href", "/dashboard");
+    expect(within(nav).getByRole("link", { name: /기업/ })).toHaveAttribute("href", "/companies");
+    expect(within(nav).getByRole("link", { name: /랭킹/ })).toHaveAttribute("href", "/ranking");
+    expect(within(nav).getByRole("link", { name: /동향/ })).toHaveClass("lg:[writing-mode:vertical-rl]");
+  });
+
+  test("numbers the tabs like a dossier index and hangs them in the margin outside the content column", () => {
+    render(<AppShell>본문</AppShell>);
+    const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
+
+    expect(within(nav).getByRole("link", { name: /동향/ })).toHaveTextContent("01");
+    expect(within(nav).getByRole("link", { name: /랭킹/ })).toHaveTextContent("03");
+    const rail = nav.closest("aside");
+    expect(rail).toHaveClass("lg:absolute", "lg:right-full");
+    expect(screen.getByRole("main")).toHaveClass("lg:border-l");
   });
 
   test("marks the tab of the current section, including nested pages", () => {
     render(<AppShell>본문</AppShell>);
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
 
-    expect(within(nav).getByRole("link", { name: "기업" })).toHaveAttribute("aria-current", "page");
-    expect(within(nav).getByRole("link", { name: "동향" })).not.toHaveAttribute("aria-current");
+    expect(within(nav).getByRole("link", { name: /기업/ })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: /동향/ })).not.toHaveAttribute("aria-current");
   });
 
   test("renders its children inside the main region", () => {
