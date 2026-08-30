@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "분석 자료" },
-  { href: "/companies", label: "기업 등록" },
+  { href: "/dashboard", label: "동향" },
+  { href: "/companies", label: "기업" },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

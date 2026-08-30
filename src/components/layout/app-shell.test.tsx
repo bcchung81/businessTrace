@@ -16,11 +16,11 @@ describe("AppShell", () => {
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
 
     expect(within(nav).getAllByRole("link")).toHaveLength(2);
-    expect(within(nav).getByRole("link", { name: "분석 자료" })).toHaveAttribute(
+    expect(within(nav).getByRole("link", { name: "동향" })).toHaveAttribute(
       "href",
       "/dashboard",
     );
-    expect(within(nav).getByRole("link", { name: "기업 등록" })).toHaveAttribute(
+    expect(within(nav).getByRole("link", { name: "기업" })).toHaveAttribute(
       "href",
       "/companies",
     );
