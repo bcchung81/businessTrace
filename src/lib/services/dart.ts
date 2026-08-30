@@ -10,6 +10,7 @@ export type DartDeps = { fetchImpl?: typeof fetch };
 export type CompanyProfile = {
   found: boolean;
   corpCode?: string;
+  stockCode?: string | null;
   corpName?: string;
   businessNo?: string;
   corporateNo?: string;
@@ -21,6 +22,13 @@ export type CompanyProfile = {
   reason?: string;
 };
 
+export type FinancialFigures = {
+  revenue: number | null;
+  operatingIncome: number | null;
+  netIncome: number | null;
+  totalAssets: number | null;
+};
+
 export type FinancialSummary = {
   found: boolean;
   fiscalYear: number;
@@ -28,6 +36,7 @@ export type FinancialSummary = {
   operatingIncome: number | null;
   netIncome: number | null;
   totalAssets: number | null;
+  previous?: FinancialFigures;
   failed?: boolean;
   reason?: string;
 };
@@ -109,6 +118,7 @@ export async function getCompanyProfile(
   return {
     found: true,
     corpCode: exact.corpCode,
+    stockCode: exact.stockCode,
     corpName: String(body.corp_name ?? exact.corpName),
     businessNo: typeof body.bizr_no === "string" ? body.bizr_no : undefined,
     corporateNo: typeof body.jurir_no === "string" ? body.jurir_no : undefined,
@@ -165,8 +175,8 @@ export async function getFinancialSummary(
   }
 
   const rows = Array.isArray(body.list) ? (body.list as Array<Record<string, unknown>>) : [];
-  const pick = (accountName: string) =>
-    parseAmount(rows.find((row) => row.account_nm === accountName)?.thstrm_amount);
+  const pick = (accountName: string, field: "thstrm_amount" | "frmtrm_amount" = "thstrm_amount") =>
+    parseAmount(rows.find((row) => row.account_nm === accountName)?.[field]);
 
   return {
     found: true,
@@ -175,5 +185,11 @@ export async function getFinancialSummary(
     operatingIncome: pick("영업이익"),
     netIncome: pick("당기순이익"),
     totalAssets: pick("자산총계"),
+    previous: {
+      revenue: pick("매출액", "frmtrm_amount"),
+      operatingIncome: pick("영업이익", "frmtrm_amount"),
+      netIncome: pick("당기순이익", "frmtrm_amount"),
+      totalAssets: pick("자산총계", "frmtrm_amount"),
+    },
   };
 }

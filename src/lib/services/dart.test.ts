@@ -173,4 +173,32 @@ describe("getFinancialSummary", () => {
 
     expect(summary.failed).toBe(true);
   });
+
+describe("getFinancialSummary previous-year figures", () => {
+  it("reads frmtrm_amount alongside thstrm_amount", async () => {
+    await prisma.dartCorpCode.create({ data: { corpCode: "00999", corpName: "㈜전기", stockCode: "123456", modifyDate: "20260101" } });
+    const fetchImpl = vi.fn(async () =>
+      Response.json({
+        status: "000",
+        list: [
+          { account_nm: "매출액", thstrm_amount: "1,200", frmtrm_amount: "1,000" },
+          { account_nm: "영업이익", thstrm_amount: "120", frmtrm_amount: "80" },
+          { account_nm: "당기순이익", thstrm_amount: "90", frmtrm_amount: "-10" },
+          { account_nm: "자산총계", thstrm_amount: "5,000", frmtrm_amount: "4,500" },
+        ],
+      }),
+    );
+    const summary = await getFinancialSummary("㈜전기", 2026, { fetchImpl });
+    expect(summary).toMatchObject({ found: true, revenue: 1200, previous: { revenue: 1000, operatingIncome: 80, netIncome: -10, totalAssets: 4500 } });
+  });
+});
+
+describe("getCompanyProfile stock code", () => {
+  it("carries the listing code from the corp code table", async () => {
+    await prisma.dartCorpCode.create({ data: { corpCode: "00777", corpName: "㈜상장", stockCode: "654321", modifyDate: "20260101" } });
+    const fetchImpl = vi.fn(async () => Response.json({ status: "000", corp_name: "㈜상장", bizr_no: "1234567890" }));
+    const profile = await getCompanyProfile("㈜상장", { fetchImpl });
+    expect(profile).toMatchObject({ found: true, stockCode: "654321" });
+  });
+});
 });

@@ -91,6 +91,14 @@ export async function listEvents(input: { year: number; since?: Date; until?: Da
 }
 
 /**
+ * 사건이 한 번이라도 기록된 기업 id — 목록에서 "무보도" 와 "사건 없음" 을 가른다.
+ */
+export async function listCompanyIdsWithEvents(year: number): Promise<number[]> {
+  const rows = await prisma.event.findMany({ where: { company: { year, isActive: true } }, select: { companyId: true }, distinct: ["companyId"] });
+  return rows.map((row) => row.companyId);
+}
+
+/**
  * 연도 활성 기업의 가장 최근 사건 발생일을 낸다.
  * listEvents 는 심각도 우선 정렬이라 "마지막 사건"에 쓸 수 없다 — 여기는 occurredAt 만으로 정렬한다.
  */
