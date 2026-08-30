@@ -5,6 +5,17 @@ export const FAITHFULNESS_THRESHOLD = 0.85;
 export const SOURCE_COVERAGE_THRESHOLD = 0.5;
 export const EVIDENCE_MATCH_THRESHOLD = 0.5;
 
+/**
+ * 세 게이트 중 탈락한 것의 이름을 낸다 — "검토 필요" 만으로는 무엇을 봐야 하는지 모른다.
+ */
+export function failedGates(scores: { sourceCoverage: number; faithfulness: number | null; evidenceMatch: number }): string[] {
+  return [
+    scores.sourceCoverage < SOURCE_COVERAGE_THRESHOLD ? "출처 인용" : null,
+    (scores.faithfulness ?? 0) < FAITHFULNESS_THRESHOLD ? "근거 충실도" : null,
+    scores.evidenceMatch < EVIDENCE_MATCH_THRESHOLD ? "근거 일치" : null,
+  ].filter((name): name is string => name !== null);
+}
+
 export type VerificationStatus = "verified" | "needs_review";
 
 export type SourceCheck = {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
-import { EVIDENCE_MATCH_THRESHOLD, FAITHFULNESS_THRESHOLD, SOURCE_COVERAGE_THRESHOLD } from "@/lib/services/verificationScores";
+import { EVIDENCE_MATCH_THRESHOLD, FAITHFULNESS_THRESHOLD, SOURCE_COVERAGE_THRESHOLD, failedGates } from "@/lib/services/verificationScores";
 
 export type VerificationLayers = {
   status: "verified" | "needs_review";
@@ -28,11 +28,7 @@ export function VerificationPanel({ layers }: { layers: VerificationLayers | nul
   const [open, setOpen] = useState(false);
   if (!layers) return <VerdictPill verdict="pending" />;
 
-  const failed = [
-    layers.sourceCoverage < SOURCE_COVERAGE_THRESHOLD ? "출처 인용" : null,
-    (layers.faithfulness ?? 0) < FAITHFULNESS_THRESHOLD ? "근거 충실도" : null,
-    layers.evidenceMatch < EVIDENCE_MATCH_THRESHOLD ? "근거 일치" : null,
-  ].filter((name): name is string => name !== null);
+  const failed = failedGates(layers);
 
   return (
     <>
