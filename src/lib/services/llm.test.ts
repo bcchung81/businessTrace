@@ -88,6 +88,17 @@ describe("createLlmClient", () => {
     expect(args.messages).toEqual([{ role: "user", content: "p" }]);
   });
 
+  it("drops adaptive thinking and effort for models that predate them", async () => {
+    const { sdk, stream } = fakeSdk(textMessage('{"score":1}'));
+
+    await createLlmClient(sdk, "claude-haiku-4-5").json({ system: "s", prompt: "p", schema, effort: "low" });
+
+    const args = stream.mock.calls[0][0] as StreamArgs;
+    expect(args.model).toBe("claude-haiku-4-5");
+    expect(args).not.toHaveProperty("thinking");
+    expect(args).not.toHaveProperty("output_config");
+  });
+
   it("carries the requested effort through to the request", async () => {
     const { sdk, stream } = fakeSdk(textMessage('{"score":1}'));
 

@@ -57,10 +57,19 @@ function extractJson(text: string) {
 }
 
 /**
+ * adaptive thinking 과 effort 를 받는 세대인지 가른다.
+ * Haiku 4.5 이하는 두 파라미터를 400 으로 거부한다 — 모델 id 로 판별해 아예 보내지 않는다.
+ */
+export function supportsAdaptiveThinking(model: string) {
+  return !/haiku-4-5|sonnet-4-5|opus-4-5|claude-3/.test(model);
+}
+
+/**
  * 구조화 JSON 응답을 돌려주는 LLM 클라이언트를 만든다.
  * Sonnet 5 가 거부하므로 temperature 를 보내지 않는다. 결정성은 effort 로 조절한다.
  */
 export function createLlmClient(sdk: StreamingMessages, model = resolveModel()): LlmClient {
+  const reasoning = supportsAdaptiveThinking(model);
   return {
     async json<T>({ system, context, prompt, schema, effort = "medium" }: LlmRequest<T>) {
       const content = context
@@ -73,8 +82,7 @@ export function createLlmClient(sdk: StreamingMessages, model = resolveModel()):
         .stream({
           model,
           max_tokens: MAX_TOKENS,
-          thinking: { type: "adaptive" },
-          output_config: { effort },
+          ...(reasoning ? { thinking: { type: "adaptive" }, output_config: { effort } } : {}),
           system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
           messages: [{ role: "user", content }],
         })
