@@ -123,7 +123,7 @@ export function EventTable({
         <>
           <div className="min-h-0 flex-1 overflow-x-auto">
             <table className="w-full text-[12px]">
-              <caption className="sr-only">이달의 사건</caption>
+              <caption className="sr-only">최근 이슈</caption>
               <thead>
                 <tr className="border-b-2 border-ink text-[11px] font-bold tracking-[0.06em] text-foreground">
                   <th scope="col" className="px-2 py-2 text-left font-semibold">날짜</th>
@@ -151,22 +151,20 @@ export function EventTable({
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{KIND_LABEL[row.event.kind]}</td>
-                      <td className="px-2 py-1.5">{row.event.title}</td>
-                      <td className="px-2 py-1.5">
+                      <td className="max-w-[280px] truncate whitespace-nowrap px-2 py-1.5" title={row.event.title}>{row.event.title}</td>
+                      <td className="max-w-[220px] truncate whitespace-nowrap px-2 py-1.5" title={row.event.evidence.map((item) => item.label).join(" · ")}>
                         {row.event.evidence.length === 0 ? (
                           <span className="text-muted-foreground/45">—</span>
                         ) : (
-                          <div className="flex flex-wrap gap-1.5">
-                            {row.event.evidence.map((item, index) =>
-                              item.link ? (
-                                <a key={index} href={item.link} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2">
-                                  {item.label}
-                                </a>
-                              ) : (
-                                <span key={index} className="text-muted-foreground">{item.label}</span>
-                              ),
-                            )}
-                          </div>
+                          row.event.evidence.map((item, index) =>
+                            item.link ? (
+                              <a key={index} href={item.link} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2">
+                                {index > 0 ? " · " : ""}{item.label}
+                              </a>
+                            ) : (
+                              <span key={index} className="text-muted-foreground">{index > 0 ? " · " : ""}{item.label}</span>
+                            ),
+                          )
                         )}
                       </td>
                     </tr>
@@ -182,7 +180,7 @@ export function EventTable({
                         <SeverityMark severity="info" />
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5">{KIND_LABEL.silence}</td>
-                      <td className="px-2 py-1.5" colSpan={2}>
+                      <td className="max-w-[280px] truncate whitespace-nowrap px-2 py-1.5" colSpan={2}>
                         {`무보도 — 최근 보도 ${row.latest ? kstMonthDay(row.latest) : "없음"}`}
                       </td>
                     </tr>

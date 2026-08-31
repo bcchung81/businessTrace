@@ -31,6 +31,18 @@ describe("EventTable", () => {
     expect(screen.getByRole("link", { name: "딥노이드" })).toHaveAttribute("href", "/companies/1");
   });
 
+  test("keeps long event and evidence text on one line with an ellipsis and the full text on hover", () => {
+    const long = "부정 보도 — 한국첨단소재 유증 흥행에도 씁쓸한 뒷맛, 소액공모 틈새 노렸나 하는 아주 긴 제목";
+    render(<EventTable events={[row({ title: long, evidence: [{ label: long, link: "https://n/1" }] })]} silence={[]} now={NOW} />);
+
+    const titleCell = screen.getByText(long, { selector: "td" });
+    expect(titleCell.className).toContain("truncate");
+    expect(titleCell).toHaveAttribute("title", long);
+
+    const evidenceCell = screen.getByRole("link", { name: long }).closest("td")!;
+    expect(evidenceCell.className).toContain("truncate");
+  });
+
   test("shows twenty rows per page by default", () => {
     const events = Array.from({ length: 25 }, (_, index) => row({ id: index + 1, title: `사건 ${index + 1}` }));
     render(<EventTable events={events} silence={[]} now={NOW} />);
