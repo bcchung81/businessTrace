@@ -2,7 +2,7 @@ import Link from "next/link";
 import { listCompanies, listYears } from "@/lib/repositories/companyRepository";
 import { listSelections } from "@/lib/repositories/selectionRecord";
 import { periodEndYm, periodLabel } from "@/lib/services/periods";
-import { compareRanks } from "@/lib/services/rising";
+import { compareRanks, fallingRanks } from "@/lib/services/rising";
 import { listBenchmarkInputs } from "@/lib/repositories/benchmarkInputs";
 import { loadRubrics, rankCompanies } from "@/lib/services/benchmarking";
 import { RisingCompanies } from "@/components/dashboard/rising-companies";
@@ -94,10 +94,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const periods = [...new Set(selections.map((record) => record.period))].sort((a, b) => periodEndYm(a).localeCompare(periodEndYm(b)) || a.localeCompare(b));
   const basePeriod = periods.at(-1) ?? null;
   const liveRanked = rankCompanies(await listBenchmarkInputs(year), loadRubrics()).map((row) => ({ companyId: row.companyId, companyName: row.name, rank: row.rank, total: row.total ?? 0 }));
-  const rising = basePeriod
-    ? compareRanks(liveRanked, selections.filter((record) => record.period === basePeriod), 10)
-    : [];
+  const baseline = basePeriod ? selections.filter((record) => record.period === basePeriod) : [];
+  const rising = basePeriod ? compareRanks(liveRanked, baseline, 10) : [];
+  const falling = basePeriod ? fallingRanks(liveRanked, baseline, 10) : [];
   const risingLabel = basePeriod && rising.length > 0 ? `실시간 랭킹 · ${periodLabel(basePeriod)} 확정 대비 순위 상승 순` : null;
+  const fallingLabel = basePeriod && falling.length > 0 ? `실시간 랭킹 · ${periodLabel(basePeriod)} 확정 대비 순위 하락 순` : null;
 
   const [collection, cells, fullRefreshAt, review] = await Promise.all([
     summariseCollection(year),
@@ -176,25 +177,29 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       <Ribbon groups={ribbon} className="-mt-12" />
 
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="grid items-start gap-8 lg:grid-cols-2">
         <Panel index="01" title="추이 상승 TOP 10" tag="실시간" tone="fresh" note="시상 후보 검토용">
           <RisingCompanies rows={rising} periodLabelText={risingLabel} />
         </Panel>
-        <Panel index="02" title="이달의 사건" tag="실측" empty="등록된 기업이 없습니다." className="scroll-mt-20" id="events">
-          {companies.length === 0 ? null : <EventTable events={events} silence={silence} lastEventAt={lastEventAt} now={now} pageSize={10} />}
+        <Panel index="02" title="추이 하락 TOP 10" tag="실시간" tone="review" note="리스크 검토용">
+          <RisingCompanies rows={falling} periodLabelText={fallingLabel} direction="down" />
         </Panel>
       </div>
 
+      <Panel index="03" title="이달의 사건" tag="실측" empty="등록된 기업이 없습니다." className="scroll-mt-20" id="events">
+        {companies.length === 0 ? null : <EventTable events={events} silence={silence} lastEventAt={lastEventAt} now={now} pageSize={10} />}
+      </Panel>
+
       <div className="grid items-stretch gap-5 lg:grid-cols-2">
-        <Panel index="03" title="주의 기업" tag="리스크">
+        <Panel index="04" title="주의 기업" tag="리스크">
           <CompanyChips items={watchlist} empty="주의 기업 없음" />
         </Panel>
-        <Panel index="04" title="홍보 후보" tag="긍정">
+        <Panel index="05" title="홍보 후보" tag="긍정">
           <CompanyChips items={promoted} empty="홍보 후보 없음" />
         </Panel>
       </div>
 
-      <Panel index="05" title="데이터 신선도" tag="분석 산출" tone="fresh">
+      <Panel index="06" title="데이터 신선도" tag="분석 산출" tone="fresh">
         <details>
           <summary className="cursor-pointer select-none px-3.5 py-2.5 text-[12px] font-semibold text-muted-foreground">
             판정 현황 · 기업별 근거 매트릭스 펼치기

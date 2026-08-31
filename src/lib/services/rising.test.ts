@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { compareRanks, risingCompanies } from "@/lib/services/rising";
+import { compareRanks, fallingRanks, risingCompanies } from "@/lib/services/rising";
+
+describe("fallingRanks", () => {
+  it("ranks live standings that dropped against the confirmed baseline", () => {
+    const live = [
+      { companyId: 1, companyName: "급락기업", rank: 20, total: 0.31 },
+      { companyId: 2, companyName: "소폭하락", rank: 8, total: 0.5 },
+      { companyId: 3, companyName: "상승기업", rank: 2, total: 0.7 },
+    ];
+    const baseline = [
+      { companyId: 1, rank: 3 },
+      { companyId: 2, rank: 5 },
+      { companyId: 3, rank: 9 },
+    ];
+
+    const falling = fallingRanks(live, baseline, 10);
+
+    expect(falling).toEqual([
+      { companyId: 1, companyName: "급락기업", prevRank: 3, rank: 20, delta: 17, total: 0.31 },
+      { companyId: 2, companyName: "소폭하락", prevRank: 5, rank: 8, delta: 3, total: 0.5 },
+    ]);
+  });
+});
 
 describe("compareRanks", () => {
   it("ranks live standings against a confirmed baseline", () => {
