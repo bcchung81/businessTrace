@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Segmented } from "@/components/ui/segmented";
 import { useState } from "react";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
@@ -166,7 +167,9 @@ export function CompanyPipelineGrid({
               <tr key={entry.id} className="border-b border-hairline align-middle last:border-0">
                 <td className={`px-2.5 py-1.5 ${EDGE[entry.verdict] ?? ""}`}><VerdictPill verdict={entry.verdict} /></td>
                 <th scope="row" className="px-2 py-1.5 text-left font-semibold">
-                  <span className="block truncate">{entry.name}</span>
+                  <Link href={`/companies/${entry.id}`} className="block truncate hover:underline">
+                    {entry.name}
+                  </Link>
                   {entry.businessNo ? null : (
                     <span className="block text-[10px] font-semibold text-review">사업자번호 미확보</span>
                   )}

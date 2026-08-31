@@ -29,6 +29,12 @@ function row(id: number, over: Partial<MatrixRow> = {}): MatrixRow {
 const ROWS = Array.from({ length: 24 }, (_, index) => row(index + 1));
 
 describe("CompanyPipelineGrid", () => {
+  test("links each company name to its detail screen", () => {
+    render(<CompanyPipelineGrid rows={[row(34, { name: "한국첨단소재" })]} now={NOW} />);
+
+    expect(screen.getByRole("link", { name: "한국첨단소재" })).toHaveAttribute("href", "/companies/34");
+  });
+
   test("prints the value each stage returned, not a tick", () => {
     render(<CompanyPipelineGrid rows={[row(1)]} pageSize={10} now={NOW} />);
     const line = screen.getByRole("row", { name: /기업1/ });
