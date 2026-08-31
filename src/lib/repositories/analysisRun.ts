@@ -114,12 +114,13 @@ export type RunHistoryRow = {
 
 /**
  * 실행 이력을 최신순으로 낸다 — 기사 수는 newsJson 길이, 판정은 검증 결과에서 읽는다.
+ * limit 이 없으면 그 해 전부다. 화면이 20건씩 나눠 보여주므로 여기서 자르면 나머지가 어디서도 열리지 않는다.
  */
 export async function listRunHistory(input: { year: number; limit?: number }): Promise<RunHistoryRow[]> {
   const rows = await prisma.analysisRun.findMany({
     where: { company: { year: input.year, isActive: true } },
     orderBy: { createdAt: "desc" },
-    take: input.limit ?? 100,
+    ...(input.limit === undefined ? {} : { take: input.limit }),
     include: { company: { select: { name: true } }, verification: { select: { status: true } } },
   });
   return rows.map((row) => {

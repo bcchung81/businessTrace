@@ -22,7 +22,7 @@ export default async function ReportsPage() {
         <p className="text-[12.5px] text-muted-foreground">분석 실행의 산출물과 위원회 제출 기록을 한곳에 둔다 — 제출 파일은 해시로 남는다.</p>
       </header>
 
-      <Panel index="01" title="실행 이력" tag="실측" note="최근 100건 · 완료된 실행만 엑셀 링크">
+      <Panel index="01" title="실행 이력" tag="실측" note={`${cohortYear}년 ${runs.length}건 · 20건씩 · 완료된 실행만 엑셀 링크`}>
         <RunHistoryTable rows={runs} />
       </Panel>
       <Panel index="02" title="월간 문서" tag="생성형" note="내려받는 순간의 데이터로 만든다 — 보관본이 필요하면 아래 보관함에">

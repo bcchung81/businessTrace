@@ -188,4 +188,15 @@ describe("listRunHistory", () => {
     expect(await listRunHistory({ year: company.year, limit: 2 })).toHaveLength(2);
     expect(await listRunHistory({ year: 1999 })).toEqual([]);
   });
+
+  it("returns the whole year when no limit is given — the screen pages it, so nothing is unreachable", async () => {
+    const { company, user } = await seedCompanyAndUser();
+    for (let index = 0; index < 105; index += 1) {
+      await prisma.analysisRun.create({
+        data: { companyId: company.id, userId: user.id, model: "m", status: "completed", newsJson: "[]", createdAt: new Date(Date.UTC(2026, 0, 1, 0, index)) },
+      });
+    }
+
+    expect(await listRunHistory({ year: company.year })).toHaveLength(105);
+  });
 });
