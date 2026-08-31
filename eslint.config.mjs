@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Legacy Flask app kept for reference only.
     "backup/**",
+    // Claude Code skill payloads are not app code.
+    ".claude/**",
   ]),
 ]);
 

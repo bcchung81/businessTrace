@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { listCompanies, listYears } from "@/lib/repositories/companyRepository";
+import { listSelections } from "@/lib/repositories/selectionRecord";
+import { periodEndYm, periodLabel, prevPeriod } from "@/lib/services/periods";
+import { risingCompanies } from "@/lib/services/rising";
+import { RisingCompanies } from "@/components/dashboard/rising-companies";
 import { listMentionArticles } from "@/lib/repositories/mentionArticles";
 import { listCompanyPipeline } from "@/lib/repositories/companyPipeline";
 import { latestEventAt, listEvents, summariseEvents } from "@/lib/repositories/eventRepository";
@@ -83,6 +87,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const promoted = tallyByCompany(events30.filter((event) => event.severity === "positive"));
   const latestRun = verdicts.companies.map((entry) => entry.runAt).filter((value): value is string => value !== null).sort().at(-1) ?? null;
 
+  const selections = await listSelections();
+  const periods = [...new Set(selections.map((record) => record.period))].sort((a, b) => periodEndYm(a).localeCompare(periodEndYm(b)) || a.localeCompare(b));
+  const targetPeriod = periods.at(-1) ?? null;
+  const rising = targetPeriod ? risingCompanies(selections, targetPeriod, 10) : [];
+  const risingLabel = targetPeriod && rising.length > 0 ? `${periodLabel(targetPeriod)} · ${periodLabel(prevPeriod(targetPeriod))} 대비 순위 상승 순` : null;
+
   const [collection, cells, fullRefreshAt, review] = await Promise.all([
     summariseCollection(year),
     summariseCells(year),
@@ -160,20 +170,25 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       <Ribbon groups={ribbon} className="-mt-12" />
 
-      <Panel index="01" title="이달의 사건" tag="실측" empty="등록된 기업이 없습니다." className="scroll-mt-20" id="events">
-        {companies.length === 0 ? null : <EventTable events={events} silence={silence} lastEventAt={lastEventAt} now={now} />}
-      </Panel>
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <Panel index="01" title="추이 상승 TOP 10" tag="제안" note="시상 후보 검토용">
+          <RisingCompanies rows={rising} periodLabelText={risingLabel} />
+        </Panel>
+        <Panel index="02" title="이달의 사건" tag="실측" empty="등록된 기업이 없습니다." className="scroll-mt-20" id="events">
+          {companies.length === 0 ? null : <EventTable events={events} silence={silence} lastEventAt={lastEventAt} now={now} pageSize={10} />}
+        </Panel>
+      </div>
 
       <div className="grid items-stretch gap-5 lg:grid-cols-2">
-        <Panel index="02" title="주의 기업" tag="리스크">
+        <Panel index="03" title="주의 기업" tag="리스크">
           <CompanyChips items={watchlist} empty="주의 기업 없음" />
         </Panel>
-        <Panel index="03" title="홍보 후보" tag="긍정">
+        <Panel index="04" title="홍보 후보" tag="긍정">
           <CompanyChips items={promoted} empty="홍보 후보 없음" />
         </Panel>
       </div>
 
-      <Panel index="04" title="데이터 신선도" tag="분석 산출" tone="fresh">
+      <Panel index="05" title="데이터 신선도" tag="분석 산출" tone="fresh">
         <details>
           <summary className="cursor-pointer select-none px-3.5 py-2.5 text-[12px] font-semibold text-muted-foreground">
             판정 현황 · 기업별 근거 매트릭스 펼치기
