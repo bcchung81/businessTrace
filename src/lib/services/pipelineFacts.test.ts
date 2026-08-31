@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { buildPipelineFacts, type PipelineInputs } from "@/lib/services/pipelineFacts";
+import { SOURCE_KEYS } from "@/lib/services/sourceEvidence";
 
 const inputs: PipelineInputs = {
   companies: 50,
@@ -47,5 +48,13 @@ describe("buildPipelineFacts", () => {
     const facts = buildPipelineFacts({ ...inputs, companies: 0, articles: 0, analysed: 0, cells: { found: 0, conflict: 0, pending: 0, absent: 0, unmeasurable: 0 } });
     expect(facts.nodes[3].unit).toBe("/0칸");
     expect(facts.nodes[0].big).toBe("0");
+  });
+});
+describe("source count", () => {
+  test("counts the sources it actually records instead of repeating the number by hand", () => {
+    const facts = buildPipelineFacts({ ...inputs, companies: 10 });
+
+    expect(facts.nodes[3].sub).toBe(`원천 ${SOURCE_KEYS.length}`);
+    expect(facts.nodes[3].unit).toBe(`/${10 * SOURCE_KEYS.length}칸`);
   });
 });

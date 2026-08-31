@@ -1,6 +1,6 @@
 import { listEvents } from "@/lib/repositories/eventRepository";
 import { listSelections, listSelectionYears } from "@/lib/repositories/selectionRecord";
-import { computeAwards } from "@/lib/services/awards";
+import { computeAwards, EXCELLENT_TOP_N } from "@/lib/services/awards";
 import { pivotEvents } from "@/lib/services/eventPivot";
 import { periodEndYm, periodLabel } from "@/lib/services/periods";
 import { Panel } from "@/components/dashboard/panel";
@@ -41,7 +41,7 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
           <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">{year}년 · 확정 기록 기준</span>
           <h1 className="font-display text-[36px] font-black leading-none tracking-[-0.04em]">이력·시상</h1>
           <p className="text-[12.5px] text-muted-foreground">
-            랭킹 화면의 시상 확정이 남긴 기간(연·반기·분기) 기록으로 그린다 — 산식이 바뀌어도 과거 기록은 그대로다.
+            랭킹 화면의 시상 확정이 남긴 기간(연·반기·분기) 기록으로 그린다 — 점수·순위는 확정 당시 값 그대로이고, 시상 카테고리만 현재 기준(상위 {EXCELLENT_TOP_N})으로 판정한다.
           </p>
         </div>
         {years.length > 0 ? (

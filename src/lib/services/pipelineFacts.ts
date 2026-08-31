@@ -1,3 +1,4 @@
+import { SOURCE_KEYS } from "@/lib/services/sourceEvidence";
 import type { Verdict } from "@/lib/services/verdictRollup";
 
 export type PipelineInputs = {
@@ -20,7 +21,8 @@ export type PipelineInputs = {
 export type PipelineNode = { key: "collect" | "analyse" | "verify" | "check"; title: string; sub: string; big: string; unit: string; lines: [string, string]; active: boolean };
 export type PipelineFacts = { nodes: PipelineNode[]; links: [string, string, string]; outputs: [string, string, string]; reviewCompanies: number };
 
-const SOURCE_COUNT = 7;
+/** 대조 분모는 실제로 적재하는 원천 수에서 온다 — 손으로 적으면 원천을 늘릴 때 분모만 조용히 틀어진다. */
+const SOURCE_COUNT = SOURCE_KEYS.length;
 
 function topDropout(gates: PipelineInputs["gateDropouts"]) {
   const entries: Array<[string, number]> = [["출처 인용", gates.source], ["근거 충실도", gates.faithfulness], ["근거 일치", gates.evidence]];
@@ -49,7 +51,7 @@ export function buildPipelineFacts(input: PipelineInputs): PipelineFacts {
       lines: [`검토 필요 ${input.counts.review} · 리스크 ${input.counts.risk} · 미분석 ${input.counts.pending}`, topDropout(input.gateDropouts)], active: input.running === 0 && hasReview,
     },
     {
-      key: "check", title: "대조", sub: "원천 7", big: String(input.cells.found), unit: `/${totalCells}칸`,
+      key: "check", title: "대조", sub: `원천 ${SOURCE_COUNT}`, big: String(input.cells.found), unit: `/${totalCells}칸`,
       lines: [`충돌 ${input.cells.conflict} · 미조회 ${input.cells.pending}`, `결측 ${input.cells.absent} · 측정 불가 ${input.cells.unmeasurable}`], active: false,
     },
   ];
