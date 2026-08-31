@@ -90,7 +90,7 @@ export async function findCertification(
     take: 5,
   });
 
-  const best = rows.find((row) => row.normalisedName === normalised) ?? rows[0];
+  const best = rows.find((row) => row.normalisedName === normalised);
   if (!best) return { certified: false, expired: false };
 
   const until = new Date(`${best.validUntil}T00:00:00Z`);

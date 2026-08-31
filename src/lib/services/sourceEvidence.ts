@@ -105,12 +105,13 @@ function nts(status: BusinessStatus | null): SnapshotRow {
   if (!status.checked) {
     return { source: "nts", status: "pending", summary: status.reason ?? "조회하지 못했다", payload: status };
   }
+  const inactiveState = status.statusCode === "02" || status.status?.startsWith("휴업") ? "휴업" : "폐업";
   return {
     source: "nts",
     status: "found",
     summary: status.isActive
       ? `계속사업자 · ${status.taxType ?? "과세유형 미상"}`
-      : `폐업 · ${status.closedAt ?? "일자 미상"}`,
+      : `${inactiveState} · ${status.closedAt ?? "일자 미상"}`,
     payload: status,
   };
 }

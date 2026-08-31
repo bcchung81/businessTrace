@@ -177,6 +177,22 @@ describe("toSnapshots", () => {
     expect(find(rows, "dart")).toMatchObject({ status: "pending" });
   });
 
+  it("reports a suspended business as 휴업, not 폐업", () => {
+    const rows = toSnapshots(
+      evidence({ businessStatus: { checked: true, isActive: false, businessNo: "1234567890", statusCode: "02", status: "휴업자" } }),
+    );
+
+    expect(find(rows, "nts")).toMatchObject({ status: "found", summary: "휴업 · 일자 미상" });
+  });
+
+  it("keeps a closed business reported as 폐업 with its closure date", () => {
+    const rows = toSnapshots(
+      evidence({ businessStatus: { checked: true, isActive: false, businessNo: "1234567890", statusCode: "03", status: "폐업자", closedAt: "20260731" } }),
+    );
+
+    expect(find(rows, "nts")).toMatchObject({ status: "found", summary: "폐업 · 20260731" });
+  });
+
   it("reads a matching financial-services number as agreement", () => {
     const rows = toSnapshots(
       evidence({ outline: { found: true, corpName: "옥타코", businessNo: "1018162201", employeeCount: null } }),

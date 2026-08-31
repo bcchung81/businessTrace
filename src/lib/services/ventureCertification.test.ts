@@ -99,6 +99,25 @@ describe("findCertification", () => {
     expect(found).toMatchObject({ certified: false, expired: true });
   });
 
+  it("refuses to attribute a longer-named namesake's certification to the queried company", async () => {
+    await refreshVentureList({
+      fetchImpl: odcloudFetch([
+        {
+          업체명: "주식회사 페어리테크",
+          벤처확인유형: "벤처투자유형",
+          벤처유효시작일: "2025-02-09",
+          벤처유효종료일: "2028-02-08",
+          "업종명(11차)": "응용 소프트웨어 개발 및 공급업",
+          벤처확인기관: "벤처기업확인기관",
+        },
+      ]),
+    });
+
+    const result = await findCertification("페어리", new Date("2026-08-31T00:00:00Z"));
+
+    expect(result).toEqual({ certified: false, expired: false });
+  });
+
   it("returns not certified for a company absent from the registry", async () => {
     const found = await findCertification("존재하지않는회사", new Date("2026-08-28"));
 
