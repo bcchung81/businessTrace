@@ -6,7 +6,10 @@ import { periodEndYm, periodLabel } from "@/lib/services/periods";
 import { Panel } from "@/components/dashboard/panel";
 import { AwardBoard } from "@/components/history/award-board";
 import { EventPivotTable } from "@/components/history/event-pivot-table";
-import { ScoreTrend, type TrendFacet } from "@/components/history/score-trend";
+import { ScoreHeatmap } from "@/components/history/score-heatmap";
+import { buildScoreHeatmap } from "@/lib/services/scoreHeatmap";
+import { listBenchmarkInputs } from "@/lib/repositories/benchmarkInputs";
+import { loadRubrics, rankCompanies } from "@/lib/services/benchmarking";
 
 export default async function HistoryPage({ searchParams }: PageProps<"/history">) {
   const params = await searchParams;
@@ -23,14 +26,10 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
   const requestedPeriod = typeof params.period === "string" ? params.period : null;
   const targetPeriod = requestedPeriod && yearPeriods.includes(requestedPeriod) ? requestedPeriod : (yearPeriods[0] ?? String(year));
 
-  const facets = new Map<number, TrendFacet>();
-  for (const record of records) {
-    const facet = facets.get(record.companyId) ?? { companyId: record.companyId, name: record.companyName, grade: record.grade, points: [] };
-    facet.points.push({ ym: periodEndYm(record.period), total: record.total });
-    facet.grade = record.grade;
-    facets.set(record.companyId, facet);
-  }
-  for (const facet of facets.values()) facet.points.sort((a, b) => a.ym.localeCompare(b.ym));
+  const liveRanked = rankCompanies(await listBenchmarkInputs(year), loadRubrics())
+    .filter((row) => row.total !== null)
+    .map((row) => ({ companyId: row.companyId, companyName: row.name, rank: row.rank, total: row.total as number }));
+  const heat = buildScoreHeatmap(records, liveRanked);
 
   const events = await listEvents({ year, since: new Date(Date.UTC(year, 0, 1)) });
   const pivot = pivotEvents(events, year);
@@ -85,8 +84,8 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
       >
         <AwardBoard categories={computeAwards(awardRecords, targetPeriod)} />
       </Panel>
-      <Panel index="02" title="점수 추이" tag="확정 기록" note="월 축 · 확정 기간의 끝 달에 점을 놓는다 · 총점 0~1">
-        <ScoreTrend facets={[...facets.values()]} />
+      <Panel index="02" title="점수 추이" tag="확정 기록" note="총점을 한 색조 진하기로 · 셀을 누르면 확정 상세 · 마지막 열은 실시간">
+        <ScoreHeatmap periods={heat.periods} rows={heat.rows} />
       </Panel>
       <Panel index="03" title="사건 연간 피벗" tag="실측" note="기업×월 사건 수 · 종류는 요약 열과 셀 title 로">
         <EventPivotTable months={pivot.months} rows={pivot.rows} />
