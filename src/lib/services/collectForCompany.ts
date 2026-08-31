@@ -17,6 +17,7 @@ export function parseAliases(raw: string | null): string[] {
 
 /**
  * 회사명과 별칭을 차례로 검색해 링크 기준으로 합친다. 일반명사 상호는 별칭 없이는 기사가 0건이다.
+ * 관련성은 언제나 회사명으로 판정한다 — 별칭은 기사를 찾는 말일 뿐, 기사가 그 별칭을 세 번 부르지는 않는다.
  */
 export async function collectForCompany(
   company: { name: string; aliases: string | null },
@@ -28,7 +29,7 @@ export async function collectForCompany(
   const seen = new Set<string>();
   const merged: CollectResult = { items: [], duplicatesRemoved: 0, errors: [], primaryCount: 0, noNews: true };
   for (const query of queries) {
-    const result = await collect({ ...options, query });
+    const result = await collect({ ...options, query, name: company.name });
     merged.duplicatesRemoved += result.duplicatesRemoved;
     merged.errors.push(...result.errors);
     for (const entry of result.items) {

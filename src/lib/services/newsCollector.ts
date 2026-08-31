@@ -16,6 +16,8 @@ export class NewsRateLimitError extends Error {}
 
 export type CollectOptions = {
   query: string;
+  /** 관련성을 판정할 기업명. 별칭으로 검색할 때 넘긴다 — 별칭은 찾는 말이지 기사의 주인공이 아니다. */
+  name?: string;
   startDate?: string;
   endDate?: string;
   limit?: number;
@@ -264,7 +266,7 @@ export async function collectNews(
 
   const deduped = removeDuplicates(merged, threshold);
   const ranked = deduped.items
-    .map((item) => ({ ...item, ...classifyRelevance({ ...item, name: options.query }) }))
+    .map((item) => ({ ...item, ...classifyRelevance({ ...item, name: options.name ?? options.query }) }))
     .sort(
       (a, b) =>
         RELEVANCE_RANK[a.relevance] - RELEVANCE_RANK[b.relevance] ||
@@ -276,7 +278,7 @@ export async function collectNews(
   const linkDeduped = dedupeByLink(enriched);
   const items = linkDeduped.items.map((item) => ({
     ...item,
-    ...classifyRelevance({ title: item.title, content: item.content, name: options.query }),
+    ...classifyRelevance({ title: item.title, content: item.content, name: options.name ?? options.query }),
   }));
 
   const primaryCount = items.filter((item) => item.relevance === "primary").length;

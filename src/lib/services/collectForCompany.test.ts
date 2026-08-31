@@ -27,6 +27,17 @@ describe("collectForCompany", () => {
     expect(result.noNews).toBe(false);
   });
 
+  test("tells the collector which name to judge relevance by — an alias is a search term, not the company", async () => {
+    const collect = vi.fn().mockResolvedValue({ items: [], duplicatesRemoved: 0, errors: [], primaryCount: 0, noNews: true });
+
+    await collectForCompany({ name: "그리너리", aliases: '["그리너리(대표 황유식)"]' }, { limit: 20 }, { collect });
+
+    expect(collect.mock.calls.map((call) => [call[0].query, call[0].name])).toEqual([
+      ["그리너리", "그리너리"],
+      ["그리너리(대표 황유식)", "그리너리"],
+    ]);
+  });
+
   test("without aliases it is a single query", async () => {
     const collect = vi.fn().mockResolvedValue({ items: [], duplicatesRemoved: 0, errors: [], primaryCount: 0, noNews: true });
     const result = await collectForCompany({ name: "㈜가", aliases: null }, { limit: 20 }, { collect });

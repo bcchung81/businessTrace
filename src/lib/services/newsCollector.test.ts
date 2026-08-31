@@ -331,6 +331,28 @@ describe("리뷰 확정 결함 회귀", () => {
     expect(duplicatesRemoved).toBe(1);
   });
 
+  it("judges relevance by the company name, not by the alias that found the article", async () => {
+    const body = "부안군은 그리너리와 협약을 맺었다. 그리너리는 탄소 크레딧을 다룬다. 그리너리 관계자는 말했다.";
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("naverapihub.apigw.ntruss.com")) {
+        return new Response(
+          JSON.stringify({ items: [{ title: "부안, 탄소배출권으로 지역 상생 해법 찾다", originallink: "https://a/1", link: "https://a/1", description: body, pubDate: "Mon, 10 Aug 2026 10:00:00 +0900" }] }),
+          { status: 200 },
+        );
+      }
+      return new Response("<html><body></body></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const { items, primaryCount } = await collectNews(
+      { query: "그리너리(대표 황유식)", name: "그리너리", google: false },
+      { fetchImpl },
+    );
+
+    expect(items[0].relevance).toBe("primary");
+    expect(primaryCount).toBe(1);
+  });
+
   it("keeps an article published in the KST afternoon of the end date — the day is inclusive", async () => {
     const fetchImpl = naverFetch([{ title: "마감일 기사", link: "https://a/1", pubDate: "Sat, 15 Aug 2026 14:00:00 +0900" }]);
 
