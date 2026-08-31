@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { ScoreTrend } from "@/components/history/score-trend";
 
 describe("ScoreTrend", () => {
-  it("renders one facet per company with its latest total and grade", () => {
+  it("renders one facet per company on a monthly axis with its latest total and grade", () => {
     render(
       <ScoreTrend
         facets={[
@@ -12,8 +12,9 @@ describe("ScoreTrend", () => {
             name: "딥노이드",
             grade: "우수",
             points: [
-              { year: 2025, total: 0.5 },
-              { year: 2026, total: 0.71 },
+              { ym: "202512", total: 0.5 },
+              { ym: "202606", total: 0.64 },
+              { ym: "202612", total: 0.71 },
             ],
           },
         ]}
@@ -23,6 +24,7 @@ describe("ScoreTrend", () => {
     expect(screen.getByText("딥노이드")).toBeInTheDocument();
     expect(screen.getByText("0.71")).toBeInTheDocument();
     expect(screen.getByText("우수")).toBeInTheDocument();
+    expect(screen.getByText(/25\.12 ~ 26\.12/)).toBeInTheDocument();
   });
 
   it("explains the empty state instead of a blank panel", () => {

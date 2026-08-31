@@ -20,7 +20,7 @@ export async function confirmSelectionAction(input: { year: number; rubricId: st
   const book = loadRubrics();
   const forced = input.rubricId === "default" ? undefined : input.rubricId;
   const ranked = rankCompanies(await listBenchmarkInputs(input.year), book, forced);
-  const saved = await saveSelections(toSelectionInputs(ranked, { year: input.year, formulaVersion: book.formulaVersion, decidedBy: userId }));
+  const saved = await saveSelections(toSelectionInputs(ranked, { year: input.year, period: String(input.year), formulaVersion: book.formulaVersion, decidedBy: userId }));
   revalidatePath("/ranking");
   revalidatePath("/history");
   return { ok: true, saved };

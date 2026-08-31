@@ -2,6 +2,7 @@ import { listEvents } from "@/lib/repositories/eventRepository";
 import { listSelections, listSelectionYears } from "@/lib/repositories/selectionRecord";
 import { computeAwards } from "@/lib/services/awards";
 import { pivotEvents } from "@/lib/services/eventPivot";
+import { periodEndYm } from "@/lib/services/periods";
 import { Panel } from "@/components/dashboard/panel";
 import { AwardBoard } from "@/components/history/award-board";
 import { EventPivotTable } from "@/components/history/event-pivot-table";
@@ -14,13 +15,15 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
   const year = Number.isInteger(requested) ? requested : (years[0] ?? new Date().getFullYear());
 
   const records = await listSelections();
+  const awardRecords = records.map((record) => ({ companyId: record.companyId, companyName: record.companyName, period: String(record.year), total: record.total, rank: record.rank }));
   const facets = new Map<number, TrendFacet>();
   for (const record of records) {
     const facet = facets.get(record.companyId) ?? { companyId: record.companyId, name: record.companyName, grade: record.grade, points: [] };
-    facet.points.push({ year: record.year, total: record.total });
+    facet.points.push({ ym: periodEndYm(String(record.year)), total: record.total });
     facet.grade = record.grade;
     facets.set(record.companyId, facet);
   }
+  for (const facet of facets.values()) facet.points.sort((a, b) => a.ym.localeCompare(b.ym));
 
   const events = await listEvents({ year, since: new Date(Date.UTC(year, 0, 1)) });
   const pivot = pivotEvents(events, year);
@@ -52,7 +55,7 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
       </header>
 
       <Panel index="01" title="시상 카테고리" tag="자동 산출" note="확정된 연도 기록만 근거다">
-        <AwardBoard categories={computeAwards(records, year)} />
+        <AwardBoard categories={computeAwards(awardRecords, String(year))} />
       </Panel>
       <Panel index="02" title="점수 추이" tag="확정 기록" note="연도별 총점 0~1 · 산식 버전은 기록마다 저장">
         <ScoreTrend facets={[...facets.values()]} />
