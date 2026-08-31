@@ -82,7 +82,7 @@ describe("EvidenceGrid", () => {
 describe("EvidenceStrip", () => {
   const SNAPSHOTS = [
     snapshot({ source: "dart", status: "found", summary: "(주)엘리스그룹" }),
-    snapshot({ source: "dartFinance", status: "absent", summary: "재무제표 미공시 (비외감)" }),
+    snapshot({ source: "dartFinance", status: "absent", summary: "재무제표 미공시 — 정기·감사보고서 없음" }),
     snapshot({ source: "fsc", status: "pending", summary: "조회하지 않았다" }),
     snapshot({ source: "nts", status: "found", summary: "계속사업자" }),
     snapshot({ source: "narajangteo", status: "unmeasurable", summary: "조달 실적 없음" }),

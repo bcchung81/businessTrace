@@ -67,10 +67,10 @@ function dartFinance(financial: FinancialSummary | null): SnapshotRow {
     ? {
         source: "dartFinance",
         status: "found",
-        summary: `${financial.fiscalYear}년 매출 ${financial.revenue ?? "미상"}`,
+        summary: `${financial.fiscalYear}년 매출 ${financial.revenue ?? "미상"}${financial.source === "auditReport" ? " · 감사보고서" : ""}`,
         payload: financial,
       }
-    : { source: "dartFinance", status: "absent", summary: "재무제표 미공시 (비외감)", payload: financial };
+    : { source: "dartFinance", status: "absent", summary: "재무제표 미공시 — 정기·감사보고서 없음", payload: financial };
 }
 
 function fsc(outline: CorpOutline | null, businessNo: string | null, decision?: string): SnapshotRow {

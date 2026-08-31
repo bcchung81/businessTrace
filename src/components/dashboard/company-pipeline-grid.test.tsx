@@ -20,7 +20,7 @@ function row(id: number, over: Partial<MatrixRow> = {}): MatrixRow {
       narajangteo: { state: "unmeasurable", value: "조달업체 미등록", note: "공공조달 미참여" },
       venture: { state: "absent", value: "벤처확인 명단에 없음", note: "" },
       dart: { state: "conflict", value: "이름이 정확히 맞는 기업이 없다", note: "후보 2건" },
-      dartFinance: { state: "absent", value: "재무제표 미공시 (비외감)", note: "" },
+      dartFinance: { state: "absent", value: "재무제표 미공시 — 정기·감사보고서 없음", note: "" },
     },
     ...over,
   };
@@ -111,7 +111,7 @@ describe("CompanyPipelineGrid", () => {
     const cell = screen.getByLabelText(/기업1 재무 결측/);
 
     expect(cell).toHaveTextContent("미공시");
-    expect(cell).toHaveAttribute("title", expect.stringContaining("재무제표 미공시 (비외감)"));
+    expect(cell).toHaveAttribute("title", expect.stringContaining("재무제표 미공시 — 정기·감사보고서 없음"));
   });
 
   test("holds the block at a constant height so paging does not resize the table", () => {
@@ -159,5 +159,6 @@ describe("compactValue", () => {
 
   test("falls through to the raw value when the finance value does not match", () => {
     expect(compactValue("dartFinance", { state: "ok", value: "비외감", note: "" })).toBe("비외감");
+    expect(compactValue("dartFinance", { state: "ok", value: "2025년 매출 2594589201 · 감사보고서", note: "" })).toBe("2025 매출 26억");
   });
 });

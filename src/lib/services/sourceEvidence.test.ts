@@ -276,6 +276,26 @@ describe("toSnapshots", () => {
     expect(find(rows, "narajangteo")).toMatchObject({ status: "pending" });
   });
 
+  it("labels an audit-report-sourced statement so the screen can cite the origin", () => {
+    const rows = toSnapshots(
+      evidence({
+        financial: { found: true, source: "auditReport", fiscalYear: 2025, revenue: 100, operatingIncome: null, netIncome: null, totalAssets: null },
+      }),
+    );
+
+    expect(find(rows, "dartFinance")).toMatchObject({ status: "found", summary: "2025년 매출 100 · 감사보고서" });
+  });
+
+  it("does not call every absent statement 비외감 — audit-only filers were being mislabeled", () => {
+    const rows = toSnapshots(
+      evidence({
+        financial: { found: false, fiscalYear: 2025, revenue: null, operatingIncome: null, netIncome: null, totalAssets: null },
+      }),
+    );
+
+    expect(find(rows, "dartFinance")).toMatchObject({ status: "absent", summary: "재무제표 미공시 — 정기·감사보고서 없음" });
+  });
+
   it("holds a failed financial statement lookup at pending, not at unpublished", () => {
     const rows = toSnapshots(
       evidence({

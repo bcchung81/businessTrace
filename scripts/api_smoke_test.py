@@ -130,6 +130,34 @@ def test_dart_finstate(corp_name):
         record("DART재무", corp_name, False, f"호출 실패: {e}")
 
 
+def test_dart_audit_document(corp_name, corp_code):
+    """감사보고서 원문(document.xml) 폴백 경로 — 정기보고서 없는 외감사가 대상이다."""
+    key = os.environ.get("DART_API_KEY", "")
+    if not key:
+        return
+    try:
+        listing = requests.get(
+            "https://opendart.fss.or.kr/api/list.json",
+            params={"crtfc_key": key, "corp_code": corp_code, "bgn_de": "20250101", "end_de": "20261231", "page_count": "100"},
+            timeout=15,
+        ).json()
+        audits = [row for row in listing.get("list", []) if "감사보고서" in row.get("report_nm", "") and "연결" not in row.get("report_nm", "")]
+        if not audits:
+            record("DART감사보고서", corp_name, None, "감사보고서 없음")
+            return
+        doc = requests.get(
+            "https://opendart.fss.or.kr/api/document.xml",
+            params={"crtfc_key": key, "rcept_no": audits[0]["rcept_no"]},
+            timeout=30,
+        )
+        zf = zipfile.ZipFile(io.BytesIO(doc.content))
+        xml = zf.read(zf.namelist()[0]).decode("utf-8", "ignore")
+        has_finance = 'ACLASS="FINANCE"' in xml
+        record("DART감사보고서", corp_name, has_finance, f"{audits[0]['report_nm']} · FINANCE 테이블 {'있음' if has_finance else '없음'}")
+    except Exception as e:
+        record("DART감사보고서", corp_name, False, f"호출 실패: {e}")
+
+
 def test_dart_business_no(corp_name):
     key = os.environ.get("DART_API_KEY", "")
     if not key:
@@ -396,6 +424,7 @@ if __name__ == "__main__":
     test_naver_maps()
     test_dart_disclosure(REF_LISTED)
     test_dart_finstate(REF_LISTED)
+    test_dart_audit_document("에이트테크", "01884074")
     test_dart_business_no(REF_LISTED)
     test_nps(REF_LISTED)
     print("-" * 70)

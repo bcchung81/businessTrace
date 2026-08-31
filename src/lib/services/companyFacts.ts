@@ -18,6 +18,7 @@ export type CompanyFacts = {
   listing: { stockCode: string | null; label: string } | null;
   finance: {
     fiscalYear: number;
+    source?: "annualReport" | "auditReport";
     revenue: number | null;
     operatingIncome: number | null;
     netIncome: number | null;
@@ -118,7 +119,7 @@ export function buildCompanyFacts(input: { businessNo: string | null; snapshots:
     corporateNo: merge([[SOURCE_NAME.dart, dart?.corporateNo ?? null], [SOURCE_NAME.fsc, fsc?.corporateNo ?? null]]),
     employees,
     listing: dart ? (dart.stockCode ? { stockCode: dart.stockCode, label: `상장 ${dart.stockCode}` } : { stockCode: null, label: "비상장" }) : null,
-    finance: finance && growth ? { fiscalYear: finance.fiscalYear, revenue: finance.revenue, operatingIncome: finance.operatingIncome, netIncome: finance.netIncome, totalAssets: finance.totalAssets, growth } : null,
+    finance: finance && growth ? { fiscalYear: finance.fiscalYear, source: finance.source, revenue: finance.revenue, operatingIncome: finance.operatingIncome, netIncome: finance.netIncome, totalAssets: finance.totalAssets, growth } : null,
     payroll: nps && typeof nps.averageBaseIncome === "number" && typeof nps.annualPayroll === "number" ? { averageBaseIncome: nps.averageBaseIncome, annualPayroll: nps.annualPayroll } : null,
     turnover: months.length > 0 ? { hired, departed, rate: average > 0 ? Math.round((departed / average) * 100) / 100 : null } : null,
     sourceDetails,

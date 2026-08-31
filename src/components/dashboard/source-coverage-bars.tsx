@@ -54,7 +54,7 @@ export function SourceCoverageBars({ coverage }: { coverage: SourceCoverage }) {
         })}
       </ul>
       <p className="border-t border-hairline pt-2 text-[11.5px] text-muted-foreground">
-        재무제표는 비상장·비외감이라 구조적 결측 — 나라장터 낙찰·연금 인건비가 대리지표다.
+        정기보고서가 없으면 감사보고서 원문에서 추출한다 — 그래도 없으면 나라장터 낙찰·연금 인건비가 대리지표다.
       </p>
     </div>
   );

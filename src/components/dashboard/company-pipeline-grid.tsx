@@ -64,7 +64,7 @@ const LEGEND: Array<{ label: string; swatch: string }> = [
   { label: "미조회", swatch: "border border-dashed border-pending-fill" },
 ];
 
-const FINANCE_REVENUE = /^(\d{4})년 매출 (\d+)$/;
+const FINANCE_REVENUE = /^(\d{4})년 매출 (\d+)(?: · 감사보고서)?$/;
 
 /**
  * 격자 칸에 들어갈 짧은 말로 줄인다.

@@ -94,6 +94,11 @@ describe("FinanceLine", () => {
     expect(line).toHaveTextContent("2025 매출 1,200 (▲20%) · 영업이익 120 (전년 —) · 순이익 90 · 자산총계 5,000 · 상장 654321");
   });
 
+  test("cites the audit report when the figures came from its document", () => {
+    render(<FinanceLine facts={{ ...facts, finance: { ...facts.finance!, source: "auditReport" } }} />);
+    expect(screen.getByText(/감사보고서/)).toBeInTheDocument();
+  });
+
   test("hatches the whole line when there is no statement", () => {
     render(<FinanceLine facts={{ ...facts, finance: null, listing: { stockCode: null, label: "비상장" } }} />);
     expect(screen.getByText(/미공시/)).toHaveClass("hatch");

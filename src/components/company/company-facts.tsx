@@ -139,6 +139,7 @@ export function FinanceLine({ facts }: { facts: CompanyFacts }) {
   return (
     <span className="font-mono tabular-nums">
       {f.fiscalYear} 매출 {amount(f.revenue)} {growth(f.growth.revenue)} · 영업이익 {amount(f.operatingIncome)} {growth(f.growth.operatingIncome)} · 순이익 {amount(f.netIncome)} · 자산총계 {amount(f.totalAssets)} · {listing}
+      {f.source === "auditReport" ? <span className="text-muted-foreground"> · 감사보고서 원문</span> : null}
     </span>
   );
 }

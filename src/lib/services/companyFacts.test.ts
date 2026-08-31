@@ -9,7 +9,7 @@ const months = Array.from({ length: 12 }, (_, i) => ({ ym: `2025${String(i + 8).
 
 const SNAPSHOTS: StoredSnapshot[] = [
   snap("dart", "found", { found: true, corpName: "주식회사 한빛", ceoName: "김한빛", corporateNo: "110111-1234567", stockCode: "654321" }),
-  snap("dartFinance", "found", { found: true, fiscalYear: 2025, revenue: 1200, operatingIncome: 120, netIncome: 90, totalAssets: 5000, previous: { revenue: 1000, operatingIncome: 80, netIncome: -10, totalAssets: 4500 } }),
+  snap("dartFinance", "found", { found: true, fiscalYear: 2025, source: "auditReport", revenue: 1200, operatingIncome: 120, netIncome: 90, totalAssets: 5000, previous: { revenue: 1000, operatingIncome: 80, netIncome: -10, totalAssets: 4500 } }),
   snap("narajangteo", "found", { found: true, corpName: "(주)한빛", ceoName: "김한빛", address: "서울특별시 금천구 가산디지털1로 1", openedAt: "20190301", employeeCount: 39 }),
   snap("fsc", "found", { found: true, corpName: "주식회사 한빛", establishedAt: "20190301", employeeCount: 41, address: "서울특별시 금천구 가산디지털1로 1", isSmallBusiness: true, mainBusiness: "소프트웨어 개발" }),
   snap("nps", "found", { found: true, businessNoPrefix: "123456", address: "서울 금천구 가산디지털1로", registeredAt: "20190401", subscribers: 111, averageBaseIncome: 4_200_000, annualPayroll: 5_594_400_000, months }),
@@ -50,7 +50,7 @@ describe("buildCompanyFacts", () => {
 
   test("reads listing, finance growth, payroll estimate and turnover", () => {
     expect(facts.listing).toEqual({ stockCode: "654321", label: "상장 654321" });
-    expect(facts.finance).toMatchObject({ fiscalYear: 2025, revenue: 1200, totalAssets: 5000, growth: { revenue: 0.2, operatingIncome: 0.5 } });
+    expect(facts.finance).toMatchObject({ fiscalYear: 2025, source: "auditReport", revenue: 1200, totalAssets: 5000, growth: { revenue: 0.2, operatingIncome: 0.5 } });
     expect(facts.payroll).toEqual({ averageBaseIncome: 4_200_000, annualPayroll: 5_594_400_000 });
     expect(facts.turnover).toEqual({ hired: 24, departed: 12, rate: 0.11 });
   });

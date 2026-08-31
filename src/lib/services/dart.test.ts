@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { resetDatabase } from "@/lib/test-support/db";
 import { prisma } from "@/lib/db";
+import { strToU8, zipSync } from "fflate";
 import { getCompanyProfile, getFinancialSummary } from "@/lib/services/dart";
 
 function jsonFetch(payload: unknown, status = 200) {
@@ -115,6 +116,50 @@ describe("getFinancialSummary", () => {
     const url = new URL(String((fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0]));
     expect(url.searchParams.get("reprt_code")).toBe("11011");
     expect(url.searchParams.get("bsns_year")).toBe("2024");
+  });
+
+  it("labels the annual-report path so the screen can tell the two sources apart", async () => {
+    const summary = await getFinancialSummary("올림플래닛", 2024, { fetchImpl: jsonFetch(FINANCE_OK) });
+
+    expect(summary.source).toBe("annualReport");
+  });
+
+  it("falls back to the audit report when the structured API has no data", async () => {
+    const auditXml = `<TU AUNITVALUE="1">(단위 : 원)</TU>
+<TABLE ACLASS="FINANCE"><TBODY>
+<TR><TE ADELIM="0">자산총계</TE><TE ADELIM="1">8,112,399,519</TE></TR>
+</TBODY></TABLE>
+<TABLE ACLASS="FINANCE"><TBODY>
+<TR><TE ADELIM="0">Ⅰ.매출액</TE><TE ADELIM="1">2,594,589,201</TE></TR>
+<TR><TE ADELIM="0">Ⅹ.당기순손실</TE><TE ADELIM="1">4,614,521,325</TE></TR>
+</TBODY></TABLE>`;
+    const zip = zipSync({ "report.xml": strToU8(auditXml) });
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("fnlttSinglAcnt")) return new Response(JSON.stringify({ status: "013", message: "조회된 데이타가 없습니다." }), { status: 200 });
+      if (url.includes("list.json")) return new Response(JSON.stringify({ status: "000", list: [{ rcept_no: "r1", report_nm: "감사보고서 (2024.12)" }] }), { status: 200 });
+      if (url.includes("document.xml")) return new Response(zip.slice().buffer as ArrayBuffer, { status: 200 });
+      throw new Error(`unexpected ${url}`);
+    }) as unknown as typeof fetch;
+
+    const summary = await getFinancialSummary("올림플래닛", 2024, { fetchImpl });
+
+    expect(summary).toMatchObject({
+      found: true,
+      source: "auditReport",
+      revenue: 2_594_589_201,
+      netIncome: -4_614_521_325,
+      totalAssets: 8_112_399_519,
+    });
+  });
+
+  it("keeps the absent verdict when no audit report exists either", async () => {
+    const fetchImpl = jsonFetch({ status: "013", message: "조회된 데이타가 없습니다." });
+
+    const summary = await getFinancialSummary("올림플래닛", 2024, { fetchImpl });
+
+    expect(summary.found).toBe(false);
+    expect(summary.reason).toContain("013");
   });
 
   it("treats an unlisted company with no statements as a normal outcome", async () => {

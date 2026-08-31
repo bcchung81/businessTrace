@@ -1,4 +1,5 @@
 import { findCorpCandidates, type CorpCandidate } from "@/lib/services/dartCorpCode";
+import { getAuditReportFinancials } from "@/lib/services/dartAuditReport";
 
 const COMPANY_URL = "https://opendart.fss.or.kr/api/company.json";
 const FINANCE_URL = "https://opendart.fss.or.kr/api/fnlttSinglAcnt.json";
@@ -37,6 +38,7 @@ export type FinancialSummary = {
   netIncome: number | null;
   totalAssets: number | null;
   previous?: FinancialFigures;
+  source?: "annualReport" | "auditReport";
   failed?: boolean;
   reason?: string;
 };
@@ -128,8 +130,8 @@ export async function getCompanyProfile(
 }
 
 /**
- * 사업보고서 기준 매출·영업이익·순이익·자산총계를 가져온다.
- * 비상장 기업은 재무가 없는 것이 정상이라 오류가 아니라 found=false 로 돌려준다.
+ * 사업보고서 기준 매출·영업이익·순이익·자산총계를 가져온다. 구조화 API 에 없으면(013) 감사보고서 원문에서 추출을 시도한다.
+ * 그래도 없으면 오류가 아니라 found=false 다 — 비상장·무공시 기업은 재무가 없는 것이 정상이다.
  */
 export async function getFinancialSummary(
   companyName: string,
@@ -168,6 +170,21 @@ export async function getFinancialSummary(
   }
 
   if (body.status !== "000") {
+    if (body.status === "013") {
+      const audit = await getAuditReportFinancials(exact.corpCode, fiscalYear, deps).catch(() => null);
+      if (audit) {
+        return {
+          found: true,
+          source: "auditReport",
+          fiscalYear,
+          revenue: audit.revenue,
+          operatingIncome: audit.operatingIncome,
+          netIncome: audit.netIncome,
+          totalAssets: audit.totalAssets,
+          previous: audit.previous,
+        };
+      }
+    }
     return {
       found: false,
       ...empty,
@@ -181,6 +198,7 @@ export async function getFinancialSummary(
 
   return {
     found: true,
+    source: "annualReport",
     fiscalYear,
     revenue: pick("매출액"),
     operatingIncome: pick("영업이익"),

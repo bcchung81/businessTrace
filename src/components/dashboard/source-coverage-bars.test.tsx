@@ -46,7 +46,7 @@ describe("SourceCoverageBars", () => {
   test("explains why financial statements are structurally missing", () => {
     render(<SourceCoverageBars coverage={COVERAGE} />);
 
-    expect(screen.getByText(/비상장·비외감이라 구조적 결측/)).toBeInTheDocument();
+    expect(screen.getByText(/감사보고서 원문에서 추출/)).toBeInTheDocument();
   });
 
   test("names each progressbar for assistive tech", () => {
