@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
-import { upsertEvents, listEvents, latestEventAt, reviewEvent, summariseEvents } from "@/lib/repositories/eventRepository";
+import { closeResolvedConflictEvents, upsertEvents, listEvents, latestEventAt, reviewEvent, summariseEvents } from "@/lib/repositories/eventRepository";
 import type { NewEvent } from "@/lib/services/eventRules";
 
 describe("Event schema", () => {
@@ -33,6 +33,26 @@ describe("Event schema", () => {
 function fresh(over: Partial<NewEvent> & { companyId: number }): NewEvent {
   return { kind: "award", severity: "positive", occurredAt: new Date("2026-08-26T00:00:00.000Z"), title: "수상 — 대상", evidenceKey: "https://n/1", evidence: [{ label: "대상", link: "https://n/1" }], runId: null, trust: "verified", ...over };
 }
+
+describe("closeResolvedConflictEvents", () => {
+  beforeEach(resetDatabase);
+
+  it("closes open namesake-conflict events whose source no longer conflicts, and leaves live ones open", async () => {
+    const company = await prisma.company.create({ data: { name: "미타운", year: 2025 } });
+    const base = { companyId: company.id, kind: "source_conflict", severity: "notice", occurredAt: new Date(), title: "t", evidenceJson: "[]" };
+    await prisma.event.create({ data: { ...base, evidenceKey: "fsc:conflict", status: "open" } });
+    await prisma.event.create({ data: { ...base, evidenceKey: "dart:conflict", status: "open" } });
+
+    const closed = await closeResolvedConflictEvents(company.id, ["dart:conflict"]);
+
+    const rows = await prisma.event.findMany({ orderBy: { evidenceKey: "asc" } });
+    expect(closed).toBe(1);
+    expect(rows.map((row) => [row.evidenceKey, row.status])).toEqual([
+      ["dart:conflict", "open"],
+      ["fsc:conflict", "done"],
+    ]);
+  });
+});
 
 describe("event repository", () => {
   beforeEach(resetDatabase);

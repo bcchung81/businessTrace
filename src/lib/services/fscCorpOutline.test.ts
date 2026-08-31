@@ -68,6 +68,14 @@ describe("lookupCorpOutline", () => {
     expect(outline.found).toBe(true);
   });
 
+  it("refuses a longer namesake containing the query — 미타운 must not match 케미타운", async () => {
+    const outline = await lookupCorpOutline("미타운", {
+      fetchImpl: fscFetch([{ ...CRYPTOLAB, corpNm: "제이더블유케미타운 주식회사", bzno: "2068117321" }]),
+    });
+
+    expect(outline).toMatchObject({ found: false });
+  });
+
   it("reports not found when the registry returns nothing", async () => {
     const outline = await lookupCorpOutline("넷록스", { fetchImpl: fscFetch([]) });
 

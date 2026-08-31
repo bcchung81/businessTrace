@@ -27,6 +27,7 @@ export type NpsWorkplace = {
   industryCode?: string;
   registeredAt?: string;
   withdrawnAt?: string;
+  numberMismatch?: boolean;
   isSubscribed?: boolean;
   workplaceCount?: number;
   subscribers: number | null;
@@ -198,6 +199,7 @@ export async function lookupWorkplace(
     if (numberMismatch) {
       return {
         found: false,
+        numberMismatch: true,
         ...EMPTY,
         candidates: toCandidates(found),
         reason: "사업자번호와 일치하는 사업장이 없습니다.",

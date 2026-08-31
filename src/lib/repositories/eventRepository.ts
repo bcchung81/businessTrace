@@ -53,6 +53,17 @@ function toRow(row: Stored): EventRow {
 }
 
 /**
+ * 더는 충돌이 아닌 원천의 열린 동명 충돌 사건을 자동으로 닫는다 — 결정·재조회로 해소된 것을 두 번 묻지 않기 위해서다.
+ */
+export async function closeResolvedConflictEvents(companyId: number, liveConflictKeys: string[]): Promise<number> {
+  const result = await prisma.event.updateMany({
+    where: { companyId, kind: "source_conflict", status: "open", evidenceKey: { notIn: liveConflictKeys } },
+    data: { status: "done", note: "충돌 해소로 자동 정리", reviewedAt: new Date() },
+  });
+  return result.count;
+}
+
+/**
  * 사건을 (기업, 종류, 근거 키) 로 upsert 한다. 담당자의 상태·메모는 재추출이 덮어쓰지 않는다.
  */
 export async function upsertEvents(events: NewEvent[]) {

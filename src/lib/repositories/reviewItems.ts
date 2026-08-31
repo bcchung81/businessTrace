@@ -105,7 +105,7 @@ export async function buildReviewItems(companyId: number): Promise<ReviewSummary
     });
   }
 
-  const open = company.events.filter((event) => event.status === "open");
+  const open = company.events.filter((event) => event.status === "open" && event.kind !== "source_conflict");
   if (open.length > 0) {
     items.push({
       kind: "open_events",

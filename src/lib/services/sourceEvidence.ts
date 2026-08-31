@@ -171,6 +171,14 @@ function nps(workplace: NpsWorkplace): SnapshotRow {
       payload: workplace,
     };
   }
+  if (workplace.numberMismatch) {
+    return {
+      source: "nps",
+      status: "absent",
+      summary: "확보 번호와 일치하는 가입 사업장 없음 — 미가입 가능성",
+      payload: workplace,
+    };
+  }
   if (workplace.candidates?.length) {
     return {
       source: "nps",

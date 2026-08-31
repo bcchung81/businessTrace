@@ -56,6 +56,18 @@ describe("buildReviewItems", () => {
     expect(summary.items[3]).toEqual({ kind: "no_news", aliases: ["가 테크"] });
   });
 
+  test("keeps namesake-conflict events out of the open-events ask — the decision item is the ask", async () => {
+    const c = await company();
+    const base = { companyId: c.id, occurredAt: new Date("2026-08-20"), title: "t", evidenceJson: "[]" };
+    await prisma.event.create({ data: { ...base, kind: "source_conflict", severity: "notice", status: "open", evidenceKey: "fsc:conflict" } });
+    await prisma.event.create({ data: { ...base, kind: "closure", severity: "alert", status: "open", evidenceKey: "nts:폐업" } });
+
+    const summary = (await buildReviewItems(c.id))!;
+    const open = summary.items.find((i) => i.kind === "open_events") as { events: Array<{ kind: string }> };
+
+    expect(open.events.map((e) => e.kind)).toEqual(["closure"]);
+  });
+
   test("lists an fsc number mismatch until the operator decides it", async () => {
     const c = await company();
     await prisma.sourceSnapshot.create({

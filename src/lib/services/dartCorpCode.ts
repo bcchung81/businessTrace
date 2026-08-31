@@ -93,6 +93,8 @@ export async function refreshCorpCodes(deps: RefreshDeps = {}) {
  * 기업명으로 DART 고유번호 후보를 찾는다. 정확히 일치하는 이름이 먼저 온다.
  * 동명·유사 상호가 흔해 단일 결과로 단정하지 않고 관리자가 고르게 한다.
  */
+const SPC_NAME = /(유동화|투자회사|리츠|사모|위탁관리|제[0-9일이삼사오륙칠팔구십]+[차호])/;
+
 export async function findCorpCandidates(companyName: string): Promise<CorpCandidate[]> {
   const name = companyName.trim();
   if (!name) return [];
@@ -104,6 +106,7 @@ export async function findCorpCandidates(companyName: string): Promise<CorpCandi
   });
 
   return rows
+    .filter((row) => row.corpName === name || !SPC_NAME.test(row.corpName))
     .map((row) => ({ corpCode: row.corpCode, corpName: row.corpName, stockCode: row.stockCode }))
     .sort((a, b) => Number(b.corpName === name) - Number(a.corpName === name));
 }

@@ -115,6 +115,20 @@ describe("findCorpCandidates", () => {
     expect(candidates[0].corpName).toBe("올림플래닛");
   });
 
+  it("drops SPC-style candidates — a 유동화·제N차 vehicle is never the company being evaluated", async () => {
+    await prisma.dartCorpCode.createMany({
+      data: [
+        { corpCode: "01611353", corpName: "페어리식사제일차", stockCode: null, modifyDate: "20250101" },
+        { corpCode: "01600764", corpName: "이퀄라이저리테일유동화투자제일호", stockCode: null, modifyDate: "20250101" },
+        { corpCode: "01247361", corpName: "써로마인드로보틱스", stockCode: null, modifyDate: "20250101" },
+      ],
+    });
+
+    expect(await findCorpCandidates("페어리")).toEqual([]);
+    expect(await findCorpCandidates("이퀄라이저")).toEqual([]);
+    expect((await findCorpCandidates("써로마인드")).map((entry) => entry.corpName)).toEqual(["써로마인드로보틱스"]);
+  });
+
   it("returns nothing for a company DART has never heard of", async () => {
     expect(await findCorpCandidates("크립토랩")).toEqual([]);
   });

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { updateCompany } from "@/lib/repositories/companyRepository";
-import { upsertEvents } from "@/lib/repositories/eventRepository";
+import { closeResolvedConflictEvents, upsertEvents } from "@/lib/repositories/eventRepository";
 import { listSourceDecisions } from "@/lib/repositories/sourceDecision";
 import { listSourceSnapshots, saveSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { collectEvidence, type CollectedEvidence, type Decisions } from "@/lib/services/collectEvidence";
@@ -23,6 +23,7 @@ export async function refreshSourcesFor(companyId: number, deps: { collect?: typ
   await saveSourceSnapshots(companyId, snapshots);
   const stored = await listSourceSnapshots(companyId);
   await upsertEvents(extractSourceEvents({ companyId, snapshots: stored, now: new Date() }));
+  await closeResolvedConflictEvents(companyId, stored.filter((snap) => snap.status === "conflict").map((snap) => `${snap.source}:conflict`));
   const patch: { businessNo?: string; industry?: string } = {};
   if (collected.businessNo && collected.businessNo !== company.businessNo) patch.businessNo = collected.businessNo;
   const industry = needsIndustry(company.industry) ? pickIndustry(stored) : null;

@@ -175,6 +175,21 @@ describe("lookupWorkplace", () => {
     expect(workplace.months.at(-1)).toMatchObject({ hired: 7, departed: 2 });
   });
 
+  it("flags a number mismatch instead of offering namesakes to pick from", async () => {
+    const fetchImpl = npsFetch({
+      bass: [
+        bassRow({ seq: 1, wkplNm: "엘에스디테크", bzowrRgstNo: "614029****", wkplRoadNmDtlAddr: "경상북도 구미시" }),
+        bassRow({ seq: 2, wkplNm: "삼익SDT주식회사", bzowrRgstNo: "503814****", wkplRoadNmDtlAddr: "대구광역시 달서구" }),
+      ],
+    });
+
+    const workplace = await lookupWorkplace("SDT", { businessNo: "6308700933" }, { fetchImpl });
+
+    expect(workplace.found).toBe(false);
+    expect(workplace.numberMismatch).toBe(true);
+    expect(workplace.candidates).toHaveLength(2);
+  });
+
   it("refuses to pick when two different companies match equally well", async () => {
     const fetchImpl = npsFetch({
       bass: [

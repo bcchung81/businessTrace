@@ -211,6 +211,27 @@ describe("toSnapshots", () => {
     expect(find(rows, "fsc")).toMatchObject({ status: "conflict", summary: "사업자번호 불일치 · 확보 1018162201 ↔ 금융위 9999999999" });
   });
 
+  it("folds a pension number mismatch to absent instead of asking to pick a namesake", () => {
+    const rows = toSnapshots(
+      evidence({
+        pension: {
+          found: false,
+          numberMismatch: true,
+          subscribers: null,
+          noticeAmount: null,
+          averageBaseIncome: null,
+          annualPayroll: null,
+          months: [],
+          growth: null,
+          candidates: [{ companyName: "엘에스디테크", businessNoPrefix: "614029" }],
+          reason: "사업자번호와 일치하는 사업장이 없습니다.",
+        },
+      }),
+    );
+
+    expect(find(rows, "nps")).toMatchObject({ status: "absent", summary: "확보 번호와 일치하는 가입 사업장 없음 — 미가입 가능성" });
+  });
+
   it("an operator decision that the fsc record is a namesake folds it to absent", () => {
     const rows = toSnapshots(
       evidence({ outline: { found: true, corpName: "옥타코", businessNo: "9999999999", employeeCount: null } }),

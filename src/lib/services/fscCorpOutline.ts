@@ -22,10 +22,12 @@ function normaliseName(value: string) {
   return value.replace(/\s|\(주\)|주식회사|㈜/g, "");
 }
 
+/**
+ * 정규화 이름이 정확히 같은 행만 채택한다. 부분 포함 폴백은 케미타운을 미타운으로 잡는 오탐을 낸다.
+ */
 function pickBestMatch(rows: OutlineRow[], companyName: string) {
   const wanted = normaliseName(companyName);
-  const exact = rows.find((row) => normaliseName(row.corpNm ?? "") === wanted);
-  return exact ?? rows.find((row) => normaliseName(row.corpNm ?? "").includes(wanted));
+  return rows.find((row) => normaliseName(row.corpNm ?? "") === wanted);
 }
 
 function readRows(body: unknown): OutlineRow[] {
