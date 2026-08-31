@@ -2,7 +2,7 @@ import { listEvents } from "@/lib/repositories/eventRepository";
 import { listSelections, listSelectionYears } from "@/lib/repositories/selectionRecord";
 import { computeAwards } from "@/lib/services/awards";
 import { pivotEvents } from "@/lib/services/eventPivot";
-import { periodEndYm } from "@/lib/services/periods";
+import { periodEndYm, periodLabel } from "@/lib/services/periods";
 import { Panel } from "@/components/dashboard/panel";
 import { AwardBoard } from "@/components/history/award-board";
 import { EventPivotTable } from "@/components/history/event-pivot-table";
@@ -15,11 +15,18 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
   const year = Number.isInteger(requested) ? requested : (years[0] ?? new Date().getFullYear());
 
   const records = await listSelections();
-  const awardRecords = records.map((record) => ({ companyId: record.companyId, companyName: record.companyName, period: String(record.year), total: record.total, rank: record.rank }));
+  const awardRecords = records.map((record) => ({ companyId: record.companyId, companyName: record.companyName, period: record.period, total: record.total, rank: record.rank }));
+
+  const yearPeriods = [...new Set(records.filter((record) => record.year === year).map((record) => record.period))].sort(
+    (a, b) => periodEndYm(b).localeCompare(periodEndYm(a)) || b.localeCompare(a),
+  );
+  const requestedPeriod = typeof params.period === "string" ? params.period : null;
+  const targetPeriod = requestedPeriod && yearPeriods.includes(requestedPeriod) ? requestedPeriod : (yearPeriods[0] ?? String(year));
+
   const facets = new Map<number, TrendFacet>();
   for (const record of records) {
     const facet = facets.get(record.companyId) ?? { companyId: record.companyId, name: record.companyName, grade: record.grade, points: [] };
-    facet.points.push({ ym: periodEndYm(String(record.year)), total: record.total });
+    facet.points.push({ ym: periodEndYm(record.period), total: record.total });
     facet.grade = record.grade;
     facets.set(record.companyId, facet);
   }
@@ -35,7 +42,7 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
           <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">{year}년 · 확정 기록 기준</span>
           <h1 className="font-display text-[36px] font-black leading-none tracking-[-0.04em]">이력·시상</h1>
           <p className="text-[12.5px] text-muted-foreground">
-            랭킹 화면의 시상 확정이 남긴 연도 기록으로 그린다 — 산식이 바뀌어도 과거 기록은 그대로다.
+            랭킹 화면의 시상 확정이 남긴 기간(연·반기·분기) 기록으로 그린다 — 산식이 바뀌어도 과거 기록은 그대로다.
           </p>
         </div>
         {years.length > 0 ? (
@@ -54,13 +61,34 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
         ) : null}
       </header>
 
-      <Panel index="01" title="시상 카테고리" tag="자동 산출" note="확정된 연도 기록만 근거다">
-        <AwardBoard categories={computeAwards(awardRecords, String(year))} />
+      <Panel
+        index="01"
+        title="시상 카테고리"
+        tag="자동 산출"
+        note="선택한 기간과 그 직전 기간들의 확정 기록이 근거다"
+        aside={
+          yearPeriods.length > 1 ? (
+            <nav aria-label="기간" className="flex">
+              {yearPeriods.map((entry) => (
+                <a
+                  key={entry}
+                  href={`/history?year=${year}&period=${entry}`}
+                  aria-current={entry === targetPeriod ? "page" : undefined}
+                  className="-ml-px border-[1.5px] border-hairline px-2.5 py-0.5 text-[11.5px] font-bold text-muted-foreground first:ml-0 hover:bg-secondary aria-[current=page]:border-ink aria-[current=page]:bg-ink aria-[current=page]:text-background"
+                >
+                  {periodLabel(entry)}
+                </a>
+              ))}
+            </nav>
+          ) : null
+        }
+      >
+        <AwardBoard categories={computeAwards(awardRecords, targetPeriod)} />
       </Panel>
-      <Panel index="02" title="점수 추이" tag="확정 기록" note="연도별 총점 0~1 · 산식 버전은 기록마다 저장">
+      <Panel index="02" title="점수 추이" tag="확정 기록" note="월 축 · 확정 기간의 끝 달에 점을 놓는다 · 총점 0~1">
         <ScoreTrend facets={[...facets.values()]} />
       </Panel>
-      <Panel index="03" title="사건 연간 피벗" tag="실측" note="기업×월 사건 수 · 종류는 셀에 마우스를 올리면">
+      <Panel index="03" title="사건 연간 피벗" tag="실측" note="기업×월 사건 수 · 종류는 요약 열과 셀 title 로">
         <EventPivotTable months={pivot.months} rows={pivot.rows} />
       </Panel>
     </div>

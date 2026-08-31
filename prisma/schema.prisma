@@ -208,6 +208,7 @@ model SelectionRecord {
   companyId      Int
   company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   year           Int
+  period         String   @default("")
   grade          String
   total          Float
   rank           Int?
@@ -216,7 +217,7 @@ model SelectionRecord {
   decidedAt      DateTime @default(now())
   decidedBy      Int
 
-  @@unique([companyId, year])
+  @@unique([companyId, period])
   @@index([year])
 }
 
