@@ -95,6 +95,20 @@ describe("getCompanyProfile with a corp code hint", () => {
   });
 });
 
+describe("getCompanyProfile with a corp code hint keeps the listing", () => {
+  it("reads the stock code from the profile response instead of fixing it at null", async () => {
+    const summary = await getCompanyProfile("올림플래닛", { fetchImpl: jsonFetch({ ...PROFILE_OK, stock_code: "654321" }) }, { corpCode: "01234567" });
+
+    expect(summary).toMatchObject({ found: true, corpCode: "01234567", stockCode: "654321" });
+  });
+
+  it("leaves the stock code null for an unlisted company", async () => {
+    const summary = await getCompanyProfile("올림플래닛", { fetchImpl: jsonFetch({ ...PROFILE_OK, stock_code: " " }) }, { corpCode: "01234567" });
+
+    expect(summary.stockCode).toBeNull();
+  });
+});
+
 describe("getFinancialSummary", () => {
   it("extracts the four headline figures as numbers", async () => {
     const summary = await getFinancialSummary("올림플래닛", 2024, { fetchImpl: jsonFetch(FINANCE_OK) });

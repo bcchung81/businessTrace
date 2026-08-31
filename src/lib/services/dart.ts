@@ -80,6 +80,7 @@ function parseAmount(raw: unknown) {
 /**
  * 기업명으로 DART 기업개황을 조회해 사업자번호까지 가져온다.
  * 사업자번호가 있어야 국세청 휴폐업·나라장터 대조가 열린다.
+ * 상장 여부는 응답의 stock_code 를 우선한다 — 고유번호를 힌트로 받은 경로에는 목록 조회가 없다.
  */
 export async function getCompanyProfile(
   companyName: string,
@@ -117,10 +118,11 @@ export async function getCompanyProfile(
     };
   }
 
+  const stockCode = typeof body.stock_code === "string" ? body.stock_code.trim() : "";
   return {
     found: true,
     corpCode: exact.corpCode,
-    stockCode: exact.stockCode,
+    stockCode: stockCode.length > 0 ? stockCode : exact.stockCode,
     corpName: String(body.corp_name ?? exact.corpName),
     businessNo: typeof body.bizr_no === "string" ? body.bizr_no : undefined,
     corporateNo: typeof body.jurir_no === "string" ? body.jurir_no : undefined,
