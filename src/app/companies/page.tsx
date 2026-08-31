@@ -12,6 +12,11 @@ import { countReviewCompanies } from "@/lib/repositories/pipelineRepo";
 import { buildNewsCoverage } from "@/lib/services/newsCoverage";
 import { BatchRunner } from "@/components/analysis/batch-runner";
 import { CompanyCardGrid } from "@/components/company/company-card-grid";
+import { CompanyPipelineGrid } from "@/components/dashboard/company-pipeline-grid";
+import { VerdictBoard } from "@/components/dashboard/verdict-board";
+import { listCompanyPipeline } from "@/lib/repositories/companyPipeline";
+import { buildMatrixRows } from "@/lib/services/matrixRows";
+import { rollupVerdicts } from "@/lib/services/verdictRollup";
 import { Panel } from "@/components/dashboard/panel";
 import { RegisterDialog } from "@/components/company/register-dialog";
 
@@ -38,7 +43,11 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   const series = await listPensionSeries(year);
   const graph = buildCoMentions(await listMentionArticles(year), activeCompanies.map((company) => company.name));
   const news = buildNewsCoverage(activeCompanies, graph.articles, now);
-  const verdicts = (await listLatestVerifications(year)).map((row) => ({ companyId: row.companyId, verdict: row.status }));
+  const verifications = await listLatestVerifications(year);
+  const verdicts = verifications.map((row) => ({ companyId: row.companyId, verdict: row.status }));
+  const pipeline = await listCompanyPipeline(year);
+  const rollup = rollupVerdicts({ companies: activeCompanies.map((company) => ({ id: company.id, name: company.name, businessNo: company.businessNo ?? null })), verifications, pipeline });
+  const matrix = buildMatrixRows(pipeline, rollup.companies, news.byCompany);
   const review = await countReviewCompanies(year);
   const cards = buildCompanyCards({ companies: activeCompanies, events, series, news: news.byCompany, verdicts, reviewIds: review.ids, everEventIds: await listCompanyIdsWithEvents(year) });
   const initialFilter = params.filter === "review" ? { reviewOnly: true } : {};
@@ -115,6 +124,18 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
 
       <Panel index="02" title="기업 목록" tag="실측">
         <CompanyCardGrid cards={cards} initialFilter={initialFilter} />
+      </Panel>
+
+      <Panel index="03" title="분석 현황" tag="분석 산출" tone="fresh">
+        <details>
+          <summary className="cursor-pointer select-none px-3.5 py-2.5 text-[12px] font-semibold text-muted-foreground">
+            판정 현황 · 기업별 근거 매트릭스 펼치기
+          </summary>
+          <div className="flex flex-col gap-5 border-t border-hairline p-3.5">
+            <VerdictBoard counts={rollup.counts} averageCitations={rollup.averageCitations} />
+            {matrix.length === 0 ? null : <CompanyPipelineGrid rows={matrix} now={now} />}
+          </div>
+        </details>
       </Panel>
     </div>
   );

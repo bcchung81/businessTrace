@@ -22,14 +22,11 @@ import { getDashboardSummary } from "@/lib/services/dashboardSummary";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { formatRunTime } from "@/lib/services/formatRunTime";
 import { KST_OFFSET_MS } from "@/lib/services/kst";
-import { buildMatrixRows } from "@/lib/services/matrixRows";
 import { buildNewsCoverage, isStale } from "@/lib/services/newsCoverage";
 import { rollupVerdicts } from "@/lib/services/verdictRollup";
 import { CompanyChips } from "@/components/dashboard/company-chips";
-import { CompanyPipelineGrid } from "@/components/dashboard/company-pipeline-grid";
 import { EventTable } from "@/components/dashboard/event-table";
 import { Panel } from "@/components/dashboard/panel";
-import { VerdictBoard } from "@/components/dashboard/verdict-board";
 import { Ribbon } from "@/components/ui/ribbon";
 
 const DAY_MS = 86_400_000;
@@ -75,7 +72,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const verdicts = rollupVerdicts({ companies: registry, verifications: await listLatestVerifications(year), pipeline });
   const graph = buildCoMentions(await listMentionArticles(year), registry.map((company) => company.name));
   const news = buildNewsCoverage(registry, graph.articles, now);
-  const matrix = buildMatrixRows(pipeline, verdicts.companies, news.byCompany);
   const activity = await summariseRunActivity(year);
   const sourceFreshness = await summariseSourceFreshness(year);
 
@@ -199,17 +195,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </Panel>
       </div>
 
-      <Panel index="06" title="데이터 신선도" tag="분석 산출" tone="fresh">
-        <details>
-          <summary className="cursor-pointer select-none px-3.5 py-2.5 text-[12px] font-semibold text-muted-foreground">
-            판정 현황 · 기업별 근거 매트릭스 펼치기
-          </summary>
-          <div className="flex flex-col gap-5 border-t border-hairline p-3.5">
-            <VerdictBoard counts={verdicts.counts} averageCitations={verdicts.averageCitations} />
-            {matrix.length === 0 ? null : <CompanyPipelineGrid rows={matrix} now={now} />}
-          </div>
-        </details>
-      </Panel>
     </div>
   );
 }
