@@ -144,13 +144,33 @@ export function extractReadableText(html: string, url: string, deps: DomFactory 
 }
 
 /**
+ * 링크에서 utm_*·fbclid 추적 파라미터만 걷어낸다.
+ * 같은 기사가 네이버·구글에서 다른 문자열로 들어와도 URL 이 한 키로 모이게 한다.
+ */
+function stripTrackingParams(link: string) {
+  try {
+    const url = new URL(link);
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^utm_/i.test(key) || key === "fbclid") url.searchParams.delete(key);
+    }
+    return url.toString();
+  } catch {
+    return link;
+  }
+}
+
+/**
  * 기사 본문을 크롤링해 정제된 텍스트로 돌려준다.
  * 실패하면 예외 대신 빈 문자열을 준다. 본문 없음은 수집 실패가 아니다.
  */
 export async function fetchArticleBody(url: string, deps: FetchDeps & DomFactory = {}) {
-  const fetchImpl = deps.fetchImpl ?? fetch;
   const resolved = await resolveGoogleNewsUrl(url, deps);
   if (resolved.includes(GOOGLE_HOST)) return "";
+  return fetchBodyFromUrl(resolved, deps);
+}
+
+async function fetchBodyFromUrl(resolved: string, deps: FetchDeps & DomFactory = {}) {
+  const fetchImpl = deps.fetchImpl ?? fetch;
 
   try {
     const response = await fetchImpl(resolved, {
@@ -192,9 +212,11 @@ export async function enrichWithBodies(
         const index = cursor;
         cursor += 1;
         const item = items[index];
-        const body = await fetchArticleBody(item.link, deps);
+        const link = stripTrackingParams(await resolveGoogleNewsUrl(item.link, deps));
+        const body = link.includes(GOOGLE_HOST) ? "" : await fetchBodyFromUrl(link, deps);
         enriched[index] = {
           ...item,
+          link,
           content: body.length > item.description.length ? body : item.description,
         };
       }

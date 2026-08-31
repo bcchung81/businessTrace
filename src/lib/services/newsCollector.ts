@@ -89,6 +89,25 @@ export function classifyRelevance(input: { title: string; content: string; name:
  * 같은 언론사 안에서 제목이 사실상 같은 기사를 걸러낸다.
  * 언론사가 다르면 남긴다 — 여러 매체가 받아쓴 통신 기사는 보도 횟수 그 자체가 신호다.
  */
+/**
+ * 원문 URL 이 같은 항목을 하나로 모은다 — 같은 기사가 네이버·구글 양쪽에서 들어온 경우다.
+ * 언론사명이 정확한 네이버판을 남긴다.
+ */
+export function dedupeByLink(items: NewsItem[]) {
+  const byLink = new Map<string, NewsItem>();
+  let removed = 0;
+  for (const item of items) {
+    const existing = byLink.get(item.link);
+    if (!existing) {
+      byLink.set(item.link, item);
+      continue;
+    }
+    removed += 1;
+    if (existing.provider === "google" && item.provider === "naver") byLink.set(item.link, item);
+  }
+  return { items: [...byLink.values()], removed };
+}
+
 export function removeDuplicates(items: NewsItem[], threshold: number) {
   if (threshold <= 0) return { items, removed: 0 };
 
@@ -254,7 +273,8 @@ export async function collectNews(
     .slice(0, limit);
 
   const enriched = await enrichWithBodies(ranked, deps);
-  const items = enriched.map((item) => ({
+  const linkDeduped = dedupeByLink(enriched);
+  const items = linkDeduped.items.map((item) => ({
     ...item,
     ...classifyRelevance({ title: item.title, content: item.content, name: options.query }),
   }));
@@ -263,7 +283,7 @@ export async function collectNews(
 
   return {
     items,
-    duplicatesRemoved: deduped.removed,
+    duplicatesRemoved: deduped.removed + linkDeduped.removed,
     primaryCount,
     noNews: primaryCount === 0,
     errors,

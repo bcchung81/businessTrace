@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   collectNews,
   removeDuplicates,
+  dedupeByLink,
   pressNameFromUrl,
   classifyRelevance,
   NewsRateLimitError,
@@ -66,6 +67,20 @@ describe("removeDuplicates", () => {
     );
 
     expect(items).toHaveLength(2);
+    expect(removed).toBe(1);
+  });
+
+  it("collapses the same resolved link across providers, keeping the naver copy", () => {
+    const { items, removed } = dedupeByLink([
+      { ...base, title: "같은 기사 - 비즈워치", link: "https://biz.example.kr/a/1", provider: "google", source: "비즈워치" },
+      { ...base, title: "같은 기사", link: "https://biz.example.kr/a/1", provider: "naver", source: "비즈니스워치" },
+      { ...base, title: "다른 기사", link: "https://biz.example.kr/a/2", provider: "naver" },
+    ]);
+
+    expect(items.map((item) => [item.link, item.provider])).toEqual([
+      ["https://biz.example.kr/a/1", "naver"],
+      ["https://biz.example.kr/a/2", "naver"],
+    ]);
     expect(removed).toBe(1);
   });
 
@@ -292,6 +307,28 @@ describe("리뷰 확정 결함 회귀", () => {
 
     expect(items.map((item) => item.link)).toEqual(["https://a/1"]);
     expect(errors).toEqual([]);
+  });
+
+  it("drops the google copy of an article naver already delivered once links resolve", async () => {
+    const link = "https://biz.example.kr/a/1";
+    const token = Buffer.from(link).toString("base64url");
+    const rss = `<?xml version="1.0"?><rss version="2.0"><channel><title>c</title><item><title>넷록스 투자 유치 - 비즈워치</title><link>https://news.google.com/rss/articles/${token}?oc=5</link><pubDate>Mon, 10 Aug 2026 10:00:00 +0900</pubDate><source url="https://biz.example.kr">비즈워치</source></item></channel></rss>`;
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("naverapihub.apigw.ntruss.com")) {
+        return new Response(
+          JSON.stringify({ items: [{ title: "넷록스 투자 유치", originallink: link, link, description: "", pubDate: "Mon, 10 Aug 2026 10:00:00 +0900" }] }),
+          { status: 200 },
+        );
+      }
+      if (url.includes("news.google.com/rss/search")) return new Response(rss, { status: 200 });
+      throw new Error("offline");
+    }) as unknown as typeof fetch;
+
+    const { items, duplicatesRemoved } = await collectNews({ query: "넷록스" }, { fetchImpl });
+
+    expect(items.map((item) => [item.link, item.provider])).toEqual([[link, "naver"]]);
+    expect(duplicatesRemoved).toBe(1);
   });
 
   it("keeps an article published in the KST afternoon of the end date — the day is inclusive", async () => {

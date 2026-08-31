@@ -142,6 +142,31 @@ describe("enrichWithBodies", () => {
 
     expect(enriched.map((entry) => entry.title)).toEqual(["a", "b", "c", "d", "e"]);
   });
+
+  it("rewrites a google proxy link to the resolved publisher url", async () => {
+    const token = Buffer.from("https://biz.example.kr/a/1").toString("base64url");
+    const fetchImpl = vi.fn(async () => {
+      throw new Error("offline");
+    }) as unknown as typeof fetch;
+
+    const [enriched] = await enrichWithBodies(
+      [item({ link: `https://news.google.com/rss/articles/${token}?oc=5`, provider: "google" })],
+      { fetchImpl },
+    );
+
+    expect(enriched.link).toBe("https://biz.example.kr/a/1");
+  });
+
+  it("strips tracking params so the same article keys identically across providers", async () => {
+    const fetchImpl = vi.fn(async () => new Response("", { status: 403 })) as unknown as typeof fetch;
+
+    const [enriched] = await enrichWithBodies(
+      [item({ link: "https://x.kr/ok?newsId=1&utm_source=naver&utm_medium=referral&fbclid=abc" })],
+      { fetchImpl },
+    );
+
+    expect(enriched.link).toBe("https://x.kr/ok?newsId=1");
+  });
 });
 
 describe("extractReadableText", () => {
