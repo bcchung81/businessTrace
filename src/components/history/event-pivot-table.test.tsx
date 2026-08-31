@@ -13,7 +13,7 @@ function cells(over: Record<number, Partial<Pick<PivotCell, "total" | "byKind" |
 }
 
 describe("EventPivotTable", () => {
-  it("splits each company into one row per kind, without the summary column", () => {
+  it("keeps one row per company and splits each month into 수·투·긍·부 sub-columns", () => {
     render(
       <EventPivotTable
         months={MONTHS}
@@ -38,18 +38,14 @@ describe("EventPivotTable", () => {
       />,
     );
 
-    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
-    expect(headers[0]).toBe("기업");
-    expect(headers[1]).toBe("종류");
-    expect(headers.at(-1)).toBe("계");
-
-    const kindRows = screen.getAllByRole("row").slice(1);
-    expect(kindRows).toHaveLength(2);
-    expect(within(kindRows[0]).getByText("수상")).toBeInTheDocument();
-    expect(within(kindRows[1]).getByText("긍정 보도")).toBeInTheDocument();
-    expect(screen.getByText("에이트테크")).toBeInTheDocument();
+    const monthHeader = screen.getByRole("columnheader", { name: "3월" });
+    expect(monthHeader).toHaveAttribute("colspan", "4");
+    expect(screen.getAllByRole("columnheader", { name: "수" })).toHaveLength(12);
+    expect(screen.getAllByRole("row")).toHaveLength(3);
     expect(screen.getByRole("button", { name: "에이트테크 3월 수상 2건 보기" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "에이트테크 3월 긍정 보도 1건 보기" })).toBeInTheDocument();
+    const name = screen.getByText("에이트테크");
+    expect(name.className).toContain("truncate");
   });
 
   it("opens a popup with only that kind's events for the month", () => {
@@ -85,7 +81,7 @@ describe("EventPivotTable", () => {
     expect(within(dialog).queryByText("긍정 보도 — 매출 급증")).not.toBeInTheDocument();
   });
 
-  it("pages twenty companies at a time even when kinds add rows", () => {
+  it("pages twenty companies at a time", () => {
     const rows = Array.from({ length: 25 }, (_, index) => ({
       companyId: index + 1,
       companyName: `기업${index + 1}`,
@@ -94,7 +90,7 @@ describe("EventPivotTable", () => {
     }));
     const { container } = render(<EventPivotTable months={MONTHS} rows={rows} />);
 
-    expect(container.querySelectorAll("tbody tr")).toHaveLength(40);
+    expect(container.querySelectorAll("tbody tr")).toHaveLength(20);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
   });
 

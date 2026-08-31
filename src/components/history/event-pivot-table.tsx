@@ -14,15 +14,12 @@ const SEVERITY_TONE: Record<string, string> = {
   info: "bg-pending-surface text-pending",
 };
 
-const KIND_ORDER: EventKind[] = ["award", "investment", "positive_press", "negative_press", "closure", "venture_expiry", "headcount_up", "headcount_down", "source_conflict", "silence"];
-
-function kindsOf(row: PivotRow): EventKind[] {
-  const present = new Set<EventKind>();
-  for (const cell of row.cells) {
-    for (const kind of Object.keys(cell.byKind)) present.add(kind as EventKind);
-  }
-  return KIND_ORDER.filter((kind) => present.has(kind));
-}
+const GRID_KINDS: Array<{ kind: EventKind; short: string }> = [
+  { kind: "award", short: "수" },
+  { kind: "investment", short: "투" },
+  { kind: "positive_press", short: "긍" },
+  { kind: "negative_press", short: "부" },
+];
 
 function monthLabel(ym: string) {
   return `${ym.slice(0, 4)}년 ${Number(ym.slice(4))}월`;
@@ -31,8 +28,8 @@ function monthLabel(ym: string) {
 type OpenCell = { companyName: string; ym: string; kind: EventKind; count: number; events: PivotCellEvent[] };
 
 /**
- * 사건 피벗 — 기업을 종류별 행으로 갈라 월별 수상·투자·긍정·부정 건수를 따로 센다.
- * 건수를 누르면 그 달·그 종류의 사건과 근거 기사가 열린다. 0 은 비워 스캔이 되게 한다.
+ * 사건 피벗 — 기업당 한 행, 달마다 수·투·긍·부 네 칸으로 갈라 종류별 건수를 센다.
+ * 건수를 누르면 그 달·그 종류의 사건과 근거 기사가 열린다. 그 외 종류는 기업 상세의 사건 이력에서 본다.
  */
 export function EventPivotTable({ months, rows }: { months: string[]; rows: PivotRow[] }) {
   const [page, setPage] = useState(0);
@@ -42,61 +39,68 @@ export function EventPivotTable({ months, rows }: { months: string[]; rows: Pivo
   }
 
   const { slice, pages, current } = paginate(rows, page);
-
   const countOf = (cell: PivotCell, kind: EventKind) => cell.byKind[kind] ?? 0;
+  const rowTotal = (row: PivotRow) =>
+    row.cells.reduce((sum, cell) => sum + GRID_KINDS.reduce((inner, entry) => inner + countOf(cell, entry.kind), 0), 0);
 
   return (
     <div className="flex flex-col gap-2 overflow-x-auto">
-      <p className="text-[11px] text-muted-foreground">칸의 숫자는 그 달·그 종류의 사건 수 — 누르면 사건과 근거 기사가 열린다.</p>
-      <table className="w-auto border-collapse text-[12px]">
+      <p className="text-[11px] text-muted-foreground">달마다 수상·투자·긍정·부정 순 네 칸 — 누르면 사건과 근거 기사가 열린다. 그 외 종류는 기업 상세의 사건 이력에.</p>
+      <table className="w-auto border-collapse text-[11px]">
         <thead>
-          <tr className="border-b-2 border-ink text-left">
-            <th className="py-1.5 pr-3 font-semibold">기업</th>
-            <th className="py-1.5 pr-3 font-semibold">종류</th>
+          <tr className="text-left">
+            <th rowSpan={2} className="border-b-2 border-ink py-1 pr-2 align-bottom text-[12px] font-semibold">기업</th>
             {months.map((ym) => (
-              <th key={ym} className="w-8 px-1 py-1.5 text-right font-mono text-[10.5px] text-muted-foreground">
+              <th key={ym} colSpan={4} className="border-l border-hairline px-0.5 pt-1 text-center font-mono text-[10px] font-semibold text-muted-foreground">
                 {Number(ym.slice(4))}월
               </th>
             ))}
-            <th className="py-1.5 pl-3 text-right font-semibold">계</th>
+            <th rowSpan={2} className="border-b-2 border-ink py-1 pl-2 text-right align-bottom text-[12px] font-semibold">계</th>
+          </tr>
+          <tr className="border-b-2 border-ink text-center">
+            {months.flatMap((ym) =>
+              GRID_KINDS.map((entry, index) => (
+                <th
+                  key={`${ym}-${entry.kind}`}
+                  title={KIND_LABEL[entry.kind]}
+                  className={`w-[17px] pb-1 font-mono text-[9.5px] font-semibold text-muted-foreground/80 ${index === 0 ? "border-l border-hairline" : ""}`}
+                >
+                  {entry.short}
+                </th>
+              )),
+            )}
           </tr>
         </thead>
         <tbody>
-          {slice.flatMap((row) => {
-            const kinds = kindsOf(row);
-            return kinds.map((kind, kindIndex) => (
-              <tr key={`${row.companyId}-${kind}`} className={kindIndex === kinds.length - 1 ? "border-b border-hairline" : ""}>
-                {kindIndex === 0 ? (
-                  <td rowSpan={kinds.length} className="whitespace-nowrap py-1.5 pr-3 align-top font-semibold">
-                    {row.companyName}
-                  </td>
-                ) : null}
-                <td className="whitespace-nowrap py-1 pr-3 text-[11px] text-muted-foreground">{KIND_LABEL[kind]}</td>
-                {row.cells.map((cell) => {
-                  const count = countOf(cell, kind);
+          {slice.map((row) => (
+            <tr key={row.companyId} className="border-b border-hairline">
+              <td className="max-w-[92px] truncate whitespace-nowrap py-1 pr-2 text-[12px] font-semibold" title={row.companyName}>
+                {row.companyName}
+              </td>
+              {row.cells.flatMap((cell) =>
+                GRID_KINDS.map((entry, index) => {
+                  const count = countOf(cell, entry.kind);
                   return (
-                    <td key={cell.ym} className="w-8 px-0.5 py-0.5 text-right font-mono tabular-nums">
+                    <td key={`${cell.ym}-${entry.kind}`} className={`w-[17px] p-0 text-center font-mono tabular-nums ${index === 0 ? "border-l border-hairline" : ""}`}>
                       {count === 0 ? null : (
                         <button
                           type="button"
-                          aria-label={`${row.companyName} ${Number(cell.ym.slice(4))}월 ${KIND_LABEL[kind]} ${count}건 보기`}
+                          aria-label={`${row.companyName} ${Number(cell.ym.slice(4))}월 ${KIND_LABEL[entry.kind]} ${count}건 보기`}
                           onClick={() =>
-                            setOpen({ companyName: row.companyName, ym: cell.ym, kind, count, events: cell.events.filter((event) => event.kind === kind) })
+                            setOpen({ companyName: row.companyName, ym: cell.ym, kind: entry.kind, count, events: cell.events.filter((event) => event.kind === entry.kind) })
                           }
-                          className="w-full px-0.5 py-0.5 text-right font-bold underline decoration-hairline decoration-dotted underline-offset-4 hover:bg-accent hover:decoration-primary"
+                          className="w-full py-1 font-bold underline decoration-hairline decoration-dotted underline-offset-2 hover:bg-accent hover:decoration-primary"
                         >
                           {count}
                         </button>
                       )}
                     </td>
                   );
-                })}
-                <td className="py-1 pl-3 text-right font-mono font-bold tabular-nums">
-                  {row.cells.reduce((sum, cell) => sum + countOf(cell, kind), 0)}
-                </td>
-              </tr>
-            ));
-          })}
+                }),
+              )}
+              <td className="py-1 pl-2 text-right font-mono text-[12px] font-bold tabular-nums">{rowTotal(row)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
       <Pager current={current} pages={pages} onPage={setPage} />
