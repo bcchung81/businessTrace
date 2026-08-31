@@ -9,7 +9,7 @@ export function RisingCompanies({ rows, periodLabelText }: { rows: RisingRow[]; 
   if (rows.length === 0) {
     return (
       <p className="border border-dashed border-hairline p-6 text-center text-[13px] text-muted-foreground">
-        직전 기간 확정 기록이 없습니다. 랭킹 화면에서 기간(연·반기·분기) 시상 확정을 두 번 이상 쌓으면 추이가 생깁니다.
+        비교할 확정 기록이 없거나 순위가 오른 기업이 없습니다. 랭킹 화면에서 시상 확정을 저장하면 실시간 순위와 그 기준을 비교합니다.
       </p>
     );
   }

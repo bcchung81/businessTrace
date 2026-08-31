@@ -36,6 +36,13 @@ export function compareSeverity(a: Severity, b: Severity) {
   return SEVERITY_ORDER.indexOf(a) - SEVERITY_ORDER.indexOf(b);
 }
 
+/**
+ * 대시보드에 올릴 사건만 남긴다 — 해소돼 자동 정리된 동명 충돌은 이력이지 이달의 사건이 아니다.
+ */
+export function dashboardEvents<T extends { kind: EventKind; status: string }>(events: T[]): T[] {
+  return events.filter((event) => !(event.kind === "source_conflict" && event.status === "done"));
+}
+
 function articleEvent(companyId: number, runId: number, trust: Trust, analysis: NewsAnalysis, kind: EventKind, severity: Severity, title: string, label: string): NewEvent {
   return {
     companyId, kind, severity, runId, trust, title,

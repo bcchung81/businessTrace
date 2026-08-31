@@ -1,5 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { risingCompanies } from "@/lib/services/rising";
+import { compareRanks, risingCompanies } from "@/lib/services/rising";
+
+describe("compareRanks", () => {
+  it("ranks live standings against a confirmed baseline", () => {
+    const live = [
+      { companyId: 1, companyName: "미타운", rank: 4, total: 0.56 },
+      { companyId: 2, companyName: "써로마인드", rank: 6, total: 0.54 },
+      { companyId: 3, companyName: "하락기업", rank: 9, total: 0.5 },
+      { companyId: 4, companyName: "신규기업", rank: 1, total: 0.9 },
+      { companyId: 5, companyName: "순위없음", rank: null, total: 0.2 },
+    ];
+    const baseline = [
+      { companyId: 1, rank: 13 },
+      { companyId: 2, rank: 13 },
+      { companyId: 3, rank: 2 },
+      { companyId: 5, rank: 20 },
+    ];
+
+    const rising = compareRanks(live, baseline, 10);
+
+    expect(rising).toEqual([
+      { companyId: 1, companyName: "미타운", prevRank: 13, rank: 4, delta: 9, total: 0.56 },
+      { companyId: 2, companyName: "써로마인드", prevRank: 13, rank: 6, delta: 7, total: 0.54 },
+    ]);
+  });
+});
 
 function record(companyId: number, name: string, period: string, rank: number | null, total: number) {
   return { companyId, companyName: name, period, rank, total };

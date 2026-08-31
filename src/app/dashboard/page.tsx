@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { listCompanies, listYears } from "@/lib/repositories/companyRepository";
 import { listSelections } from "@/lib/repositories/selectionRecord";
-import { periodEndYm, periodLabel, prevPeriod } from "@/lib/services/periods";
-import { risingCompanies } from "@/lib/services/rising";
+import { periodEndYm, periodLabel } from "@/lib/services/periods";
+import { compareRanks } from "@/lib/services/rising";
+import { listBenchmarkInputs } from "@/lib/repositories/benchmarkInputs";
+import { loadRubrics, rankCompanies } from "@/lib/services/benchmarking";
 import { RisingCompanies } from "@/components/dashboard/rising-companies";
 import { listMentionArticles } from "@/lib/repositories/mentionArticles";
 import { listCompanyPipeline } from "@/lib/repositories/companyPipeline";
 import { latestEventAt, listEvents, summariseEvents } from "@/lib/repositories/eventRepository";
+import { dashboardEvents } from "@/lib/services/eventRules";
 import { listLatestVerifications } from "@/lib/repositories/verificationResult";
 import { summariseRunActivity } from "@/lib/repositories/analysisRun";
 import { summariseSourceFreshness } from "@/lib/repositories/sourceSnapshot";
@@ -76,7 +79,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const activity = await summariseRunActivity(year);
   const sourceFreshness = await summariseSourceFreshness(year);
 
-  const events = await listEvents({ year, since: since90 });
+  const events = dashboardEvents(await listEvents({ year, since: since90 }));
   const eventSummary = await summariseEvents(year, since30);
   const lastEventAt = await latestEventAt(year);
   const events30 = events.filter((event) => Date.parse(event.occurredAt) >= since30.getTime());
@@ -89,9 +92,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   const selections = await listSelections();
   const periods = [...new Set(selections.map((record) => record.period))].sort((a, b) => periodEndYm(a).localeCompare(periodEndYm(b)) || a.localeCompare(b));
-  const targetPeriod = periods.at(-1) ?? null;
-  const rising = targetPeriod ? risingCompanies(selections, targetPeriod, 10) : [];
-  const risingLabel = targetPeriod && rising.length > 0 ? `${periodLabel(targetPeriod)} · ${periodLabel(prevPeriod(targetPeriod))} 대비 순위 상승 순` : null;
+  const basePeriod = periods.at(-1) ?? null;
+  const liveRanked = rankCompanies(await listBenchmarkInputs(year), loadRubrics()).map((row) => ({ companyId: row.companyId, companyName: row.name, rank: row.rank, total: row.total ?? 0 }));
+  const rising = basePeriod
+    ? compareRanks(liveRanked, selections.filter((record) => record.period === basePeriod), 10)
+    : [];
+  const risingLabel = basePeriod && rising.length > 0 ? `실시간 랭킹 · ${periodLabel(basePeriod)} 확정 대비 순위 상승 순` : null;
 
   const [collection, cells, fullRefreshAt, review] = await Promise.all([
     summariseCollection(year),
@@ -171,7 +177,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       <Ribbon groups={ribbon} className="-mt-12" />
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <Panel index="01" title="추이 상승 TOP 10" tag="제안" note="시상 후보 검토용">
+        <Panel index="01" title="추이 상승 TOP 10" tag="실시간" tone="fresh" note="시상 후보 검토용">
           <RisingCompanies rows={rising} periodLabelText={risingLabel} />
         </Panel>
         <Panel index="02" title="이달의 사건" tag="실측" empty="등록된 기업이 없습니다." className="scroll-mt-20" id="events">

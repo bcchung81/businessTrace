@@ -24,6 +24,6 @@ describe("RisingCompanies", () => {
   it("explains why it is empty instead of hiding", () => {
     render(<RisingCompanies rows={[]} periodLabelText={null} />);
 
-    expect(screen.getByText(/직전 기간 확정 기록이 없습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/비교할 확정 기록이 없거나 순위가 오른 기업이 없습니다/)).toBeInTheDocument();
   });
 });

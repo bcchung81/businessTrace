@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { AnalysisResult, NewsAnalysis } from "@/lib/services/analyzer";
 import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
 import {
-  compareSeverity, extractAnalysisEvents, extractPensionEvents, extractSourceEvents,
-  HEADCOUNT_RATIO, NEGATIVE_PRESS_MAX, POSITIVE_PRESS_MIN,
+  compareSeverity, dashboardEvents, extractAnalysisEvents, extractPensionEvents, extractSourceEvents,
+  HEADCOUNT_RATIO, NEGATIVE_PRESS_MAX, POSITIVE_PRESS_MIN, type EventKind,
 } from "@/lib/services/eventRules";
 
 const NOW = new Date("2026-08-30T00:00:00.000Z");
@@ -131,6 +131,26 @@ describe("extractSourceEvents", () => {
     const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("dart", "conflict", "이름이 정확히 맞는 기업이 없다 · 후보 1건"), snap("nts", "found", "계속사업자 · 일반과세자")] });
 
     expect(events).toEqual([expect.objectContaining({ kind: "source_conflict", severity: "notice", evidenceKey: "dart:conflict", title: "동명 타사 충돌 — DART" })]);
+  });
+});
+
+describe("dashboardEvents", () => {
+  const stub = (kind: EventKind, status: string) =>
+    ({ kind, status }) as unknown as Parameters<typeof dashboardEvents>[0][number];
+
+  it("hides auto-resolved namesake conflicts but keeps live ones and every other kind", () => {
+    const rows = dashboardEvents([
+      stub("source_conflict", "done"),
+      stub("source_conflict", "open"),
+      stub("award", "done"),
+      stub("closure", "open"),
+    ]);
+
+    expect(rows.map((row) => [row.kind, row.status])).toEqual([
+      ["source_conflict", "open"],
+      ["award", "done"],
+      ["closure", "open"],
+    ]);
   });
 });
 
