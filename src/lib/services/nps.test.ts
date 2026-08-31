@@ -376,3 +376,53 @@ describe("lookupWorkplace", () => {
     expect(workplace).toMatchObject({ found: true, businessNoPrefix: "625870", subscribers: 61 });
   });
 });
+
+describe("lookupWorkplace pagination", () => {
+  beforeEach(() => {
+    process.env.NTS_SERVICE_KEY = "key";
+  });
+
+  it("reads every page of a common trade name instead of the first hundred rows", async () => {
+    const target = { wkplNm: "주식회사 한빛", bzowrRgstNo: "1234567890", wkplRoadNmDtlAddr: "서울", seq: 999, dataCrtYm: "202607", jnngpCnt: 11, wkplJnngStcd: "1" };
+    const filler = (n: number): Row => ({ wkplNm: `한빛물류 ${n}`, bzowrRgstNo: "9999999999", wkplRoadNmDtlAddr: "부산", seq: n, dataCrtYm: "202607", jnngpCnt: 1, wkplJnngStcd: "1" });
+    const page1 = Array.from({ length: 100 }, (_, i) => filler(i + 1));
+    const page2 = [target];
+    const pages = new Map([["1", page1], ["2", page2]]);
+
+    const fetchImpl = vi.fn(async (input: URL | string) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("getBassInfoSearchV2")) {
+        const rows = pages.get(url.searchParams.get("pageNo") ?? "1") ?? [];
+        return new Response(JSON.stringify({ response: { header: { resultCode: "00" }, body: { totalCount: 101, items: { item: rows } } } }));
+      }
+      return new Response(JSON.stringify({ response: { header: { resultCode: "00" }, body: { totalCount: 0, items: { item: [] } } } }));
+    }) as unknown as typeof fetch;
+
+    const result = await lookupWorkplace("주식회사 한빛", { businessNo: "1234567890" }, { fetchImpl });
+
+    expect(result.found).toBe(true);
+    const pageNos = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls
+      .map((call) => new URL(String(call[0])))
+      .filter((url) => url.pathname.endsWith("getBassInfoSearchV2"))
+      .map((url) => url.searchParams.get("pageNo"));
+    expect(pageNos).toEqual(["1", "2"]);
+  });
+
+  it("stops after one page when the total fits in it", async () => {
+    const row = { wkplNm: "주식회사 한빛", bzowrRgstNo: "1234567890", wkplRoadNmDtlAddr: "서울", seq: 1, dataCrtYm: "202607", jnngpCnt: 5, wkplJnngStcd: "1" };
+    const fetchImpl = vi.fn(async (input: URL | string) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("getBassInfoSearchV2")) {
+        return new Response(JSON.stringify({ response: { header: { resultCode: "00" }, body: { totalCount: 1, items: { item: [row] } } } }));
+      }
+      return new Response(JSON.stringify({ response: { header: { resultCode: "00" }, body: { totalCount: 0, items: { item: [] } } } }));
+    }) as unknown as typeof fetch;
+
+    await lookupWorkplace("주식회사 한빛", { businessNo: "1234567890" }, { fetchImpl });
+
+    const searches = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls
+      .map((call) => new URL(String(call[0])))
+      .filter((url) => url.pathname.endsWith("getBassInfoSearchV2"));
+    expect(searches).toHaveLength(1);
+  });
+});

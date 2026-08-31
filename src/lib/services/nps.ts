@@ -1,4 +1,6 @@
 const BASE_URL = "https://apis.data.go.kr/B552015/NpsBplcInfoInqireServiceV2";
+const SEARCH_PAGE_SIZE = 100;
+const MAX_SEARCH_PAGES = 10;
 const REQUEST_TIMEOUT_MS = 15000;
 export const CONTRIBUTION_RATE = 0.09;
 const MAX_MONTHS = 12;
@@ -84,6 +86,12 @@ function readRows(body: unknown): Row[] {
   return nested ? [nested as Row] : [];
 }
 
+function readTotal(body: unknown): number {
+  const total = (body as { response?: { body?: { totalCount?: unknown } } })?.response?.body?.totalCount;
+  const parsed = Number(total);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function score(row: Row, companyName: string, hints: Hints) {
   const wanted = normaliseName(companyName);
   const name = normaliseName(text(row, "wkplNm"));
@@ -154,6 +162,7 @@ function sum(values: Array<number | null>) {
 /**
  * 국민연금 가입 사업장에서 고용 규모와 12개월 추이를 낸다.
  * 사업장 단위 데이터라 같은 법인의 여러 사업장을 합산한다 — 합치지 않으면 이전이 인원 급감으로 읽힌다.
+ * 이름 검색은 totalCount 까지 페이지를 넘긴다 — 흔한 상호는 첫 100행에 우리 회사가 없다.
  */
 export async function lookupWorkplace(
   companyName: string,
@@ -180,12 +189,19 @@ export async function lookupWorkplace(
     if (header?.resultCode && header.resultCode !== "00") {
       throw new Error(`국민연금 응답 ${header.resultCode}: ${header.resultMsg ?? "사유 없음"}`);
     }
-    return readRows(body);
+    return { rows: readRows(body), total: readTotal(body) };
   };
 
   try {
-    const search = (name: string) =>
-      call("getBassInfoSearchV2", { wkplNm: name, numOfRows: "100", pageNo: "1" });
+    const search = async (name: string) => {
+      const rows: Row[] = [];
+      for (let page = 1; page <= MAX_SEARCH_PAGES; page += 1) {
+        const answer = await call("getBassInfoSearchV2", { wkplNm: name, numOfRows: String(SEARCH_PAGE_SIZE), pageNo: String(page) });
+        rows.push(...answer.rows);
+        if (answer.rows.length === 0 || rows.length >= answer.total) break;
+      }
+      return rows;
+    };
 
     let found = await search(companyName);
     const closedUp = companyName.replace(/\s+/g, "");
@@ -222,8 +238,8 @@ export async function lookupWorkplace(
       recent.map(async (row) => {
         const seq = text(row, "seq");
         const [detail, period] = await Promise.all([
-          call("getDetailInfoSearchV2", { seq }),
-          call("getPdAcctoSttusInfoSearchV2", { seq, dataCrtYm: text(row, "dataCrtYm") }),
+          call("getDetailInfoSearchV2", { seq }).then((answer) => answer.rows),
+          call("getPdAcctoSttusInfoSearchV2", { seq, dataCrtYm: text(row, "dataCrtYm") }).then((answer) => answer.rows),
         ]);
         return { row, detail: detail[0] ?? {}, period: period[0] ?? {} };
       }),
