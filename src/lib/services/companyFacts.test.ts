@@ -52,7 +52,7 @@ describe("buildCompanyFacts", () => {
     expect(facts.listing).toEqual({ stockCode: "654321", label: "상장 654321" });
     expect(facts.finance).toMatchObject({ fiscalYear: 2025, source: "auditReport", revenue: 1200, totalAssets: 5000, growth: { revenue: 0.2, operatingIncome: 0.5 } });
     expect(facts.payroll).toEqual({ averageBaseIncome: 4_200_000, annualPayroll: 5_594_400_000 });
-    expect(facts.turnover).toEqual({ hired: 24, departed: 12, rate: 0.11 });
+    expect(facts.turnover).toEqual({ hired: 24, departed: 12, rate: 0.11, months: 12 });
   });
 
   test("spells out each source's detail lines for the strip", () => {
@@ -66,5 +66,15 @@ describe("buildCompanyFacts", () => {
     const empty = buildCompanyFacts({ businessNo: null, snapshots: [] });
     expect(empty).toMatchObject({ ceo: null, founded: null, address: null, corporateNo: null, employees: [], listing: null, finance: null, payroll: null, turnover: null });
     expect(empty.sourceDetails.dart).toEqual([]);
+  });
+
+  test("counts the months it actually observed — a new workplace has fewer than twelve", () => {
+    const short = SNAPSHOTS.map((snap) =>
+      snap.source === "nps" ? { ...snap, payload: { ...(snap.payload as object), months: months.slice(-5) } } : snap,
+    );
+
+    const facts = buildCompanyFacts({ businessNo: null, snapshots: short });
+
+    expect(facts.turnover?.months).toBe(5);
   });
 });

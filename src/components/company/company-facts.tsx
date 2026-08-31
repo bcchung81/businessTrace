@@ -92,7 +92,7 @@ export function FactsTable({ facts, businessNo, industry }: { facts: CompanyFact
     facts.turnover
       ? {
           key: "turnover",
-          label: "12개월 입·퇴사",
+          label: `${facts.turnover.months}개월 입·퇴사`,
           chars: turnoverText.length,
           value: (
             <span>

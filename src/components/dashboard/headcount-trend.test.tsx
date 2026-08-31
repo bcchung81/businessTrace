@@ -41,9 +41,9 @@ describe("HeadcountTrend", () => {
     expect(screen.getByText(/collect-pension/)).toBeInTheDocument();
   });
 
-  test("inline variant sits beside a company name with count, direction in words, delta and range", () => {
+  test("inline variant names the months it observed, not a fixed twelve", () => {
     render(<HeadcountInline facet={facet({ direction: "down", ratio: -0.16, latest: 190 })} />);
-    const group = screen.getByRole("group", { name: "고용 규모 12개월" });
+    const group = screen.getByRole("group", { name: "고용 규모 2개월" });
     expect(group).toHaveTextContent("가입자");
     expect(group).toHaveTextContent("감소");
     expect(group).toHaveTextContent("세로축 0부터");
@@ -51,6 +51,6 @@ describe("HeadcountTrend", () => {
 
   test("inline variant says so when there is no snapshot instead of drawing an empty chart", () => {
     render(<HeadcountInline facet={null} />);
-    expect(screen.getByRole("group", { name: "고용 규모 12개월" })).toHaveTextContent("연금 스냅샷 없음");
+    expect(screen.getByRole("group", { name: "고용 규모 없음" })).toHaveTextContent("연금 스냅샷 없음");
   });
 });

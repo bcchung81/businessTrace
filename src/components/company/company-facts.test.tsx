@@ -15,7 +15,7 @@ const facts: CompanyFacts = {
   listing: { stockCode: "654321", label: "상장 654321" },
   finance: { fiscalYear: 2025, revenue: 1200, operatingIncome: 120, netIncome: 90, totalAssets: 5000, growth: { revenue: 0.2, operatingIncome: null } },
   payroll: { averageBaseIncome: 4_200_000, annualPayroll: 5_594_400_000 },
-  turnover: { hired: 24, departed: 12, rate: 0.11 },
+  turnover: { hired: 24, departed: 12, rate: 0.11, months: 12 },
   sourceDetails: { dart: ["주식회사 한빛", "대표 김한빛", "상장 654321"], dartFinance: [], fsc: [], nts: ["계속사업자", "부가가치세 일반과세자"], narajangteo: [], venture: [], nps: [] },
 };
 
@@ -49,6 +49,8 @@ describe("FactsTable", () => {
     expect(table).toHaveTextContent("55.9억 · 인당 420만");
     expect(within(table).getByText("추정")).toBeInTheDocument();
     expect(within(table).getByText("12개월 입·퇴사")).toBeInTheDocument();
+    render(<FactsTable facts={{ ...facts, turnover: { hired: 3, departed: 1, rate: 0.05, months: 5 } }} businessNo="1234567890" industry={null} />);
+    expect(screen.getByText("5개월 입·퇴사")).toBeInTheDocument();
     expect(table).toHaveTextContent("입사 24 · 퇴사 12 · 이직률 11%");
   });
 

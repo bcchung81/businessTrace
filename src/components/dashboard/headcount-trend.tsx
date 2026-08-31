@@ -96,7 +96,7 @@ export function HeadcountTrend({ facets }: { facets: Facet[] }) {
  */
 export function HeadcountInline({ facet }: { facet: Facet | null }) {
   return (
-    <div role="group" aria-label="고용 규모 12개월" className="flex items-center gap-3 border-l-2 border-ink pl-3 text-[11px] text-muted-foreground">
+    <div role="group" aria-label={`고용 규모 ${facet ? `${facet.points.length}개월` : "없음"}`} className="flex items-center gap-3 border-l-2 border-ink pl-3 text-[11px] text-muted-foreground">
       {facet ? (
         <>
           <div className="flex flex-col">
