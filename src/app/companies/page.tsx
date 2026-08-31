@@ -119,7 +119,16 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
       ) : null}
 
       <Panel index="01" title="일괄 분석 실행" tag="실측" note="대상을 고르고 실행 — 진행은 4단 스테퍼로, 상단 밴드에도 표시된다" className="scroll-mt-20" empty="등록된 기업이 없습니다.">
-        {candidates.length === 0 ? null : <BatchRunner key={`${preselected.join(",")}-${initialStage}`} candidates={candidates} preselected={preselected} initialStage={initialStage} />}
+        {candidates.length === 0 ? null : (
+          <details open={preselected.length > 0}>
+            <summary className="cursor-pointer select-none px-3.5 py-2.5 text-[12px] font-semibold text-muted-foreground">
+              대상 선택 · 실행 펼치기
+            </summary>
+            <div className="border-t border-hairline p-3.5">
+              <BatchRunner key={`${preselected.join(",")}-${initialStage}`} candidates={candidates} preselected={preselected} initialStage={initialStage} />
+            </div>
+          </details>
+        )}
       </Panel>
 
       <Panel index="02" title="기업 목록" tag="실측">
