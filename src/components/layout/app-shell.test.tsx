@@ -20,6 +20,14 @@ describe("AppShell", () => {
     expect(within(screen.getByRole("banner")).queryByRole("navigation")).not.toBeInTheDocument();
   });
 
+  test("floats the bookmark rail so it stays visible while the page scrolls", () => {
+    render(<AppShell>본문</AppShell>);
+    const aside = screen.getByRole("complementary");
+
+    expect(aside.className).toContain("lg:fixed");
+    expect(aside.className).toContain("lg:top-[72px]");
+  });
+
   test("shows the three places this tool has as bookmark tabs on the left", () => {
     render(<AppShell>본문</AppShell>);
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
@@ -42,7 +50,7 @@ describe("AppShell", () => {
     expect(within(nav).getByRole("link", { name: /이력/ })).toHaveTextContent("04");
     expect(within(nav).getByRole("link", { name: /리포트/ })).toHaveTextContent("05");
     const rail = nav.closest("aside");
-    expect(rail).toHaveClass("lg:absolute", "lg:right-full");
+    expect(rail).toHaveClass("lg:fixed", "lg:-translate-x-full");
     expect(screen.getByRole("main")).toHaveClass("lg:border-l");
   });
 
