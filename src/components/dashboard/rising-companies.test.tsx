@@ -7,8 +7,8 @@ describe("RisingCompanies", () => {
     render(
       <RisingCompanies
         rows={[
-          { companyId: 12, companyName: "미타운", prevRank: 13, rank: 4, delta: 9, total: 0.56 },
-          { companyId: 14, companyName: "써로마인드", prevRank: 13, rank: 6, delta: 7, total: 0.54 },
+          { companyId: 12, companyName: "미타운", prevRank: 13, rank: 4, delta: 9, total: 0.56, totalDelta: 0.08, reason: { key: "award", label: "수상 상승", delta: 0.06 } },
+          { companyId: 14, companyName: "써로마인드", prevRank: 13, rank: 6, delta: 7, total: 0.54, totalDelta: 0.07, reason: null },
         ]}
         periodLabelText="2025 하반기 · 2025 상반기 대비"
       />,
@@ -21,10 +21,26 @@ describe("RisingCompanies", () => {
     expect(screen.getByText("2025 하반기 · 2025 상반기 대비")).toBeInTheDocument();
   });
 
+  it("names why each company moved so a rank jump is not read as performance on its own", () => {
+    render(
+      <RisingCompanies
+        rows={[
+          { companyId: 12, companyName: "미타운", prevRank: 13, rank: 4, delta: 9, total: 0.56, totalDelta: 0.08, reason: { key: "award", label: "수상 상승", delta: 0.06 } },
+          { companyId: 15, companyName: "무암", prevRank: 40, rank: 20, delta: 20, total: 0.44, totalDelta: 0.1, reason: { key: "verification", label: "검증 상태 변경", delta: 0.1 } },
+        ]}
+        periodLabelText={null}
+      />,
+    );
+
+    expect(screen.getByText("수상 상승")).toBeInTheDocument();
+    expect(screen.getByText("검증 상태 변경")).toBeInTheDocument();
+    expect(screen.getByText("+0.08")).toBeInTheDocument();
+  });
+
   it("renders a falling list with the risk tone and a down arrow", () => {
     render(
       <RisingCompanies
-        rows={[{ companyId: 34, companyName: "한국첨단소재", prevRank: 3, rank: 20, delta: 17, total: 0.31 }]}
+        rows={[{ companyId: 34, companyName: "한국첨단소재", prevRank: 3, rank: 20, delta: 17, total: 0.31, totalDelta: -0.12, reason: { key: "risk", label: "리스크 감점", delta: -0.12 } }]}
         periodLabelText="실시간 랭킹 · 2025년 확정 대비 순위 하락 순"
         direction="down"
       />,
@@ -33,6 +49,8 @@ describe("RisingCompanies", () => {
     expect(screen.getByText("3위→20위")).toBeInTheDocument();
     expect(screen.getByText("▼17")).toBeInTheDocument();
     expect(screen.getByText("▼17")).toHaveClass("text-risk");
+    expect(screen.getByText("리스크 감점")).toBeInTheDocument();
+    expect(screen.getByText("−0.12")).toBeInTheDocument();
   });
 
   it("explains why it is empty instead of hiding", () => {

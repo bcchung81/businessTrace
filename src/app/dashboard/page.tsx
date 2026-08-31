@@ -2,7 +2,7 @@ import Link from "next/link";
 import { listCompanies, listYears } from "@/lib/repositories/companyRepository";
 import { listSelections } from "@/lib/repositories/selectionRecord";
 import { periodEndYm, periodLabel } from "@/lib/services/periods";
-import { compareRanks, fallingRanks } from "@/lib/services/rising";
+import { compareRanks, fallingRanks, MIN_TOTAL_DELTA } from "@/lib/services/rising";
 import { listBenchmarkInputs } from "@/lib/repositories/benchmarkInputs";
 import { loadRubrics, rankCompanies } from "@/lib/services/benchmarking";
 import { RisingCompanies } from "@/components/dashboard/rising-companies";
@@ -89,12 +89,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const selections = await listSelections();
   const periods = [...new Set(selections.map((record) => record.period))].sort((a, b) => periodEndYm(a).localeCompare(periodEndYm(b)) || a.localeCompare(b));
   const basePeriod = periods.at(-1) ?? null;
-  const liveRanked = rankCompanies(await listBenchmarkInputs(year), loadRubrics()).map((row) => ({ companyId: row.companyId, companyName: row.name, rank: row.rank, total: row.total ?? 0 }));
+  const liveRanked = rankCompanies(await listBenchmarkInputs(year), loadRubrics()).map((row) => ({ companyId: row.companyId, companyName: row.name, rank: row.rank, total: row.total ?? 0, metrics: row.metrics }));
   const baseline = basePeriod ? selections.filter((record) => record.period === basePeriod) : [];
   const rising = basePeriod ? compareRanks(liveRanked, baseline, 10) : [];
   const falling = basePeriod ? fallingRanks(liveRanked, baseline, 10) : [];
-  const risingLabel = basePeriod && rising.length > 0 ? `실시간 랭킹 · ${periodLabel(basePeriod)} 확정 대비 순위 상승 순` : null;
-  const fallingLabel = basePeriod && falling.length > 0 ? `실시간 랭킹 · ${periodLabel(basePeriod)} 확정 대비 순위 하락 순` : null;
+  const risingLabel = basePeriod && rising.length > 0 ? `실시간 랭킹 · ${periodLabel(basePeriod)} 확정 대비 · 총점 ${MIN_TOTAL_DELTA.toFixed(2)} 이상 움직인 것만` : null;
+  const fallingLabel = basePeriod && falling.length > 0 ? `실시간 랭킹 · ${periodLabel(basePeriod)} 확정 대비 · 총점 ${MIN_TOTAL_DELTA.toFixed(2)} 이상 움직인 것만` : null;
 
   const [collection, cells, fullRefreshAt, review] = await Promise.all([
     summariseCollection(year),

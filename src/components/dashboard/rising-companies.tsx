@@ -1,9 +1,14 @@
 import Link from "next/link";
 import type { RisingRow } from "@/lib/services/rising";
 
+function signed(value: number) {
+  return `${value > 0 ? "+" : "−"}${Math.abs(value).toFixed(2)}`;
+}
+
 /**
  * 순위 추이 TOP 10 — 실시간 랭킹을 확정 기준과 대조한 상승(▲ verified) 또는 하락(▼ risk) 목록.
  * 인원 추이와 같은 문법으로 증감 색을 쓴다.
+ * 순위 폭 옆에 총점 변동과 그것을 끈 지표를 함께 적는다 — 압축된 중위권에서는 몇 계단이 몇 점인지 알 수 없다.
  */
 export function RisingCompanies({ rows, periodLabelText, direction = "up" }: { rows: RisingRow[]; periodLabelText: string | null; direction?: "up" | "down" }) {
   if (rows.length === 0) {
@@ -31,6 +36,14 @@ export function RisingCompanies({ rows, periodLabelText, direction = "up" }: { r
               {row.prevRank}위→{row.rank}위
             </span>
             <span className={`w-9 whitespace-nowrap text-right font-mono text-[12px] font-bold tabular-nums ${tone}`}>{arrow}{row.delta}</span>
+            {row.reason ? (
+              <span className="hidden max-w-[86px] truncate text-[10.5px] text-muted-foreground sm:inline" title={row.reason.label}>
+                {row.reason.label}
+              </span>
+            ) : null}
+            {row.totalDelta === null ? null : (
+              <span className="w-11 whitespace-nowrap text-right font-mono text-[11px] tabular-nums text-muted-foreground">{signed(row.totalDelta)}</span>
+            )}
             <span className="w-10 text-right font-mono text-[11.5px] tabular-nums">{row.total.toFixed(2)}</span>
           </li>
         ))}
