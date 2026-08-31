@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AnalysisResult, NewsAnalysis } from "@/lib/services/analyzer";
 import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
 import {
+  isSameStory,
   compareSeverity, dashboardEvents, extractAnalysisEvents, extractPensionEvents, extractSourceEvents,
   HEADCOUNT_RATIO, NEGATIVE_PRESS_MAX, POSITIVE_PRESS_MIN, type EventKind,
 } from "@/lib/services/eventRules";
@@ -22,6 +23,30 @@ function result(analyses: NewsAnalysis[]): AnalysisResult {
   return { companyName: "딥노이드", model: "m", analyses, comprehensiveOpinion: "", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 },
     stats: { totalNews: analyses.length, scoredNews: analyses.length, excludedNews: 0, averageSentiment: 0, positiveCount: 0, negativeCount: 0, neutralCount: 0, awardCount: 0, investmentCount: 0 } };
 }
+
+describe("isSameStory", () => {
+  const base = { companyId: 1, kind: "positive_press" as const, occurredAt: new Date("2026-08-20"), title: "긍정 보도 — 오토노머스에이투지, 중기부 '글로벌 팁스' 선정" };
+
+  it("matches a differently-worded headline of the same story within a week", () => {
+    expect(isSameStory(base, { ...base, occurredAt: new Date("2026-08-21"), title: "긍정 보도 — 오토노머스에이투지, '글로벌 팁스' 선정…66억 규모 레벨4" })).toBe(true);
+  });
+
+  it("rejects the same wording a month apart", () => {
+    expect(isSameStory(base, { ...base, occurredAt: new Date("2026-09-25") })).toBe(false);
+  });
+
+  it("rejects a different story of the same kind", () => {
+    const a = { ...base, title: "긍정 보도 — 무암, 시리즈B 투자 유치" };
+    expect(isSameStory(a, { ...a, title: "긍정 보도 — 무암, 신임 CTO 영입" })).toBe(false);
+  });
+
+  it("rejects another company, another kind, and non-news kinds", () => {
+    expect(isSameStory(base, { ...base, companyId: 2 })).toBe(false);
+    expect(isSameStory(base, { ...base, kind: "award" })).toBe(false);
+    const closure = { ...base, kind: "closure" as const, title: "휴·폐업 — 폐업" };
+    expect(isSameStory(closure, { ...closure })).toBe(false);
+  });
+});
 
 describe("extractAnalysisEvents", () => {
   it("turns an award into a positive event carrying the article as evidence and the run's trust", () => {

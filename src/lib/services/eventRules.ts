@@ -1,4 +1,5 @@
 import type { AnalysisResult, NewsAnalysis } from "@/lib/services/analyzer";
+import { diceSimilarity } from "@/lib/services/textSimilarity";
 import type { PensionPoint } from "@/lib/repositories/pensionSnapshot";
 import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
 import { STALE_DAYS } from "@/lib/services/newsCoverage";
@@ -31,6 +32,27 @@ export const KIND_LABEL: Record<EventKind, string> = {
 
 const DAY_MS = 86_400_000;
 const STAGE_SHORT = new Map(MATRIX_STAGES.map((stage) => [stage.key, stage.short]));
+
+export const NEWS_EVENT_KINDS: EventKind[] = ["award", "investment", "positive_press", "negative_press"];
+export const STORY_WINDOW_DAYS = 7;
+export const STORY_SIMILARITY = 0.4;
+
+type StoryRef = { companyId: number; kind: EventKind; occurredAt: Date; title: string };
+
+function storyTitle(title: string) {
+  return title.replace(/^[^—]*— /, "");
+}
+
+/**
+ * 두 사건이 같은 실제 사건의 다른 기사인지 판정한다 — 같은 (기업, 뉴스 종류)이고 7일 이내, 제목 유사도 0.4 이상.
+ * 언론사마다 다르게 쓴 같은 소식이 개별 건수로 집계되는 것을 막는다. 문턱은 실데이터 검정으로 정했다.
+ */
+export function isSameStory(a: StoryRef, b: StoryRef): boolean {
+  if (a.companyId !== b.companyId || a.kind !== b.kind) return false;
+  if (!NEWS_EVENT_KINDS.includes(a.kind)) return false;
+  if (Math.abs(a.occurredAt.getTime() - b.occurredAt.getTime()) > STORY_WINDOW_DAYS * DAY_MS) return false;
+  return diceSimilarity(storyTitle(a.title), storyTitle(b.title)) >= STORY_SIMILARITY;
+}
 
 export function compareSeverity(a: Severity, b: Severity) {
   return SEVERITY_ORDER.indexOf(a) - SEVERITY_ORDER.indexOf(b);
