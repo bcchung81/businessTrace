@@ -95,8 +95,10 @@ export function BatchRunner({
       if (controller.signal.aborted) return;
       setError(caught instanceof Error ? caught.message : "알 수 없는 오류");
     } finally {
-      if (running.current === controller) running.current = null;
-      setBusy(false);
+      if (running.current === controller) {
+        running.current = null;
+        setBusy(false);
+      }
     }
   }
 

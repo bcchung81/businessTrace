@@ -97,6 +97,36 @@ describe("BatchRunner", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument());
   });
 
+  test("a run that was replaced does not clear the busy flag of the run that replaced it", async () => {
+    const open = () => {
+      let close: () => void = () => {};
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: "batch_start", total: 1, stage: "full" })}\n\n`));
+          close = () => controller.close();
+        },
+      });
+      return { response: new Response(body, { status: 200 }), close: () => close() };
+    };
+    const first = open();
+    const second = open();
+    const fetchImpl = vi.fn().mockResolvedValueOnce(first.response).mockResolvedValueOnce(second.response);
+    render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "실행" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "중단" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "실행" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
+    first.close();
+
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "실행" })).not.toBeInTheDocument();
+  });
+
   test("surfaces a 409 as a message instead of a stepper", async () => {
     const fetchImpl = vi.fn(async () => Response.json({ message: "이미 실행 중입니다 · 3개사" }, { status: 409 }));
     render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
