@@ -13,7 +13,7 @@ export type ReviewItem =
   | {
       kind: "verification";
       runId: number;
-      status: "needs_review";
+      status: "needs_review" | "failed";
       failed: string[];
       faithfulness: number | null;
       sourceCoverage: number;
@@ -95,7 +95,7 @@ export async function buildReviewItems(companyId: number): Promise<ReviewSummary
     items.push({
       kind: "verification",
       runId: run.id,
-      status: "needs_review",
+      status: verification.status === "failed" ? "failed" : "needs_review",
       failed: failedGates(scores),
       faithfulness: verification.faithfulness,
       sourceCoverage: scores.sourceCoverage,

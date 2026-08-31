@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
+import { findVerification } from "@/lib/repositories/verificationResult";
 import { listEvents } from "@/lib/repositories/eventRepository";
 import type { AnalysisResult, AnalyzeEvent } from "@/lib/services/analyzer";
 import { runCompanyAnalysis, type PipelineDeps } from "@/lib/services/analysisPipeline";
@@ -23,7 +24,7 @@ function result(over: Partial<AnalysisResult> = {}): AnalysisResult {
   };
 }
 
-function verification(status: "verified" | "needs_review"): VerificationOutput {
+function verification(status: "verified" | "needs_review" | "failed"): VerificationOutput {
   return {
     status,
     faithfulness: 0.9,
@@ -189,6 +190,23 @@ describe("runCompanyAnalysis — events", () => {
     await runCompanyAnalysis({ company, userId: user.id, news: NEWS }, deps({ verify: async () => { throw new Error("judge down"); } }));
 
     expect(await listEvents({ year: 2025, companyId: company.id })).toEqual([]);
+  });
+
+  it("reports a judge that produced no verdict as a verification failure, not as a verdict", async () => {
+    const { company, user } = await seed();
+    const types: string[] = [];
+    const outcome = await runCompanyAnalysis(
+      { company, userId: user.id, news: NEWS },
+      deps({
+        verify: async () => ({ ...verification("failed"), faithfulness: null, detail: { layer1: { coverage: 1, cited: 1, total: 1, invalid: [] }, layer2: null, layer3: 0.6, error: "timeout" } }),
+        onEvent: (event) => types.push(event.type),
+      }),
+    );
+
+    expect(outcome).toMatchObject({ status: "verification_failed", message: "timeout" });
+    expect(types).not.toContain("verified");
+    expect(await listEvents({ year: 2025, companyId: company.id })).toEqual([]);
+    expect((await findVerification(outcome.runId))?.status).toBe("failed");
   });
 
   it("keeps the run verified when event extraction fails after the verification is saved", async () => {

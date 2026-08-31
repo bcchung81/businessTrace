@@ -211,3 +211,22 @@ describe("listLatestVerifications", () => {
     expect(await listLatestVerifications(2025)).toEqual([]);
   });
 });
+
+describe("listLatestVerifications with a failed judge", () => {
+  beforeEach(resetDatabase);
+
+  it("keeps the failed status instead of folding it into needs_review", async () => {
+    const user = await prisma.user.create({ data: { email: "f@example.com", passwordHash: "x" } });
+    const company = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
+    const run = await prisma.analysisRun.create({
+      data: { companyId: company.id, userId: user.id, model: "m", status: "completed", newsJson: "[]", completedAt: new Date() },
+    });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: run.id, status: "failed", faithfulness: null, sourceCoverage: 1, evidenceMatch: 0.7, unsupportedClaims: "[]", counterEvidence: "[]", detailJson: JSON.stringify({ error: "timeout" }) },
+    });
+
+    const rows = await listLatestVerifications(2026);
+
+    expect(rows[0].status).toBe("failed");
+  });
+});

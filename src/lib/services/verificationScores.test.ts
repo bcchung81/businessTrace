@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { checkSources, evidenceMatch, decide } from "@/lib/services/verificationScores";
+import { checkSources, evidenceMatch, decide, failedGates } from "@/lib/services/verificationScores";
 import type { NewsAnalysis } from "@/lib/services/analyzer";
 import type { NewsItem } from "@/lib/services/newsTypes";
 
@@ -121,5 +121,11 @@ describe("decide", () => {
 
   it("never verifies when the judge score is missing, however good the other gates are", () => {
     expect(decide({ faithfulness: null, sourceCoverage: 1, evidenceMatch: 1 })).toBe("needs_review");
+  });
+});
+
+describe("failedGates with an unmeasured gate", () => {
+  it("does not name 근거 충실도 as failed when the judge never produced a score", () => {
+    expect(failedGates({ sourceCoverage: 1, faithfulness: null, evidenceMatch: 1 })).toEqual([]);
   });
 });

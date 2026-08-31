@@ -35,6 +35,7 @@ const NEWS_HEADERS = [
 const VERDICT_LABEL: Record<VerificationOutput["status"], string> = {
   verified: "검증 완료",
   needs_review: "검토 필요",
+  failed: "검증 실패",
 };
 
 function koreanDate(iso: string) {

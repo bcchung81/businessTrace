@@ -105,7 +105,7 @@ describe("AnalysisRunner", () => {
     expect(await screen.findByText("검증 완료")).toBeInTheDocument();
   });
 
-  test("never shows a failed verification as a pass", async () => {
+  test("says the verification failed rather than calling it a review — nothing was judged", async () => {
     runner(
       sseResponse([
         { type: "verifying", runId: 7 },
@@ -115,8 +115,9 @@ describe("AnalysisRunner", () => {
 
     start();
 
-    expect(await screen.findByText("검토 필요")).toBeInTheDocument();
+    expect(await screen.findByText("검증 실패")).toBeInTheDocument();
     expect(screen.queryByText("검증 완료")).not.toBeInTheDocument();
+    expect(screen.queryByText("검토 필요")).not.toBeInTheDocument();
   });
 
   test("surfaces a rate limit with its reason instead of a blank screen", async () => {

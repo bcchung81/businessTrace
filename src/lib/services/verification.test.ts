@@ -101,24 +101,24 @@ describe("verifyAnalysis", () => {
     expect(output.status).toBe("needs_review");
   });
 
-  it("falls back to needs_review when the judge call fails", async () => {
+  it("marks the run failed when the judge call fails — no verdict was reached", async () => {
     const llm = { json: vi.fn(async () => { throw new Error("timeout"); }) } as unknown as LlmClient;
 
     const output = await verifyAnalysis(result([analysis()]), { llm });
 
-    expect(output.status).toBe("needs_review");
+    expect(output.status).toBe("failed");
     expect(output.faithfulness).toBeNull();
     expect(output.detail.error).toContain("timeout");
   });
 
-  it("falls back to needs_review when the judge refuses", async () => {
+  it("marks the run failed when the judge refuses", async () => {
     const llm = {
       json: vi.fn(async () => {
         throw new LlmRefusalError("refused");
       }),
     } as unknown as LlmClient;
 
-    expect((await verifyAnalysis(result([analysis()]), { llm })).status).toBe("needs_review");
+    expect((await verifyAnalysis(result([analysis()]), { llm })).status).toBe("failed");
   });
 
   it("holds back an analysis whose sources are mostly uncitable, even with a perfect judge", async () => {

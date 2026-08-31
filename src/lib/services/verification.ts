@@ -78,11 +78,13 @@ export async function verifyAnalysis(
     error = caught instanceof Error ? caught.message : String(caught);
   }
 
-  const status = decide({
-    faithfulness,
-    sourceCoverage: layer1.coverage,
-    evidenceMatch: layer3,
-  });
+  const status = error
+    ? "failed"
+    : decide({
+        faithfulness,
+        sourceCoverage: layer1.coverage,
+        evidenceMatch: layer3,
+      });
 
   return {
     status,

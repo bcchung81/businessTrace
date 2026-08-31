@@ -44,7 +44,9 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   const graph = buildCoMentions(await listMentionArticles(year), activeCompanies.map((company) => company.name));
   const news = buildNewsCoverage(activeCompanies, graph.articles, now);
   const verifications = await listLatestVerifications(year);
-  const verdicts = verifications.map((row) => ({ companyId: row.companyId, verdict: row.status }));
+  const verdicts = verifications
+    .filter((row) => row.status !== "failed")
+    .map((row) => ({ companyId: row.companyId, verdict: row.status as "verified" | "needs_review" }));
   const pipeline = await listCompanyPipeline(year);
   const rollup = rollupVerdicts({ companies: activeCompanies.map((company) => ({ id: company.id, name: company.name, businessNo: company.businessNo ?? null })), verifications, pipeline });
   const matrix = buildMatrixRows(pipeline, rollup.companies, news.byCompany);

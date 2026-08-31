@@ -75,6 +75,19 @@ describe("rollupVerdicts", () => {
     expect(entry?.counterEvidence).toBe(3);
   });
 
+  it("does not count a failed verification as review, and keeps it out of the gate funnel", () => {
+    const summary = rollupVerdicts({
+      companies: [COMPANIES[0]],
+      verifications: [verification({ companyId: 1, status: "failed", faithfulness: null })],
+      pipeline: [],
+    });
+
+    expect(summary.companies[0].verdict).toBe("pending");
+    expect(summary.counts).toMatchObject({ review: 0, pending: 1 });
+    expect(summary.gates.analysed).toBe(0);
+    expect(summary.gateDropouts.faithfulness).toBe(0);
+  });
+
   it("raises risk on a source conflict and names the stage", () => {
     const summary = rollupVerdicts({
       companies: COMPANIES,

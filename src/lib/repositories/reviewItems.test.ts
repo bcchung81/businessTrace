@@ -56,6 +56,22 @@ describe("buildReviewItems", () => {
     expect(summary.items[3]).toEqual({ kind: "no_news", aliases: ["가 테크"] });
   });
 
+  test("a failed judge asks for a re-run, not for a review of gates it never measured", async () => {
+    const user = await prisma.user.create({ data: { email: "v@example.com", passwordHash: "x" } });
+    const c = await company();
+    const run = await prisma.analysisRun.create({
+      data: { companyId: c.id, userId: user.id, model: "m", status: "completed", newsJson: "[]", resultJson: JSON.stringify({ stats: { scoredNews: 3 } }), completedAt: new Date() },
+    });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: run.id, status: "failed", faithfulness: null, sourceCoverage: 1, evidenceMatch: 0.7, unsupportedClaims: "[]", counterEvidence: "[]", detailJson: JSON.stringify({ error: "timeout" }) },
+    });
+
+    const summary = (await buildReviewItems(c.id))!;
+    const item = summary.items.find((entry) => entry.kind === "verification")!;
+
+    expect(item).toMatchObject({ status: "failed", failed: [] });
+  });
+
   test("keeps namesake-conflict events out of the open-events ask — the decision item is the ask", async () => {
     const c = await company();
     const base = { companyId: c.id, occurredAt: new Date("2026-08-20"), title: "t", evidenceJson: "[]" };

@@ -26,7 +26,9 @@ type Company = { id: number; name: string };
 
 function verdict(state: RunState) {
   if (state.phase !== "done") return null;
-  return state.verification?.status === "verified" ? "검증 완료" : "검토 필요";
+  if (state.verification) return state.verification.status === "verified" ? "검증 완료" : "검토 필요";
+  if (state.stats && state.stats.scoredNews === 0) return "기사 없음";
+  return "검증 실패";
 }
 
 /**

@@ -73,7 +73,7 @@ export async function listLatestVerifications(year: number): Promise<Verificatio
     seen.add(run.companyId);
     rows.push({
       companyId: run.companyId,
-      status: run.verification.status === "verified" ? "verified" : "needs_review",
+      status: run.verification.status === "verified" || run.verification.status === "failed" ? (run.verification.status as VerificationRow["status"]) : "needs_review",
       faithfulness: run.verification.faithfulness,
       sourceCoverage: run.verification.sourceCoverage,
       evidenceMatch: run.verification.evidenceMatch,

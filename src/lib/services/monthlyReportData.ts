@@ -42,7 +42,9 @@ export async function loadMonthlyReportInput(input: {
   const series = await listPensionSeries(cohortYear);
   const graph = buildCoMentions(await listMentionArticles(cohortYear), companies.map((company) => company.name));
   const news = buildNewsCoverage(companies, graph.articles, now);
-  const verdicts = (await listLatestVerifications(cohortYear)).map((row) => ({ companyId: row.companyId, verdict: row.status }));
+  const verdicts = (await listLatestVerifications(cohortYear))
+    .filter((row) => row.status !== "failed")
+    .map((row) => ({ companyId: row.companyId, verdict: row.status as "verified" | "needs_review" }));
   const cards = buildCompanyCards({ companies, events, series, news: news.byCompany, verdicts });
 
   const activity = await summariseRunActivity(cohortYear);

@@ -25,6 +25,7 @@ function parseRevenue(payload: string): number | null {
 /**
  * 연도의 활성 기업마다 벤치마킹 지표 입력을 한 줄로 모은다.
  * 분석은 최신 완료 실행 하나만, 재무는 found 스냅샷만, 리스크는 확인된 경보만 센다 — 미확인 경보는 감점 근거가 아니다.
+ * 검증이 실행되지 못한 런은 결측으로 둔다 — 못 잰 것을 0 점으로 적으면 없는 판정을 만들어낸다.
  */
 export async function listBenchmarkInputs(year: number): Promise<BenchmarkInput[]> {
   const companies = await prisma.company.findMany({
@@ -36,7 +37,11 @@ export async function listBenchmarkInputs(year: number): Promise<BenchmarkInput[
       events: { where: { severity: "alert", status: { in: ["acknowledged", "done"] } }, select: { id: true } },
     },
   });
-  const verification = new Map((await listLatestVerifications(year)).map((row) => [row.companyId, row.status]));
+  const verification = new Map(
+    (await listLatestVerifications(year))
+      .filter((row) => row.status !== "failed")
+      .map((row) => [row.companyId, row.status as "verified" | "needs_review"]),
+  );
 
   return companies.map((company) => {
     const stats = parseStats(company.analysisRuns[0]?.resultJson ?? null);

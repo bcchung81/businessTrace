@@ -114,6 +114,12 @@ export async function runCompanyAnalysis(
         return { runId: run.id, status: "verification_failed", message, usage };
       }
 
+      if (verification.status === "failed") {
+        const message = (verification.detail as { error?: string }).error ?? "검증 판정을 얻지 못했습니다.";
+        emit({ type: "verification_failed", runId: run.id, message });
+        return { runId: run.id, status: "verification_failed", message, usage };
+      }
+
       emit({ type: "verified", runId: run.id, verification });
 
       try {
