@@ -23,4 +23,9 @@ describe("GET /api/companies/[id]/explain", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ total: null, contributions: expect.any(Array) });
   });
+
+  test("400 for a non-numeric id instead of a Prisma crash", async () => {
+    const response = await GET(new Request("http://localhost"), ctx("abc"));
+    expect(response.status).toBe(400);
+  });
 });

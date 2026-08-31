@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { listEvents } from "@/lib/repositories/eventRepository";
 import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
+import { parseId } from "@/lib/services/routeParams";
 import { buildExplanation } from "@/lib/repositories/explainInputs";
 import { buildReviewItems } from "@/lib/repositories/reviewItems";
 import { ReviewBlock } from "@/components/company/review-block";
@@ -26,8 +27,9 @@ function formatBusinessNo(businessNo: string | null) {
 }
 
 export default async function CompanyDetailPage({ params }: PageProps<"/companies/[id]">) {
-  const { id } = await params;
-  const company = await prisma.company.findUnique({ where: { id: Number(id) } });
+  const companyId = parseId((await params).id);
+  if (companyId === null) notFound();
+  const company = await prisma.company.findUnique({ where: { id: companyId } });
   if (!company) notFound();
 
   const snapshots = await listSourceSnapshots(company.id);

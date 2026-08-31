@@ -2,13 +2,14 @@ import { auth } from "@/auth";
 import { listBenchmarkInputs } from "@/lib/repositories/benchmarkInputs";
 import { loadRubrics, rankCompanies, weightLabel } from "@/lib/services/benchmarking";
 import { buildRankingWorkbook, rankingFileName } from "@/lib/services/rankingExcel";
+import { parseYear } from "@/lib/services/routeParams";
 
 export async function GET(request: Request) {
   if (!(await auth())?.user) return Response.json({ message: "unauthorized" }, { status: 401 });
 
   const url = new URL(request.url);
-  const year = Number(url.searchParams.get("year"));
-  if (!Number.isInteger(year)) return Response.json({ message: "year 가 필요합니다." }, { status: 400 });
+  const year = parseYear(url.searchParams.get("year"));
+  if (year === null) return Response.json({ message: "year 가 필요합니다." }, { status: 400 });
 
   const book = loadRubrics();
   const rubricId = url.searchParams.get("rubric") ?? undefined;

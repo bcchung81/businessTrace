@@ -40,4 +40,8 @@ describe("GET /api/companies/benchmark", () => {
     const response = await GET(new Request("http://localhost/api/companies/benchmark?year=2026&rubric=nope"));
     expect(response.status).toBe(400);
   });
+  test("400 when year is missing — Number(null) is 0, which used to slip through", async () => {
+    const response = await GET(new Request("http://localhost/api/companies/benchmark"));
+    expect(response.status).toBe(400);
+  });
 });

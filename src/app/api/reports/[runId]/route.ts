@@ -4,13 +4,15 @@ import { buildExplanation } from "@/lib/repositories/explainInputs";
 import { findVerification } from "@/lib/repositories/verificationResult";
 import type { AnalysisResult } from "@/lib/services/analyzer";
 import { buildReport, reportFileName } from "@/lib/services/reportExcel";
+import { parseId } from "@/lib/services/routeParams";
 import type { VerificationOutput } from "@/lib/services/verification";
 
 export async function GET(_request: Request, context: RouteContext<"/api/reports/[runId]">) {
   if (!(await auth())?.user) return Response.json({ message: "unauthorized" }, { status: 401 });
 
-  const { runId } = await context.params;
-  const run = await prisma.analysisRun.findUnique({ where: { id: Number(runId) } });
+  const id = parseId((await context.params).runId);
+  if (id === null) return Response.json({ message: "잘못된 id 입니다." }, { status: 400 });
+  const run = await prisma.analysisRun.findUnique({ where: { id } });
   if (!run) return Response.json({ message: "분석 기록을 찾을 수 없습니다." }, { status: 404 });
   if (!run.resultJson) {
     return Response.json({ message: "아직 완료되지 않은 분석입니다." }, { status: 409 });

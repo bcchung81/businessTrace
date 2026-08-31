@@ -2,6 +2,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { createCompanies, createCompany, listCompanies } from "@/lib/repositories/companyRepository";
 import { parseRegisterLines } from "@/lib/services/companyImport";
+import { parseYear } from "@/lib/services/routeParams";
 
 const createSchema = z.union([
   z.object({
@@ -17,8 +18,8 @@ export async function GET(request: Request) {
   if (!(await auth())?.user) return Response.json({ message: "unauthorized" }, { status: 401 });
 
   const params = new URL(request.url).searchParams;
-  const year = Number(params.get("year"));
-  if (!Number.isInteger(year)) {
+  const year = parseYear(params.get("year"));
+  if (year === null) {
     return Response.json({ message: "year 파라미터가 필요합니다." }, { status: 400 });
   }
 
