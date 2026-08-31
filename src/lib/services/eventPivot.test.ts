@@ -22,8 +22,20 @@ describe("pivotEvents", () => {
     expect(months[0]).toBe("202601");
     expect(rows.map((row) => row.companyName)).toEqual(["가", "나"]);
     expect(rows[0].total).toBe(3);
-    expect(rows[0].cells[2]).toEqual({ ym: "202603", total: 2, byKind: { award: 2 } });
-    expect(rows[0].cells[6]).toEqual({ ym: "202607", total: 1, byKind: { closure: 1 } });
+    expect(rows[0].cells[2]).toMatchObject({ ym: "202603", total: 2, byKind: { award: 2 } });
+    expect(rows[0].cells[6]).toMatchObject({ ym: "202607", total: 1, byKind: { closure: 1 } });
+  });
+
+  it("carries each cell's events so a click can show the underlying articles", () => {
+    const { rows } = pivotEvents(
+      [event(1, "가", "2026-03-05T00:00:00.000Z", "award"), event(1, "가", "2026-03-20T00:00:00.000Z", "closure")],
+      2026,
+    );
+
+    const cell = rows[0].cells[2];
+    expect(cell.events).toHaveLength(2);
+    expect(cell.events[0]).toMatchObject({ kind: "award", title: "t", occurredAt: "2026-03-05T00:00:00.000Z" });
+    expect(rows[0].cells[0].events).toEqual([]);
   });
 
   it("ignores events outside the year and returns no row for silent companies", () => {
