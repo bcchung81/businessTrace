@@ -223,3 +223,82 @@ describe("classifyRelevance 띄어쓰기", () => {
     expect(result.relevance).toBe("primary");
   });
 });
+
+describe("리뷰 확정 결함 회귀", () => {
+  const base: NewsItem = {
+    title: "",
+    link: "",
+    description: "",
+    content: "",
+    published: "2025-01-01T00:00:00.000Z",
+    source: "",
+    provider: "naver",
+    titleMatch: false,
+    mentions: 0,
+    relevance: "unrelated",
+  };
+
+  beforeEach(() => {
+    process.env.NCP_APIGW_API_KEY_ID = "hub-id";
+    process.env.NCP_APIGW_API_KEY = "hub-secret";
+  });
+
+  function naverFetch(items: Array<{ title: string; link: string; pubDate: string }>) {
+    return vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("naverapihub.apigw.ntruss.com")) {
+        return new Response(
+          JSON.stringify({ items: items.map((entry) => ({ title: entry.title, originallink: entry.link, link: entry.link, description: "", pubDate: entry.pubDate })) }),
+          { status: 200 },
+        );
+      }
+      return new Response("<html><body></body></html>", { status: 200 });
+    }) as unknown as typeof fetch;
+  }
+
+  it("keeps the same wire headline from different outlets and dedupes only within one outlet", () => {
+    const { items, removed } = removeDuplicates(
+      [
+        { ...base, title: "넷록스, 시리즈A 투자 유치", source: "연합뉴스" },
+        { ...base, title: "넷록스 시리즈A 투자유치", source: "전자신문" },
+        { ...base, title: "넷록스 시리즈A 투자 유치!", source: "연합뉴스" },
+      ],
+      0.5,
+    );
+
+    expect(items).toHaveLength(2);
+    expect(removed).toBe(1);
+  });
+
+  it("promotes two spaced-name mentions when the first sits in the lead", () => {
+    const filler = "다른 회사 이야기가 길게 이어진다. ".repeat(30);
+    const result = classifyRelevance({
+      title: "AI 업계 소식",
+      content: `코난 테크놀로지가 계약을 맺었다. ${filler}코난 테크놀로지 관계자는 말했다.`,
+      name: "코난 테크놀로지",
+    });
+
+    expect(result.mentions).toBe(2);
+    expect(result.relevance).toBe("primary");
+  });
+
+  it("drops only the article with a broken date, not the whole Naver feed", async () => {
+    const fetchImpl = naverFetch([
+      { title: "정상 기사", link: "https://a/1", pubDate: "Mon, 10 Aug 2026 10:00:00 +0900" },
+      { title: "깨진 기사", link: "https://a/2", pubDate: "" },
+    ]);
+
+    const { items, errors } = await collectNews({ query: "넷록스", google: false }, { fetchImpl });
+
+    expect(items.map((item) => item.link)).toEqual(["https://a/1"]);
+    expect(errors).toEqual([]);
+  });
+
+  it("keeps an article published in the KST afternoon of the end date — the day is inclusive", async () => {
+    const fetchImpl = naverFetch([{ title: "마감일 기사", link: "https://a/1", pubDate: "Sat, 15 Aug 2026 14:00:00 +0900" }]);
+
+    const { items } = await collectNews({ query: "넷록스", google: false, startDate: "2026-08-15", endDate: "2026-08-15" }, { fetchImpl });
+
+    expect(items).toHaveLength(1);
+  });
+});

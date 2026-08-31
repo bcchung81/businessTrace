@@ -66,14 +66,25 @@ function escapeRegExp(value: string) {
  * 명단은 "코난 테크놀로지", 기사는 "코난테크놀로지"로 쓴다 - 그대로 세면 주제 기사가 0건이 된다.
  * 두 글자 이름은 어절을 건너뛰어 오탐할 수 있어 정확 일치만 센다.
  */
-export function countCompanyMentions(haystack: string, needle: string) {
+function mentionPattern(needle: string) {
   const compact = (needle ?? "").replace(/\s+/g, "");
-  if (compact.length === 0) return 0;
+  if (compact.length === 0) return null;
+  return compact.length < FLEXIBLE_MIN_LENGTH
+    ? escapeRegExp(compact)
+    : [...compact].map(escapeRegExp).join("\\s*");
+}
 
-  const pattern =
-    compact.length < FLEXIBLE_MIN_LENGTH
-      ? escapeRegExp(compact)
-      : [...compact].map(escapeRegExp).join("\\s*");
-
+export function countCompanyMentions(haystack: string, needle: string) {
+  const pattern = mentionPattern(needle);
+  if (!pattern) return 0;
   return (haystack ?? "").match(new RegExp(pattern, "g"))?.length ?? 0;
+}
+
+/**
+ * 기업명이 처음 나오는 위치를 낸다. 세는 규칙과 같은 띄어쓰기 무시 패턴을 쓴다 — 다르면 리드 판정이 어긋난다.
+ */
+export function firstMentionIndex(haystack: string, needle: string) {
+  const pattern = mentionPattern(needle);
+  if (!pattern) return -1;
+  return (haystack ?? "").search(new RegExp(pattern));
 }

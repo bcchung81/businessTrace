@@ -1,7 +1,7 @@
 import Parser from "rss-parser";
 import pressMapping from "@/lib/services/pressMapping.json";
 import { enrichWithBodies } from "@/lib/services/articleBody";
-import { countCompanyMentions, diceSimilarity } from "@/lib/services/textSimilarity";
+import { countCompanyMentions, diceSimilarity, firstMentionIndex } from "@/lib/services/textSimilarity";
 import type { FetchDeps, NewsItem, Relevance } from "@/lib/services/newsTypes";
 
 const NAVER_HUB = "https://naverapihub.apigw.ntruss.com/search/v1/news";
@@ -31,6 +31,14 @@ export type CollectResult = {
   noNews: boolean;
   errors: string[];
 };
+
+/**
+ * 날짜 문자열을 ISO 로 바꾼다. 못 읽으면 null — 기사 하나의 깨진 날짜가 수집원 전체를 무너뜨리면 안 된다.
+ */
+function toIso(raw: string | undefined): string | null {
+  const time = Date.parse(raw ?? "");
+  return Number.isNaN(time) ? null : new Date(time).toISOString();
+}
 
 function stripHtml(value: string | undefined) {
   return (value ?? "")
@@ -66,7 +74,7 @@ export function pressNameFromUrl(url: string) {
 export function classifyRelevance(input: { title: string; content: string; name: string }) {
   const titleMatch = countCompanyMentions(input.title, input.name) > 0;
   const mentions = countCompanyMentions(input.content, input.name);
-  const firstIndex = input.content.indexOf(input.name.replace(/\s+/g, ""));
+  const firstIndex = firstMentionIndex(input.content, input.name);
   const inLead =
     firstIndex >= 0 && input.content.length > 0 && firstIndex / input.content.length < LEAD_RATIO;
 
@@ -78,7 +86,8 @@ export function classifyRelevance(input: { title: string; content: string; name:
 }
 
 /**
- * 제목이 사실상 같은 기사를 걸러낸다.
+ * 같은 언론사 안에서 제목이 사실상 같은 기사를 걸러낸다.
+ * 언론사가 다르면 남긴다 — 여러 매체가 받아쓴 통신 기사는 보도 횟수 그 자체가 신호다.
  */
 export function removeDuplicates(items: NewsItem[], threshold: number) {
   if (threshold <= 0) return { items, removed: 0 };
@@ -86,7 +95,7 @@ export function removeDuplicates(items: NewsItem[], threshold: number) {
   const kept: NewsItem[] = [];
   let removed = 0;
   for (const item of items) {
-    if (kept.some((existing) => diceSimilarity(existing.title, item.title) >= threshold)) removed += 1;
+    if (kept.some((existing) => existing.source === item.source && diceSimilarity(existing.title, item.title) >= threshold)) removed += 1;
     else kept.push(item);
   }
   return { items: kept, removed };
@@ -128,12 +137,14 @@ async function fetchNaver(query: string, fetchImpl: typeof fetch): Promise<NewsI
     for (const entry of page) {
       const link = entry.originallink || entry.link;
       const description = stripHtml(entry.description);
+      const published = toIso(entry.pubDate);
+      if (!published) continue;
       collected.push({
         title: stripHtml(entry.title),
         link,
         description,
         content: description,
-        published: new Date(entry.pubDate).toISOString(),
+        published,
         source: pressNameFromUrl(link),
         provider: "naver",
         titleMatch: false,
@@ -160,22 +171,36 @@ async function fetchGoogle(query: string, fetchImpl: typeof fetch): Promise<News
     await response.text(),
   );
 
-  return feed.items.map((entry) => {
+  const items: NewsItem[] = [];
+  for (const entry of feed.items) {
     const description = stripHtml(entry.contentSnippet ?? entry.content);
     const rawSource = (entry as { sourceRaw?: string | { _?: string } }).sourceRaw;
-    return {
+    const published = entry.isoDate ?? toIso(entry.pubDate);
+    if (!published) continue;
+    items.push({
       title: stripHtml(entry.title).replace(/\s-\s[^-]+$/, ""),
       link: entry.link ?? "",
       description,
       content: description,
-      published: entry.isoDate ?? new Date(entry.pubDate ?? Date.now()).toISOString(),
+      published,
       source: (typeof rawSource === "object" ? rawSource?._ : rawSource) ?? "Google News",
       provider: "google" as const,
       titleMatch: false,
       mentions: 0,
       relevance: "unrelated" as Relevance,
-    };
-  });
+    });
+  }
+  return items;
+}
+
+/**
+ * 날짜 하나를 KST 하루의 시작·끝 시각으로 편다. UTC 자정으로 읽으면 마감일 오전 9시 이후 기사가 전부 빠진다.
+ */
+function dayBoundary(date: string, edge: "start" | "end"): number {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return Date.parse(`${date}T${edge === "start" ? "00:00:00.000" : "23:59:59.999"}+09:00`);
+  }
+  return new Date(date).getTime();
 }
 
 const RELEVANCE_RANK: Record<Relevance, number> = { primary: 0, mention: 1, unrelated: 2 };
@@ -210,11 +235,11 @@ export async function collectNews(
   ];
 
   if (options.startDate) {
-    const from = new Date(options.startDate).getTime();
+    const from = dayBoundary(options.startDate, "start");
     merged = merged.filter((item) => new Date(item.published).getTime() >= from);
   }
   if (options.endDate) {
-    const to = new Date(options.endDate).getTime();
+    const to = dayBoundary(options.endDate, "end");
     merged = merged.filter((item) => new Date(item.published).getTime() <= to);
   }
 
