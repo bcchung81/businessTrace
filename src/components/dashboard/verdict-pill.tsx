@@ -1,11 +1,6 @@
-import type { Verdict } from "@/lib/services/verdictRollup";
+import { VERDICT_LABEL, type Verdict } from "@/lib/services/verdictRollup";
 
-export const VERDICT_LABEL: Record<Verdict, string> = {
-  verified: "통과",
-  review: "검토",
-  risk: "리스크",
-  pending: "미분석",
-};
+export { VERDICT_LABEL };
 
 const VERDICT_CLASS: Record<Verdict, string> = {
   verified: "bg-verified-surface text-verified",

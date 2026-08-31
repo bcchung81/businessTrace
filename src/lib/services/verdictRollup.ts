@@ -41,6 +41,14 @@ export type VerdictSummary = {
   averageCitations: number;
 };
 
+/** 화면과 엑셀이 함께 쓰는 판정 이름 — 두 벌로 두면 산식이 갈린다. */
+export const VERDICT_LABEL: Record<Verdict, string> = {
+  verified: "통과",
+  review: "검토",
+  risk: "리스크",
+  pending: "미분석",
+};
+
 /** 봐야 할 순서 — 막힌 것이 먼저다. */
 export const VERDICT_ORDER: Verdict[] = ["risk", "review", "verified", "pending"];
 

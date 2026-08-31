@@ -1,14 +1,11 @@
 import ExcelJS from "exceljs";
 import { METRIC_KEYS, METRIC_LABEL, type BenchmarkRow } from "@/lib/services/benchmarking";
 import { fitColumns } from "@/lib/services/reportExcel";
+import { VERDICT_LABEL, type Verdict } from "@/lib/services/verdictRollup";
 
 const DASH = "—";
 
-function verdictOf(row: BenchmarkRow): string {
-  const verification = row.metrics.find((metric) => metric.key === "verification")?.raw;
-  if (verification === null || verification === undefined) return "미분석";
-  return verification === 1 ? "검증 통과" : "검토 필요";
-}
+
 
 function cell(value: number | null, digits = 2): string | number {
   return value === null ? DASH : Number(value.toFixed(digits));
@@ -16,10 +13,13 @@ function cell(value: number | null, digits = 2): string | number {
 
 /**
  * 랭킹 시트 하나짜리 워크북을 만든다. 첫 줄에 가중치와 산식 버전을 적는다 — 숫자만 있는 표는 근거자료가 아니다.
+ * 판정은 화면과 같은 값을 받아 적는다 — 예전에는 검증 지표만 보고 따로 계산해, 동명 충돌 기업이 화면에선 리스크인데 엑셀에선 통과였다.
  */
 export async function buildRankingWorkbook(input: {
   year: number;
   rows: BenchmarkRow[];
+  /** 화면이 쓰는 판정 — 원천 충돌은 judge 판정을 덮으므로 검증 지표만 보면 엑셀이 다른 말을 한다. */
+  verdicts: Map<number, Verdict>;
   weightLabel: string;
   formulaVersion: string;
 }): Promise<Buffer> {
@@ -38,7 +38,7 @@ export async function buildRankingWorkbook(input: {
     sheet.addRow([
       row.rank ?? DASH,
       row.name,
-      verdictOf(row),
+      VERDICT_LABEL[input.verdicts.get(row.companyId) ?? "pending"],
       cell(row.total, 3),
       ...row.metrics.map((metric) => cell(metric.normalised)),
       row.riskPenalty === 0 ? 0 : -Number(row.riskPenalty.toFixed(2)),

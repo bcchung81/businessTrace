@@ -1,5 +1,9 @@
 import { auth } from "@/auth";
 import { listBenchmarkInputs } from "@/lib/repositories/benchmarkInputs";
+import { listCompanies } from "@/lib/repositories/companyRepository";
+import { listCompanyPipeline } from "@/lib/repositories/companyPipeline";
+import { listLatestVerifications } from "@/lib/repositories/verificationResult";
+import { rollupVerdicts } from "@/lib/services/verdictRollup";
 import { loadRubrics, rankCompanies, weightLabel } from "@/lib/services/benchmarking";
 import { buildRankingWorkbook, rankingFileName } from "@/lib/services/rankingExcel";
 import { parseYear } from "@/lib/services/routeParams";
@@ -20,7 +24,13 @@ export async function GET(request: Request) {
   const label = weightLabel(rubric);
 
   if (url.searchParams.get("format") === "xlsx") {
-    const buffer = await buildRankingWorkbook({ year, rows, weightLabel: label, formulaVersion: book.formulaVersion });
+    const rollup = rollupVerdicts({
+      companies: (await listCompanies({ year })).map((company) => ({ id: company.id, name: company.name })),
+      verifications: await listLatestVerifications(year),
+      pipeline: await listCompanyPipeline(year),
+    });
+    const verdicts = new Map(rollup.companies.map((entry) => [entry.companyId, entry.verdict]));
+    const buffer = await buildRankingWorkbook({ year, rows, verdicts, weightLabel: label, formulaVersion: book.formulaVersion });
     return new Response(new Uint8Array(buffer), {
       headers: {
         "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
