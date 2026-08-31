@@ -49,7 +49,7 @@ describe("ReviewBlock", () => {
 
   test("dart candidate can be rejected as not registered", async () => {
     const actions = mockActions();
-    render(<ReviewBlock companyId={1} year={2026} summary={summary([{ kind: "dart_conflict", candidate: { corpCode: "00123", corpName: "주식회사 가", stockCode: null } }])} actions={actions} />);
+    render(<ReviewBlock companyId={1} year={2026} summary={summary([{ kind: "dart_conflict", candidateCount: 1, candidate: { corpCode: "00123", corpName: "주식회사 가", stockCode: null } }])} actions={actions} />);
     fireEvent.click(screen.getByRole("button", { name: "아니다 — DART 미등록으로 확정" }));
     await waitFor(() => expect(actions.decideDart).toHaveBeenCalledWith({ companyId: 1, corpCode: "none" }));
     fireEvent.click(screen.getByRole("button", { name: "이 기업이 맞다" }));
@@ -137,5 +137,18 @@ describe("ReviewBlock", () => {
     fireEvent.click(screen.getByRole("button", { name: "저장 후 원천 대조" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("10자리"));
     expect(within(screen.getByRole("alert")).getByText(/10자리/)).toBeInTheDocument();
+  });  test("says how many DART namesakes there are instead of always claiming one", () => {
+    const actions = mockActions();
+    render(
+      <ReviewBlock
+        companyId={1}
+        year={2026}
+        summary={summary([{ kind: "dart_conflict", candidateCount: 3, candidate: { corpCode: "001", corpName: "주식회사 가", stockCode: null } }])}
+        actions={actions}
+      />,
+    );
+
+    expect(screen.getByText(/후보 3건/)).toBeInTheDocument();
+    expect(screen.queryByText(/후보 1건/)).not.toBeInTheDocument();
   });
 });

@@ -72,6 +72,25 @@ describe("buildReviewItems", () => {
     expect(item).toMatchObject({ status: "failed", failed: [] });
   });
 
+  test("carries how many DART namesakes there are, not just the first one", async () => {
+    const c = await company();
+    await prisma.sourceSnapshot.create({
+      data: {
+        companyId: c.id, source: "dart", status: "conflict", summary: "후보 3건",
+        payload: JSON.stringify({ candidates: [
+          { corpCode: "001", corpName: "주식회사 가", stockCode: null },
+          { corpCode: "002", corpName: "가 주식회사", stockCode: null },
+          { corpCode: "003", corpName: "(주)가", stockCode: "123456" },
+        ] }),
+      },
+    });
+
+    const summary = (await buildReviewItems(c.id))!;
+    const item = summary.items.find((entry) => entry.kind === "dart_conflict")!;
+
+    expect(item).toMatchObject({ candidateCount: 3, candidate: { corpCode: "001" } });
+  });
+
   test("keeps namesake-conflict events out of the open-events ask — the decision item is the ask", async () => {
     const c = await company();
     const base = { companyId: c.id, occurredAt: new Date("2026-08-20"), title: "t", evidenceJson: "[]" };

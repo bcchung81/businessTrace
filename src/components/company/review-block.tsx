@@ -86,7 +86,7 @@ function FscConflict({ item, companyId, run, actions }: { item: Extract<ReviewIt
 
 function DartConflict({ item, companyId, run, actions }: { item: Extract<ReviewItem, { kind: "dart_conflict" }>; companyId: number; run: Runner; actions: ReviewActions }) {
   return (
-    <Item icon="alert" title="동명 타사 충돌" badge="DART" why="이름이 정확히 맞는 기업이 없다 · 후보 1건"
+    <Item icon="alert" title="동명 타사 충돌" badge="DART" why={`이름이 정확히 맞는 기업이 없다 · 후보 ${item.candidateCount}건`}
       actions={<>
         <Button variant="signal-outline" size="sm" onClick={() => run(() => actions.decideDart({ companyId, corpCode: item.candidate.corpCode, label: item.candidate.corpName }))}>이 기업이 맞다</Button>
         <Button variant="signal-outline" size="sm" onClick={() => run(() => actions.decideDart({ companyId, corpCode: "none" }))}>아니다 — DART 미등록으로 확정</Button>

@@ -8,7 +8,7 @@ export type OpenEventItem = { id: number; occurredAt: string; severity: "alert" 
 export type ReviewItem =
   | { kind: "no_business_no"; npsPrefix: string | null }
   | { kind: "nps_conflict"; candidates: NpsCandidateItem[]; chosen: string | null }
-  | { kind: "dart_conflict"; candidate: { corpCode: string; corpName: string; stockCode: string | null } }
+  | { kind: "dart_conflict"; candidateCount: number; candidate: { corpCode: string; corpName: string; stockCode: string | null } }
   | { kind: "fsc_conflict"; registryNo: string | null; fscNo: string; corpName: string }
   | {
       kind: "verification";
@@ -79,7 +79,11 @@ export async function buildReviewItems(companyId: number): Promise<ReviewSummary
   const dartPayload = parse<{ candidates?: Array<{ corpCode: string; corpName: string; stockCode: string | null }> }>(dart?.payload);
   if (dart?.status === "conflict" && !decision("dart") && dartPayload?.candidates?.[0]) {
     const first = dartPayload.candidates[0];
-    items.push({ kind: "dart_conflict", candidate: { corpCode: first.corpCode, corpName: first.corpName, stockCode: first.stockCode ?? null } });
+    items.push({
+      kind: "dart_conflict",
+      candidateCount: dartPayload.candidates.length,
+      candidate: { corpCode: first.corpCode, corpName: first.corpName, stockCode: first.stockCode ?? null },
+    });
   }
 
   const fsc = snapshot("fsc");
