@@ -59,6 +59,22 @@ describe("reduceAnalysis", () => {
     expect(state.opinion).toBe("종합 의견");
   });
 
+  it("ends the run when nothing was scored — no verification will follow", () => {
+    const empty = { ...RESULT, analyses: [], stats: { totalNews: 3, scoredNews: 0, excludedNews: 3, averageSentiment: 0 } };
+
+    const state = run([{ type: "complete", runId: 7, result: empty }]);
+
+    expect(state.phase).toBe("done");
+    expect(state.log.at(-1)).toMatchObject({ level: "warn" });
+    expect(state.log.at(-1)?.text).toContain("검증");
+  });
+
+  it("still waits for verification when something was scored", () => {
+    const state = run([{ type: "complete", runId: 7, result: RESULT }]);
+
+    expect(state.phase).not.toBe("done");
+  });
+
   it("ends on the verification verdict", () => {
     const verification = { status: "verified", faithfulness: 0.92, sourceCoverage: 1, evidenceMatch: 0.47 };
     const state = run([{ type: "verifying", runId: 7 }, { type: "verified", runId: 7, verification }]);

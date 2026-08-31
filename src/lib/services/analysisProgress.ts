@@ -44,6 +44,7 @@ function log(state: RunState, ...entries: LogEntry[]): LogEntry[] {
 /**
  * SSE 이벤트 하나를 진행 상태에 접는다.
  * 검증 실패는 판정을 비워 둔 채 끝낸다 - 검사에 실패한 것을 통과로 읽으면 안 된다.
+ * 집계된 기사가 0건이면 검증이 뒤따르지 않으므로 그 자리에서 끝낸다 - 아니면 스테퍼가 영영 "분석 중" 이다.
  */
 export function reduceAnalysis(state: RunState, raw: unknown): RunState {
   if (!raw || typeof raw !== "object") return state;
@@ -83,12 +84,19 @@ export function reduceAnalysis(state: RunState, raw: unknown): RunState {
 
     case "complete": {
       const result = event.result as { stats?: AnalysisStats; comprehensiveOpinion?: string };
+      const nothingScored = (result?.stats?.scoredNews ?? 0) === 0;
       return {
         ...state,
+        phase: nothingScored ? "done" : state.phase,
         runId: Number(event.runId ?? state.runId),
         stats: result?.stats ?? null,
         opinion: result?.comprehensiveOpinion ?? null,
-        log: log(state, { level: "info", text: "분석 완료 · 검증을 시작합니다." }),
+        log: log(
+          state,
+          nothingScored
+            ? { level: "warn", text: "회사가 주제인 기사가 없어 검증 없이 종료합니다." }
+            : { level: "info", text: "분석 완료 · 검증을 시작합니다." },
+        ),
       };
     }
 
