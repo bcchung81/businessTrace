@@ -27,6 +27,14 @@ describe("buildCompanyFacts", () => {
     expect(facts.corporateNo).toEqual({ value: "110111-1234567", sources: ["DART"], agreement: "single" });
   });
 
+  test("strips a trailing time from a source date — 나라장터 sends '2019-03-11 00:00:00'", () => {
+    const timed = buildCompanyFacts({
+      businessNo: null,
+      snapshots: [{ ...SNAPSHOTS[2], payload: { ...(SNAPSHOTS[2].payload as object), openedAt: "2019-03-11 00:00:00" } }],
+    });
+    expect(timed.founded).toMatchObject({ value: "2019-03-11" });
+  });
+
   test("flags a mismatch and keeps the alternatives", () => {
     const alt = buildCompanyFacts({ businessNo: null, snapshots: [SNAPSHOTS[0], { ...SNAPSHOTS[2], payload: { ...(SNAPSHOTS[2].payload as object), ceoName: "이한빛" } }] });
     expect(alt.ceo).toEqual({ value: "김한빛", sources: ["DART", "나라장터"], agreement: "mismatch", alternatives: ["나라장터 이한빛"] });

@@ -14,7 +14,7 @@ import { OpinionCitations } from "@/components/company/opinion-citations";
 import { VerificationPanel } from "@/components/company/verification-panel";
 import { EventTimeline } from "@/components/company/event-timeline";
 import { EvidenceStrip } from "@/components/company/evidence-grid";
-import { EmployeeCounts, FactsLine, FinanceLine, SourceDetails } from "@/components/company/company-facts";
+import { FactsTable, FinanceLine, SourceDetails } from "@/components/company/company-facts";
 import { buildCompanyFacts } from "@/lib/services/companyFacts";
 import { RefreshSources } from "@/components/company/refresh-sources";
 import { HeadcountInline } from "@/components/dashboard/headcount-trend";
@@ -50,18 +50,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
             <h1 className="font-display text-[36px] font-black leading-none tracking-[-0.04em]">{company.name}</h1>
             <HeadcountInline facet={summary.facets.find((facet) => facet.companyId === company.id) ?? summary.facets[0] ?? null} />
           </div>
-          <p className="text-[12px] text-muted-foreground">
-            {businessNo ? (
-              <span className="font-mono">{businessNo}</span>
-            ) : (
-              <span className="font-medium text-review">
-                사업자번호 미확보 — 뉴스 외 근거를 붙일 수 없습니다
-              </span>
-            )}
-            {company.industry ? <span> · {company.industry}</span> : null}
-          </p>
-          <FactsLine facts={facts} />
-          <EmployeeCounts facts={facts} />
+          <FactsTable facts={facts} businessNo={businessNo} industry={company.industry} />
         </div>
         <div className="flex items-center gap-3">
           <Link

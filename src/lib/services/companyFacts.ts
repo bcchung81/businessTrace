@@ -39,7 +39,8 @@ function payloadOf<T>(snapshots: StoredSnapshot[], source: SourceKey): T | null 
 function normaliseDate(raw: string | undefined): string | null {
   if (!raw) return null;
   const digits = raw.replace(/\D/g, "");
-  return digits.length === 8 ? `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}` : raw;
+  if (digits.length === 8 || digits.length === 14) return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+  return raw;
 }
 
 function normaliseAddress(raw: string | undefined): string | null {

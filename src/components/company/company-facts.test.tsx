@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { EmployeeCounts, FactsLine, FinanceLine, SourceDetails } from "@/components/company/company-facts";
+import { FactsTable, FinanceLine, SourceDetails } from "@/components/company/company-facts";
 import type { CompanyFacts } from "@/lib/services/companyFacts";
 
 const facts: CompanyFacts = {
@@ -19,34 +19,56 @@ const facts: CompanyFacts = {
   sourceDetails: { dart: ["주식회사 한빛", "대표 김한빛", "상장 654321"], dartFinance: [], fsc: [], nts: ["계속사업자", "부가가치세 일반과세자"], narajangteo: [], venture: [], nps: [] },
 };
 
-describe("FactsLine", () => {
-  test("shows each basic with its sources and marks agreement in words", () => {
-    render(<FactsLine facts={facts} />);
-    const line = screen.getByRole("list", { name: "기업 기본" });
-    expect(within(line).getByText("대표 김한빛")).toBeInTheDocument();
-    expect(within(line).getByText("DART·나라장터 일치")).toBeInTheDocument();
-    expect(within(line).getByText("설립 2019-03-01")).toBeInTheDocument();
-    expect(within(line).getByText("불일치 · 금융위 2019-04-01")).toHaveClass("text-review");
-    expect(within(line).getByText("상장 654321")).toBeInTheDocument();
-    expect(within(line).queryByText(/법인번호/)).not.toBeInTheDocument();
+describe("FactsTable", () => {
+  test("lays every basic out as key-value cells with sources and agreement in words", () => {
+    render(<FactsTable facts={facts} businessNo="1234567890" industry="SW" />);
+    const table = screen.getByLabelText("기업 기본");
+    expect(within(table).getByText("사업자번호")).toBeInTheDocument();
+    expect(within(table).getByText("1234567890")).toBeInTheDocument();
+    expect(within(table).getByText("업종")).toBeInTheDocument();
+    expect(within(table).getByText("SW")).toBeInTheDocument();
+    expect(within(table).getByText("대표")).toBeInTheDocument();
+    expect(within(table).getByText("김한빛")).toBeInTheDocument();
+    expect(within(table).getByText("DART·나라장터 일치")).toBeInTheDocument();
+    expect(within(table).getByText("설립")).toBeInTheDocument();
+    expect(within(table).getByText("2019-03-01")).toBeInTheDocument();
+    expect(within(table).getByText("불일치 · 금융위 2019-04-01")).toHaveClass("text-review");
+    expect(within(table).getByText("상장")).toBeInTheDocument();
+    expect(within(table).getByText("상장 654321")).toBeInTheDocument();
+    expect(within(table).queryByText("법인번호")).not.toBeInTheDocument();
   });
 
-  test("says so when nothing is known instead of vanishing", () => {
-    render(<FactsLine facts={{ ...facts, ceo: null, founded: null, address: null, listing: null }} />);
-    expect(screen.getByText("기본 정보 없음 — 원천 조회 후 채워진다")).toBeInTheDocument();
+  test("folds the employee sources, payroll estimate and turnover into the same table", () => {
+    render(<FactsTable facts={facts} businessNo="1234567890" industry={null} />);
+    const table = screen.getByLabelText("기업 기본");
+    expect(within(table).getByText("국민연금 가입자")).toBeInTheDocument();
+    expect(within(table).getByText("111")).toBeInTheDocument();
+    expect(within(table).getByText("조달 종업원")).toBeInTheDocument();
+    expect(within(table).getByText("원천 간 차이 큼")).toHaveClass("text-review");
+    expect(within(table).getByText("인건비 추정")).toBeInTheDocument();
+    expect(table).toHaveTextContent("55.9억 · 인당 420만");
+    expect(within(table).getByText("추정")).toBeInTheDocument();
+    expect(within(table).getByText("12개월 입·퇴사")).toBeInTheDocument();
+    expect(table).toHaveTextContent("입사 24 · 퇴사 12 · 이직률 11%");
   });
-});
 
-describe("EmployeeCounts", () => {
-  test("lists every source count and flags a spread over 20% as a mismatch", () => {
-    render(<EmployeeCounts facts={facts} />);
-    const group = screen.getByRole("group", { name: "종업원수 원천 비교" });
-    expect(group).toHaveTextContent("국민연금 가입자 111");
-    expect(group).toHaveTextContent("조달 종업원 39");
-    expect(within(group).getByText("원천 간 차이 큼")).toHaveClass("text-review");
-    expect(group).toHaveTextContent("인건비 추정 55.9억 · 인당 420만");
-    expect(group).toHaveTextContent("12개월 입사 24 · 퇴사 12 · 이직률 11%");
-    expect(within(group).getByText("추정")).toBeInTheDocument();
+  test("warns in the 사업자번호 cell when the number is missing", () => {
+    render(<FactsTable facts={facts} businessNo={null} industry={null} />);
+    expect(screen.getByText("미확보 — 뉴스 외 근거를 붙일 수 없습니다")).toHaveClass("text-review");
+  });
+
+  test("still shows the 사업자번호 warning cell when nothing else is known", () => {
+    render(
+      <FactsTable
+        facts={{ ...facts, ceo: null, founded: null, address: null, listing: null, employees: [], payroll: null, turnover: null }}
+        businessNo={null}
+        industry={null}
+      />,
+    );
+    const table = screen.getByLabelText("기업 기본");
+    expect(within(table).getByText("사업자번호")).toBeInTheDocument();
+    expect(within(table).getByText("미확보 — 뉴스 외 근거를 붙일 수 없습니다")).toHaveClass("text-review");
+    expect(within(table).queryByText("대표")).not.toBeInTheDocument();
   });
 });
 
