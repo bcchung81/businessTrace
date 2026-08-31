@@ -57,16 +57,25 @@ describe("createCompanies", () => {
 
     const result = await createCompanies({
       year: 2024,
-      names: ["크립토랩", " 올림플래닛 ", "넷록스", "", "페어리"],
+      entries: [
+        { name: "크립토랩", businessNo: "6258700800" },
+        { name: "올림플래닛", businessNo: null },
+        { name: "넷록스", businessNo: null },
+        { name: "페어리", businessNo: "1458102014" },
+      ],
     });
 
     expect(result).toMatchObject({ created: 3, skipped: ["넷록스"] });
     expect(result.createdIds).toHaveLength(3);
     expect(await prisma.company.count()).toBe(4);
+    const cryptolab = await prisma.company.findFirst({ where: { name: "크립토랩" } });
+    expect(cryptolab?.businessNo).toBe("6258700800");
+    const olim = await prisma.company.findFirst({ where: { name: "올림플래닛" } });
+    expect(olim?.businessNo).toBeNull();
   });
 
   it("keeps display order in the order they were pasted", async () => {
-    await createCompanies({ year: 2024, names: ["크립토랩", "올림플래닛", "페어리"] });
+    await createCompanies({ year: 2024, entries: [{ name: "크립토랩" }, { name: "올림플래닛" }, { name: "페어리" }] });
 
     const companies = await listCompanies({ year: 2024 });
 

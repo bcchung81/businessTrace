@@ -29,6 +29,42 @@ export function searchName(official: string) {
     .trim();
 }
 
+export type RegisterEntry = { name: string; businessNo: string | null };
+
+/**
+ * 등록 폼의 한 줄을 "기업명 [사업자번호]" 로 읽는다 — 번호는 쉼표·탭·공백 뒤 마지막 토큰이다.
+ * 6자리 이상 숫자로 보이는데 10자리가 아니면 버리지 않고 사유와 함께 남긴다.
+ */
+export function parseRegisterLines(lines: string[]): { entries: RegisterEntry[]; invalid: string[] } {
+  const entries: RegisterEntry[] = [];
+  const invalid: string[] = [];
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    const parts = line.split(/[,\t]/).map((part) => part.trim()).filter(Boolean);
+    const explicit = parts.length > 1;
+    const tokens = explicit ? parts : line.split(/\s+/);
+    const last = tokens[tokens.length - 1] ?? "";
+    const digits = last.replace(/\D/g, "");
+    const numberish = tokens.length > 1 && /^[\d-]+$/.test(last) && (explicit || digits.length >= 6);
+
+    if (!numberish) {
+      entries.push({ name: line.replace(/\s+/g, " "), businessNo: null });
+      continue;
+    }
+    const name = tokens.slice(0, -1).join(" ").trim();
+    if (digits.length !== 10) {
+      invalid.push(`${name || last} — 사업자번호가 10자리가 아닙니다`);
+      continue;
+    }
+    entries.push({ name, businessNo: digits });
+  }
+
+  return { entries, invalid };
+}
+
 function cell(row: ImportRow, index: number) {
   const value = row[index];
   return value === null || value === undefined ? "" : String(value).trim();

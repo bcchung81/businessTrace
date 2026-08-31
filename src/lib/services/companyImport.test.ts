@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseImportRows, searchName } from "@/lib/services/companyImport";
+import { parseImportRows, parseRegisterLines, searchName } from "@/lib/services/companyImport";
 
 const HEADER = ["선정년도", "구분", "분야", "기업명", "전담기관", "대표자", "사업자등록번호", "내역사업명", "성과정보"];
 
@@ -27,6 +27,38 @@ describe("searchName", () => {
 
   it("leaves a name that carries no corporate form alone", () => {
     expect(searchName("아주대학교 산학협력단")).toBe("아주대학교 산학협력단");
+  });
+});
+
+describe("parseRegisterLines", () => {
+  it("reads a bare name, and a name with its business number after a comma or tab", () => {
+    const { entries, invalid } = parseRegisterLines(["크립토랩", "올림플래닛, 120-88-24298", "넷록스\t6258700800", "  "]);
+
+    expect(entries).toEqual([
+      { name: "크립토랩", businessNo: null },
+      { name: "올림플래닛", businessNo: "1208824298" },
+      { name: "넷록스", businessNo: "6258700800" },
+    ]);
+    expect(invalid).toEqual([]);
+  });
+
+  it("treats a trailing ten-digit token as the number even with only spaces", () => {
+    const { entries } = parseRegisterLines(["코난 테크놀로지 123-45-67890"]);
+
+    expect(entries).toEqual([{ name: "코난 테크놀로지", businessNo: "1234567890" }]);
+  });
+
+  it("rejects a malformed number with the line instead of silently dropping it", () => {
+    const { entries, invalid } = parseRegisterLines(["페어리, 12345"]);
+
+    expect(entries).toEqual([]);
+    expect(invalid).toEqual(["페어리 — 사업자번호가 10자리가 아닙니다"]);
+  });
+
+  it("keeps a name that merely contains digits as a name", () => {
+    const { entries } = parseRegisterLines(["3D시스템즈"]);
+
+    expect(entries).toEqual([{ name: "3D시스템즈", businessNo: null }]);
   });
 });
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { auth } from "@/auth";
 import { createCompanies, createCompany, listCompanies } from "@/lib/repositories/companyRepository";
+import { parseRegisterLines } from "@/lib/services/companyImport";
 
 const createSchema = z.union([
   z.object({
@@ -35,7 +36,9 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ message: "잘못된 요청입니다." }, { status: 400 });
 
   if ("names" in parsed.data) {
-    return Response.json(await createCompanies(parsed.data), { status: 201 });
+    const { entries, invalid } = parseRegisterLines(parsed.data.names);
+    const result = await createCompanies({ year: parsed.data.year, entries });
+    return Response.json({ ...result, invalid }, { status: 201 });
   }
 
   const result = await createCompany(parsed.data);

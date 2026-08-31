@@ -43,16 +43,16 @@ export async function createCompany(input: CompanyInput): Promise<CompanyResult>
 /**
  * 붙여넣은 기업명 목록을 한 번에 등록하고 건너뛴 항목을 알려준다.
  */
-export async function createCompanies(input: { year: number; names: string[] }) {
+export async function createCompanies(input: { year: number; entries: Array<{ name: string; businessNo?: string | null }> }) {
   const skipped: string[] = [];
   const createdIds: number[] = [];
   let created = 0;
 
-  for (const raw of input.names) {
-    const name = raw.trim();
+  for (const entry of input.entries) {
+    const name = entry.name.trim();
     if (!name) continue;
 
-    const result = await createCompany({ name, year: input.year });
+    const result = await createCompany({ name, year: input.year, businessNo: entry.businessNo ?? null });
     if (result.ok) {
       created += 1;
       createdIds.push(result.company.id);

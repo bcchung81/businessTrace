@@ -7,6 +7,7 @@ import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listLatestVerifications } from "@/lib/repositories/verificationResult";
 import { buildCoMentions } from "@/lib/services/coMention";
 import { buildCompanyCards } from "@/lib/services/companyCards";
+import { parseRegisterLines } from "@/lib/services/companyImport";
 import { countReviewCompanies } from "@/lib/repositories/pipelineRepo";
 import { buildNewsCoverage } from "@/lib/services/newsCoverage";
 import { BatchRunner } from "@/components/analysis/batch-runner";
@@ -53,12 +54,14 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   async function register(formData: FormData) {
     "use server";
     const targetYear = Number(formData.get("year"));
-    const names = String(formData.get("names") ?? "").split(/\r?\n/);
-    const { created, skipped, createdIds } = await createCompanies({ year: targetYear, names });
+    const lines = String(formData.get("names") ?? "").split(/\r?\n/);
+    const { entries, invalid } = parseRegisterLines(lines);
+    const { created, skipped, createdIds } = await createCompanies({ year: targetYear, entries });
 
-    const message = skipped.length
-      ? `${created}건 등록, ${skipped.length}건 중복 제외 (${skipped.join(", ")})`
-      : `${created}건 등록`;
+    const parts = [`${created}건 등록`];
+    if (skipped.length) parts.push(`${skipped.length}건 중복 제외 (${skipped.join(", ")})`);
+    if (invalid.length) parts.push(`${invalid.length}건 형식 오류 (${invalid.join(" · ")})`);
+    const message = parts.join(", ");
 
     revalidatePath("/companies");
     const run = createdIds.length > 0 ? `&run=${createdIds.join(",")}` : "";
