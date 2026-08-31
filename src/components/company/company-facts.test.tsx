@@ -52,6 +52,21 @@ describe("FactsTable", () => {
     expect(table).toHaveTextContent("입사 24 · 퇴사 12 · 이직률 11%");
   });
 
+  test("widens a long cell to fit its data and keeps short cells single-column", () => {
+    const long = {
+      value: "경기도 고양시 덕양구 삼원로",
+      sources: ["나라장터"],
+      agreement: "mismatch" as const,
+      alternatives: ["금융위 경기도 고양시 덕양구 원흥동 삼원로 73"],
+    };
+    render(<FactsTable facts={{ ...facts, address: long }} businessNo="1234567890" industry={null} />);
+
+    const address = screen.getByText("주소").closest("div")!;
+    expect(address.className).toContain("lg:col-span-3");
+    const ceo = screen.getByText("대표").closest("div")!;
+    expect(ceo.className).not.toContain("col-span");
+  });
+
   test("warns in the 사업자번호 cell when the number is missing", () => {
     render(<FactsTable facts={facts} businessNo={null} industry={null} />);
     expect(screen.getByText("미확보 — 뉴스 외 근거를 붙일 수 없습니다")).toHaveClass("text-review");
