@@ -47,4 +47,23 @@ describe("pipelineRepo", () => {
     expect(review).toMatchObject({ companies: 3, openAlertNotice: 1, needsReview: 0 });
     expect(review.ids.sort()).toEqual([noBizno.id, conflict.id, openAlert.id].sort());
   });
+
+  test("countReviewCompanies still sees an unreviewed verdict behind a later news-only run", async () => {
+    const user = await prisma.user.create({ data: { email: "q2@example.com", passwordHash: "x" } });
+    const c = await prisma.company.create({ data: { name: "㈜마", year: YEAR, businessNo: "4" } });
+    const analysed = await prisma.analysisRun.create({
+      data: { companyId: c.id, userId: user.id, model: "m", status: "completed", newsJson: "[]", createdAt: new Date("2026-08-01") },
+    });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: analysed.id, status: "needs_review", unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" },
+    });
+    await prisma.analysisRun.create({
+      data: { companyId: c.id, userId: user.id, model: "m", status: "collected", newsJson: "[]", createdAt: new Date("2026-08-20") },
+    });
+
+    const review = await countReviewCompanies(YEAR);
+
+    expect(review.needsReview).toBe(1);
+    expect(review.ids).toContain(c.id);
+  });
 });

@@ -149,6 +149,29 @@ describe("listLatestVerifications", () => {
     expect(rows[0].runAt).toBe(new Date("2026-08-20").toISOString());
   });
 
+  it("counts citations from the primary articles the analyzer consumed, not everything collected", async () => {
+    const { company, user } = await seedCompanyWithUser("딥노이드", 2025);
+    const run = await prisma.analysisRun.create({
+      data: {
+        companyId: company.id, userId: user.id, model: "m", status: "completed",
+        createdAt: new Date("2026-08-20"), completedAt: new Date("2026-08-20"),
+        newsJson: JSON.stringify([
+          { link: "https://n/1", relevance: "primary" },
+          { link: "https://n/2", relevance: "primary" },
+          { link: "https://n/3", relevance: "mention" },
+          { link: "https://n/4", relevance: "unrelated" },
+        ]),
+      },
+    });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: run.id, status: "verified", unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" },
+    });
+
+    const rows = await listLatestVerifications(2025);
+
+    expect(rows[0].citations).toBe(2);
+  });
+
   it("skips runs that are still running or failed", async () => {
     const { company, user } = await seedCompanyWithUser("옥타코", 2025);
     await seedRun({

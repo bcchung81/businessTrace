@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   const companies = await prisma.company.findMany({
     where: { id: { in: parsed.data.companyIds }, isActive: true },
     orderBy: [{ displayOrder: "asc" }, { id: "asc" }],
-    include: { analysisRuns: { where: { status: "completed", verification: { isNot: null } }, select: { id: true }, take: 1 } },
+    include: { analysisRuns: { where: { status: "completed", verification: { is: { status: "verified" } } }, select: { id: true }, take: 1 } },
   });
   const targets: BatchTarget[] = companies.map((company) => ({
     id: company.id,

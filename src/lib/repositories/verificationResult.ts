@@ -41,6 +41,20 @@ function jsonLength(raw: string) {
 }
 
 /**
+ * 저장된 기사 중 분석기가 실제로 소비한 primary 만 센다 — 전체를 세면 인용 수가 부풀려진다.
+ */
+function primaryCitationCount(raw: string) {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return 0;
+    const primary = parsed.filter((item) => (item as { relevance?: string }).relevance === "primary").length;
+    return primary > 0 ? primary : parsed.length === 0 ? 0 : parsed.filter((item) => (item as { relevance?: string }).relevance === undefined).length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * 해당 연도 기업별 최신 완료 실행의 검증 결과를 낸다.
  * 기업당 하나만 쓴다 — 재실행분까지 세면 같은 기업이 두 번 잡혀 판정 수가 부풀려진다.
  */
@@ -64,7 +78,7 @@ export async function listLatestVerifications(year: number): Promise<Verificatio
       sourceCoverage: run.verification.sourceCoverage,
       evidenceMatch: run.verification.evidenceMatch,
       counterEvidence: jsonLength(run.verification.counterEvidence),
-      citations: jsonLength(run.newsJson),
+      citations: primaryCitationCount(run.newsJson),
       runAt: (run.completedAt ?? run.createdAt).toISOString(),
     });
   }

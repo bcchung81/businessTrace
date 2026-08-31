@@ -65,7 +65,11 @@ export async function collectEvidence(
         : null;
 
   const [financial, businessStatus, procurement, certification, pension] = await Promise.all([
-    deps.getFinancialSummary(company.name, company.year),
+    decisions.dart === "none"
+      ? Promise.resolve(null)
+      : decisions.dart
+        ? deps.getFinancialSummary(company.name, company.year, undefined, { corpCode: decisions.dart })
+        : deps.getFinancialSummary(company.name, company.year),
     businessNo ? deps.checkBusinessStatus(businessNo) : Promise.resolve(null),
     businessNo ? deps.getProcurementProfile(businessNo) : Promise.resolve(null),
     deps.findCertification(company.name, new Date()),

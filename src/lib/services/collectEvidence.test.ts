@@ -148,4 +148,17 @@ describe("collectEvidence", () => {
     expect(deps.getCompanyProfile).toHaveBeenCalledWith("㈜가", undefined, { corpCode: "00123456" });
     expect(deps.lookupWorkplace).toHaveBeenCalledWith("㈜가", { businessNo: "625870" });
   });
+
+  it("passes the decided corp code to the finance lookup too — the name alone finds a namesake or nothing", async () => {
+    const deps = collectors();
+    await collectEvidence({ name: "옥타코", year: 2026, businessNo: null }, deps, { dart: "00123456" });
+    expect(deps.getFinancialSummary).toHaveBeenCalledWith("옥타코", 2026, undefined, { corpCode: "00123456" });
+  });
+
+  it("skips the finance lookup entirely when the operator decided the company is not in DART", async () => {
+    const deps = collectors();
+    const result = await collectEvidence({ name: "㈜가", year: 2026, businessNo: "1234567890" }, deps, { dart: "none" });
+    expect(deps.getFinancialSummary).not.toHaveBeenCalled();
+    expect(result.evidence.financial).toBeNull();
+  });
 });

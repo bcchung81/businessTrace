@@ -56,6 +56,24 @@ describe("buildReviewItems", () => {
     expect(summary.items[3]).toEqual({ kind: "no_news", aliases: ["가 테크"] });
   });
 
+  test("a later news-only collection run does not hide an unreviewed verification", async () => {
+    const user = await prisma.user.create({ data: { email: "c@example.com", passwordHash: "x" } });
+    const c = await company();
+    const analysed = await prisma.analysisRun.create({
+      data: { companyId: c.id, userId: user.id, model: "m", status: "completed", newsJson: "[]", createdAt: new Date("2026-08-01"), completedAt: new Date("2026-08-01") },
+    });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: analysed.id, status: "needs_review", unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" },
+    });
+    await prisma.analysisRun.create({
+      data: { companyId: c.id, userId: user.id, model: "m", status: "collected", newsJson: "[]", createdAt: new Date("2026-08-20") },
+    });
+
+    const summary = (await buildReviewItems(c.id))!;
+
+    expect(summary.items.map((i) => i.kind)).toContain("verification");
+  });
+
   test("flags a missing business number with the NPS prefix pre-filled, and returns nothing to review when clean", async () => {
     const c = await company({ businessNo: null });
     await prisma.sourceSnapshot.create({ data: { companyId: c.id, source: "nps", status: "found", summary: "가입자 8명", payload: JSON.stringify({ businessNoPrefix: "625870" }) } });

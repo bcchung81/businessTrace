@@ -50,7 +50,7 @@ export async function buildReviewItems(companyId: number): Promise<ReviewSummary
       sourceSnapshots: true,
       sourceDecisions: true,
       events: { where: { severity: { in: ["alert", "notice"] } }, orderBy: { occurredAt: "desc" } },
-      analysisRuns: { orderBy: { createdAt: "desc" }, take: 1, include: { verification: true } },
+      analysisRuns: { where: { status: { not: "collected" } }, orderBy: { createdAt: "desc" }, take: 1, include: { verification: true } },
     },
   });
   if (!company) return null;

@@ -36,6 +36,21 @@ describe("POST /api/analyze/batch", () => {
     expect((await busy.json()).message).toContain("2개사");
   });
 
+  test("marks a company verified only when its verification actually passed", async () => {
+    const user = await prisma.user.create({ data: { email: "b@example.com", passwordHash: "x" } });
+    const a = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
+    const run = await prisma.analysisRun.create({
+      data: { companyId: a.id, userId: user.id, model: "m", status: "completed", newsJson: "[]" },
+    });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: run.id, status: "needs_review", unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" },
+    });
+
+    await (await post({ companyIds: [a.id], stage: "full", limit: 20, force: false, naver: true, google: true })).text();
+
+    expect(vi.mocked(runBatch).mock.calls.at(-1)![0][0]).toMatchObject({ id: a.id, verified: false });
+  });
+
   test("streams batch events for the requested companies as SSE", async () => {
     const a = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
     const b = await prisma.company.create({ data: { name: "㈜나", year: 2026, isActive: false } });

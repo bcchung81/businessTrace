@@ -70,7 +70,7 @@ export async function countReviewCompanies(year: number) {
       sourceSnapshots: { where: { status: "conflict" }, select: { source: true } },
       sourceDecisions: { select: { source: true } },
       events: { where: { severity: { in: ["alert", "notice"] }, status: "open" }, select: { id: true } },
-      analysisRuns: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true, verification: { select: { status: true, reviewedAt: true } } } },
+      analysisRuns: { where: { status: { not: "collected" } }, orderBy: { createdAt: "desc" }, take: 1, select: { status: true, verification: { select: { status: true, reviewedAt: true } } } },
     },
   });
   const ids: number[] = [];

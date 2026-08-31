@@ -135,6 +135,7 @@ export async function getFinancialSummary(
   companyName: string,
   fiscalYear: number,
   deps: DartDeps = {},
+  hints: { corpCode?: string } = {},
 ): Promise<FinancialSummary> {
   const empty = {
     fiscalYear,
@@ -144,7 +145,7 @@ export async function getFinancialSummary(
     totalAssets: null,
   };
 
-  const { exact } = await resolveCorp(companyName);
+  const exact = hints.corpCode ? { corpCode: hints.corpCode } : (await resolveCorp(companyName)).exact;
   if (!exact) return { found: false, ...empty, reason: "DART 에 등록되지 않은 기업입니다." };
 
   let body: DartResponse;
