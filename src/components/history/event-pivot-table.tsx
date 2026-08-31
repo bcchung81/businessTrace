@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { Pager, paginate } from "@/components/ui/pager";
 import type { PivotRow } from "@/lib/services/eventPivot";
 import { KIND_LABEL, type EventKind } from "@/lib/services/eventRules";
 
@@ -23,10 +27,12 @@ function rowSummary(row: PivotRow) {
  * 0 은 비워 숫자만 스캔되게 한다.
  */
 export function EventPivotTable({ months, rows }: { months: string[]; rows: PivotRow[] }) {
+  const [page, setPage] = useState(0);
   if (rows.length === 0) {
     return <p className="border border-dashed border-hairline p-6 text-center text-[13px] text-muted-foreground">이 연도의 사건이 없습니다.</p>;
   }
 
+  const { slice, pages, current } = paginate(rows, page);
   return (
     <div className="flex flex-col gap-2 overflow-x-auto">
       <p className="text-[11px] text-muted-foreground">
@@ -46,7 +52,7 @@ export function EventPivotTable({ months, rows }: { months: string[]; rows: Pivo
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {slice.map((row) => (
             <tr key={row.companyId} className="border-b border-hairline">
               <td className="whitespace-nowrap py-1.5 pr-3 font-semibold">{row.companyName}</td>
               {row.cells.map((cell) => (
@@ -64,6 +70,7 @@ export function EventPivotTable({ months, rows }: { months: string[]; rows: Pivo
           ))}
         </tbody>
       </table>
+      <Pager current={current} pages={pages} onPage={setPage} />
     </div>
   );
 }

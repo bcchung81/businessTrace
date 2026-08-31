@@ -31,14 +31,14 @@ describe("EventTable", () => {
     expect(screen.getByRole("link", { name: "딥노이드" })).toHaveAttribute("href", "/companies/1");
   });
 
-  test("shows ten rows per page by default", () => {
-    const events = Array.from({ length: 12 }, (_, index) => row({ id: index + 1, title: `사건 ${index + 1}` }));
+  test("shows twenty rows per page by default", () => {
+    const events = Array.from({ length: 25 }, (_, index) => row({ id: index + 1, title: `사건 ${index + 1}` }));
     render(<EventTable events={events} silence={[]} now={NOW} />);
 
-    expect(screen.getAllByRole("row").slice(1)).toHaveLength(10);
+    expect(screen.getAllByRole("row").slice(1)).toHaveLength(20);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
-    expect(screen.getAllByRole("row").slice(1)).toHaveLength(2);
+    expect(screen.getAllByRole("row").slice(1)).toHaveLength(5);
   });
 
   test("filters to open only and by kind", () => {

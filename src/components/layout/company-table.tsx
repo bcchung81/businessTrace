@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { Pager, paginate } from "@/components/ui/pager";
 import type { CompanyModel } from "@/generated/prisma/models";
 
 function formatBusinessNo(businessNo: string | null) {
@@ -7,6 +11,7 @@ function formatBusinessNo(businessNo: string | null) {
 }
 
 export function CompanyTable({ companies }: { companies: CompanyModel[] }) {
+  const [page, setPage] = useState(0);
   if (companies.length === 0) {
     return (
       <div className="border border-dashed border-hairline bg-background p-8 text-center">
@@ -16,6 +21,7 @@ export function CompanyTable({ companies }: { companies: CompanyModel[] }) {
   }
 
   const unverifiable = companies.filter((company) => !company.businessNo).length;
+  const { slice, pages, current } = paginate(companies, page);
 
   return (
     <div className="flex flex-col gap-2">
@@ -39,7 +45,7 @@ export function CompanyTable({ companies }: { companies: CompanyModel[] }) {
             </tr>
           </thead>
           <tbody>
-            {companies.map((company) => (
+            {slice.map((company) => (
               <tr
                 key={company.id}
                 className="border-b border-hairline last:border-0 hover:bg-surface"
@@ -78,6 +84,7 @@ export function CompanyTable({ companies }: { companies: CompanyModel[] }) {
           </tbody>
         </table>
       </div>
+      <Pager current={current} pages={pages} onPage={setPage} />
 
       {unverifiable > 0 ? (
         <p className="text-[12px] leading-relaxed text-muted-foreground">

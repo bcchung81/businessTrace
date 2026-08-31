@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Pager, paginate } from "@/components/ui/pager";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
 import { Segmented } from "@/components/ui/segmented";
 import { METRIC_KEYS, METRIC_LABEL, type BenchmarkRow } from "@/lib/services/benchmarking";
@@ -39,19 +40,21 @@ function score(value: number | null, digits = 2) {
 export function RankingTable({ rows, industries }: { rows: RankingRow[]; industries: string[] }) {
   const [sort, setSort] = useState<Sort>("rank");
   const [industry, setIndustry] = useState("");
+  const [page, setPage] = useState(0);
 
-  const visible = rows.filter((row) => industry === "" || row.industry === industry).sort(compare(sort));
+  const filtered = rows.filter((row) => industry === "" || row.industry === industry).sort(compare(sort));
+  const { slice: visible, pages, current } = paginate(filtered, page);
 
   return (
     <div className="flex flex-col">
       <div className="flex flex-wrap items-center gap-3 border-b border-hairline py-2 text-[11.5px]">
-        <Segmented label="정렬" value={sort} options={SORTS} onChange={setSort} />
+        <Segmented label="정렬" value={sort} options={SORTS} onChange={(value) => { setSort(value); setPage(0); }} />
         <label className="ml-auto flex items-center gap-2 text-muted-foreground">
           산업
           <select
             aria-label="산업"
             value={industry}
-            onChange={(event) => setIndustry(event.target.value)}
+            onChange={(event) => { setIndustry(event.target.value); setPage(0); }}
             className="border-[1.5px] border-hairline bg-background px-2 py-0.5 text-[11.5px] text-foreground"
           >
             <option value="">전체</option>
@@ -109,6 +112,7 @@ export function RankingTable({ rows, industries }: { rows: RankingRow[]; industr
           </tbody>
         </table>
       </div>
+      <Pager current={current} pages={pages} onPage={setPage} />
     </div>
   );
 }

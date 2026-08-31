@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { RunHistoryTable } from "@/components/reports/run-history-table";
 import type { RunHistoryRow } from "@/lib/repositories/analysisRun";
 
@@ -28,6 +28,16 @@ describe("RunHistoryTable", () => {
     expect(screen.getByText("20")).toBeInTheDocument();
     expect(screen.getByText("120")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "엑셀" })).toHaveAttribute("href", "/api/reports/7");
+  });
+
+  it("pages twenty runs at a time", () => {
+    const many = Array.from({ length: 25 }, (_, index) => row({ id: index + 1 }));
+    const { container } = render(<RunHistoryTable rows={many} />);
+
+    expect(container.querySelectorAll("tbody tr")).toHaveLength(20);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(container.querySelectorAll("tbody tr")).toHaveLength(5);
   });
 
   it("shows no excel link for an incomplete run and explains an empty history", () => {

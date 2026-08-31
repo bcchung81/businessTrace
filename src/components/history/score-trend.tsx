@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, YAxis } from "recharts";
+import { Pager, paginate } from "@/components/ui/pager";
 
 export type TrendFacet = { companyId: number; name: string; grade: string; points: Array<{ ym: string; total: number }> };
 
@@ -13,6 +15,7 @@ function ymLabel(ym: string) {
  * 한 축에 50개 선을 겹치면 색으로만 갈라야 해서 읽을 수 없다.
  */
 export function ScoreTrend({ facets }: { facets: TrendFacet[] }) {
+  const [page, setPage] = useState(0);
   if (facets.length === 0) {
     return (
       <p className="border border-dashed border-hairline p-6 text-center text-[13px] text-muted-foreground">
@@ -21,9 +24,11 @@ export function ScoreTrend({ facets }: { facets: TrendFacet[] }) {
     );
   }
 
+  const { slice, pages, current } = paginate(facets, page);
   return (
+    <div className="flex flex-col gap-2">
     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {facets.map((facet) => {
+      {slice.map((facet) => {
         const first = facet.points[0];
         const last = facet.points.at(-1);
         return (
@@ -53,5 +58,7 @@ export function ScoreTrend({ facets }: { facets: TrendFacet[] }) {
         );
       })}
     </ul>
+    <Pager current={current} pages={pages} onPage={setPage} />
+    </div>
   );
 }

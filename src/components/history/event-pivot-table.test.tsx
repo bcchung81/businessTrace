@@ -51,6 +51,20 @@ describe("EventPivotTable", () => {
     expect(screen.getByRole("table").className).toContain("w-auto");
   });
 
+  it("pages twenty company rows at a time", () => {
+    const months = Array.from({ length: 12 }, (_, index) => `2026${String(index + 1).padStart(2, "0")}`);
+    const rows = Array.from({ length: 25 }, (_, index) => ({
+      companyId: index + 1,
+      companyName: `기업${index + 1}`,
+      total: 1,
+      cells: months.map((ym, m) => ({ ym, total: m === 0 ? 1 : 0, byKind: m === 0 ? { award: 1 } : {} })),
+    }));
+    const { container } = render(<EventPivotTable months={months} rows={rows} />);
+
+    expect(container.querySelectorAll("tbody tr")).toHaveLength(20);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+  });
+
   it("explains an empty year instead of an empty table", () => {
     render(<EventPivotTable months={[]} rows={[]} />);
 

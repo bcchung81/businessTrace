@@ -9,6 +9,20 @@ const card = (id: number, name: string, needsReview: boolean): CompanyCardData =
   events30d: { alert: 0, notice: 0, positive: 0, info: 0 }, open: 0, worstSeverity: null, trust: null, needsReview,
 });
 
+describe("CompanyCardGrid paging", () => {
+  test("pages twenty companies at a time and resets to page one on filter change", () => {
+    const cards = Array.from({ length: 25 }, (_, index) => card(index + 1, `기업${index + 1}`, index === 24));
+    render(<CompanyCardGrid cards={cards} />);
+
+    expect(screen.getAllByRole("row")).toHaveLength(21);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getAllByRole("row")).toHaveLength(6);
+    fireEvent.click(screen.getByRole("checkbox", { name: "확인 필요만" }));
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+  });
+});
+
 describe("CompanyCardGrid review filter", () => {
   test("offers 확인 필요만 and can start with it on", () => {
     render(<CompanyCardGrid cards={[card(1, "㈜가", true), card(2, "㈜나", false)]} initialFilter={{ reviewOnly: true }} />);

@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
+import { Pager, paginate } from "@/components/ui/pager";
 import type { RunHistoryRow } from "@/lib/repositories/analysisRun";
 import { formatRunTime } from "@/lib/services/formatRunTime";
 
@@ -6,12 +10,14 @@ import { formatRunTime } from "@/lib/services/formatRunTime";
  * 분석 실행 이력 표 — 완료된 실행만 엑셀 링크를 낸다. 토큰은 입력+출력 합계다.
  */
 export function RunHistoryTable({ rows }: { rows: RunHistoryRow[] }) {
+  const [page, setPage] = useState(0);
   if (rows.length === 0) {
     return <p className="border border-dashed border-hairline p-6 text-center text-[13px] text-muted-foreground">실행 이력이 없습니다. 기업 화면의 일괄 실행이 이곳에 쌓입니다.</p>;
   }
 
+  const { slice, pages, current } = paginate(rows, page);
   return (
-    <div className="overflow-x-auto">
+    <div className="flex flex-col overflow-x-auto">
       <table className="w-full border-collapse text-[12.5px]">
         <thead>
           <tr className="border-b-2 border-ink text-left">
@@ -24,7 +30,7 @@ export function RunHistoryTable({ rows }: { rows: RunHistoryRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {slice.map((row) => (
             <tr key={row.id} className="border-b border-hairline">
               <td className="whitespace-nowrap py-1.5 pr-2 font-mono tabular-nums text-muted-foreground">{formatRunTime(row.createdAt)}</td>
               <td className="whitespace-nowrap py-1.5 pr-2 font-semibold">{row.companyName}</td>
@@ -42,6 +48,7 @@ export function RunHistoryTable({ rows }: { rows: RunHistoryRow[] }) {
           ))}
         </tbody>
       </table>
+      <Pager current={current} pages={pages} onPage={setPage} />
     </div>
   );
 }

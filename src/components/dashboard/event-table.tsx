@@ -31,7 +31,7 @@ function dateOf(row: DisplayRow): string {
 export function EventTable({
   events,
   silence,
-  pageSize = 10,
+  pageSize = 20,
   lastEventAt = null,
   now = new Date(),
 }: {

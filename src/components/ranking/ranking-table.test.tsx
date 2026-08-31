@@ -20,6 +20,22 @@ function rows(): RankingRow[] {
 }
 
 describe("RankingTable", () => {
+  test("pages twenty rows at a time", () => {
+    const many = rankCompanies(
+      Array.from({ length: 25 }, (_, index) => ({
+        companyId: index + 1, name: `기업${String(index + 1).padStart(2, "0")}`, industry: "SW",
+        sentiment: index, awards: 0, investments: 0, revenue: null, verification: "verified" as const, confirmedRisks: 0,
+      })),
+      loadRubrics(),
+    ).map((row) => ({ ...row, businessNo: "1234567890", verdict: "verified" as const }));
+    render(<RankingTable rows={many} industries={["SW"]} />);
+
+    expect(screen.getAllByRole("row")).toHaveLength(21);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getAllByRole("row")).toHaveLength(6);
+  });
+
   test("shows the eleven columns in the brief's order", () => {
     render(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);

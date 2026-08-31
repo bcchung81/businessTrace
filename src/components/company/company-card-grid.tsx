@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { COMPANY_COLUMNS, CompanyRow } from "@/components/company/company-row";
 import { Button } from "@/components/ui/button";
+import { Pager, paginate } from "@/components/ui/pager";
 import { filterCards, sortCards, type CardFilter, type CardSort, type CompanyCardData } from "@/lib/services/companyCards";
 
 const SORT_LABEL: Record<CardSort, string> = { triage: "긴급도순", name: "이름순", news: "최근보도순" };
@@ -14,8 +15,10 @@ const SORTS: CardSort[] = ["triage", "name", "news"];
 export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyCardData[]; initialFilter?: CardFilter }) {
   const [sort, setSort] = useState<CardSort>("triage");
   const [filter, setFilter] = useState<CardFilter>(initialFilter);
+  const [page, setPage] = useState(0);
 
   const visible = useMemo(() => sortCards(filterCards(cards, filter), sort), [cards, filter, sort]);
+  const { slice, pages, current } = paginate(visible, page);
 
   return (
     <div className="flex flex-col gap-4">
@@ -28,7 +31,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
               variant={sort === option ? "signal" : "signal-outline"}
               size="sm"
               aria-pressed={sort === option}
-              onClick={() => setSort(option)}
+              onClick={() => { setSort(option); setPage(0); }}
             >
               {SORT_LABEL[option]}
             </Button>
@@ -41,7 +44,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
               type="checkbox"
               aria-label="확인 필요만"
               checked={filter.reviewOnly ?? false}
-              onChange={(event) => setFilter((prev) => ({ ...prev, reviewOnly: event.target.checked }))}
+              onChange={(event) => { setFilter((prev) => ({ ...prev, reviewOnly: event.target.checked })); setPage(0); }}
             />
             확인 필요만
           </label>
@@ -49,7 +52,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
             <input
               type="checkbox"
               checked={filter.noticeOnly ?? false}
-              onChange={(event) => setFilter((prev) => ({ ...prev, noticeOnly: event.target.checked }))}
+              onChange={(event) => { setFilter((prev) => ({ ...prev, noticeOnly: event.target.checked })); setPage(0); }}
             />
             주의만
           </label>
@@ -57,7 +60,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
             <input
               type="checkbox"
               checked={filter.positiveOnly ?? false}
-              onChange={(event) => setFilter((prev) => ({ ...prev, positiveOnly: event.target.checked }))}
+              onChange={(event) => { setFilter((prev) => ({ ...prev, positiveOnly: event.target.checked })); setPage(0); }}
             />
             홍보 후보만
           </label>
@@ -65,7 +68,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
             <input
               type="checkbox"
               checked={filter.missingBusinessNo ?? false}
-              onChange={(event) => setFilter((prev) => ({ ...prev, missingBusinessNo: event.target.checked }))}
+              onChange={(event) => { setFilter((prev) => ({ ...prev, missingBusinessNo: event.target.checked })); setPage(0); }}
             />
             사업자번호 미확보만
           </label>
@@ -90,11 +93,12 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
               </tr>
             </thead>
             <tbody>
-              {visible.map((card) => (
+              {slice.map((card) => (
                 <CompanyRow key={card.id} card={card} />
               ))}
             </tbody>
           </table>
+          <Pager current={current} pages={pages} onPage={setPage} />
         </div>
       )}
     </div>

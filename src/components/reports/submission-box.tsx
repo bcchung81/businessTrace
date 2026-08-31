@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { submitFileAction } from "@/app/reports/actions";
 import { Button } from "@/components/ui/button";
+import { Pager, paginate } from "@/components/ui/pager";
 import type { SubmissionRow } from "@/lib/repositories/submission";
 import { formatRunTime } from "@/lib/services/formatRunTime";
 
@@ -13,6 +14,8 @@ export function SubmissionBox({ submissions }: { submissions: SubmissionRow[] })
   const form = useRef<HTMLFormElement>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [page, setPage] = useState(0);
+  const { slice, pages, current } = paginate(submissions, page);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,7 +51,7 @@ export function SubmissionBox({ submissions }: { submissions: SubmissionRow[] })
             </tr>
           </thead>
           <tbody>
-            {submissions.map((row) => (
+            {slice.map((row) => (
               <tr key={row.id} className="border-b border-hairline">
                 <td className="py-1.5 pr-2 font-semibold">{row.filename}</td>
                 <td className="whitespace-nowrap py-1.5 pr-2 font-mono tabular-nums text-muted-foreground">{formatRunTime(row.submittedAt)}</td>
@@ -60,6 +63,7 @@ export function SubmissionBox({ submissions }: { submissions: SubmissionRow[] })
           </tbody>
         </table>
       )}
+      <Pager current={current} pages={pages} onPage={setPage} />
     </div>
   );
 }

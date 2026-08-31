@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { CompanyTable } from "@/components/layout/company-table";
 import type { CompanyModel } from "@/generated/prisma/models";
 
@@ -60,6 +60,16 @@ describe("CompanyTable", () => {
     );
 
     expect(screen.getAllByRole("row")).toHaveLength(3);
+  });
+
+  it("pages twenty companies at a time", () => {
+    const many = Array.from({ length: 25 }, (_, index) => company({ id: index + 1, name: `기업${index + 1}` }));
+    render(<CompanyTable companies={many} />);
+
+    expect(screen.getAllByRole("row")).toHaveLength(21);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getAllByRole("row")).toHaveLength(6);
   });
 
   it("links each company name to its evidence screen", () => {

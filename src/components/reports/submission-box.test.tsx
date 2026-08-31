@@ -19,6 +19,17 @@ describe("SubmissionBox", () => {
     expect(screen.getByText("수정본")).toBeInTheDocument();
   });
 
+  it("pages twenty submissions at a time", () => {
+    const many = Array.from({ length: 25 }, (_, index) => ({
+      id: index + 1, filename: `제출-${index + 1}.xlsx`, storedPath: "data/submissions/x", sha256: "ab".repeat(32),
+      size: 1024, note: null, submittedAt: "2026-08-30T09:00:00.000Z", submittedBy: 1,
+    }));
+    const { container } = render(<SubmissionBox submissions={many} />);
+
+    expect(container.querySelectorAll("tbody tr")).toHaveLength(20);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+  });
+
   it("explains an empty archive", () => {
     render(<SubmissionBox submissions={[]} />);
 

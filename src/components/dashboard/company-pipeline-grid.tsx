@@ -106,7 +106,7 @@ function score(value: number | null, verdict: MatrixRow["verdict"]) {
  */
 export function CompanyPipelineGrid({
   rows,
-  pageSize = 10,
+  pageSize = 20,
   now,
 }: {
   rows: MatrixRow[];

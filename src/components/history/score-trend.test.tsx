@@ -27,6 +27,19 @@ describe("ScoreTrend", () => {
     expect(screen.getByText(/25\.12 ~ 26\.12/)).toBeInTheDocument();
   });
 
+  it("pages twenty company facets at a time", () => {
+    const facets = Array.from({ length: 25 }, (_, index) => ({
+      companyId: index + 1,
+      name: `기업${index + 1}`,
+      grade: "선정",
+      points: [{ ym: "202512", total: 0.5 }],
+    }));
+    render(<ScoreTrend facets={facets} />);
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(20);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+  });
+
   it("explains the empty state instead of a blank panel", () => {
     render(<ScoreTrend facets={[]} />);
 
