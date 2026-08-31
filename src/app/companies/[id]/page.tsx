@@ -7,7 +7,7 @@ import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { buildExplanation } from "@/lib/repositories/explainInputs";
 import { buildReviewItems } from "@/lib/repositories/reviewItems";
 import { ReviewBlock } from "@/components/company/review-block";
-import { confirmEventsAction, decideDartAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction } from "@/app/companies/[id]/actions";
+import { confirmEventsAction, decideDartAction, decideFscAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction } from "@/app/companies/[id]/actions";
 import { buildDashboard } from "@/lib/services/dashboardSummary";
 import { ContributionBars } from "@/components/company/contribution-bars";
 import { OpinionCitations } from "@/components/company/opinion-citations";
@@ -72,6 +72,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
             decideNps: decideNpsAction,
             holdNps: holdNpsAction,
             decideDart: decideDartAction,
+            decideFsc: decideFscAction,
             reviewVerification: reviewVerificationAction,
             confirmEvents: confirmEventsAction,
             saveAliases: saveAliasesAction,

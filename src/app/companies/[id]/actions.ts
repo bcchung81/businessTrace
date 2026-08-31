@@ -50,6 +50,17 @@ export async function decideDartAction(input: { companyId: number; corpCode: str
   return done(input.companyId);
 }
 
+/**
+ * 금융위 번호 불일치를 정리한다 — 맞으면 그 번호로 수용, "none" 이면 동명 타사로 배제하고 바로 재조회한다.
+ */
+export async function decideFscAction(input: { companyId: number; value: string; label?: string }): Promise<ActionResult> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, message: "unauthorized" };
+  await saveSourceDecision({ companyId: input.companyId, source: "fsc", value: input.value, label: input.label ?? null, userId });
+  await refreshSourcesFor(input.companyId);
+  return done(input.companyId);
+}
+
 export async function reviewVerificationAction(input: { runId: number; note: string }): Promise<ActionResult> {
   const userId = await currentUserId();
   if (!userId) return { ok: false, message: "unauthorized" };

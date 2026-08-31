@@ -56,6 +56,22 @@ describe("buildReviewItems", () => {
     expect(summary.items[3]).toEqual({ kind: "no_news", aliases: ["가 테크"] });
   });
 
+  test("lists an fsc number mismatch until the operator decides it", async () => {
+    const c = await company();
+    await prisma.sourceSnapshot.create({
+      data: {
+        companyId: c.id, source: "fsc", status: "conflict", summary: "사업자번호 불일치 · 확보 6258700001 ↔ 금융위 2068117321",
+        payload: JSON.stringify({ found: true, corpName: "주식회사 가온", businessNo: "2068117321" }),
+      },
+    });
+
+    const before = (await buildReviewItems(c.id))!;
+    expect(before.items).toContainEqual({ kind: "fsc_conflict", registryNo: "6258700001", fscNo: "2068117321", corpName: "주식회사 가온" });
+
+    await saveSourceDecision({ companyId: c.id, source: "fsc", value: "none", userId: 1 });
+    expect((await buildReviewItems(c.id))!.items.find((i) => i.kind === "fsc_conflict")).toBeUndefined();
+  });
+
   test("a later news-only collection run does not hide an unreviewed verification", async () => {
     const user = await prisma.user.create({ data: { email: "c@example.com", passwordHash: "x" } });
     const c = await company();

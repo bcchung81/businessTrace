@@ -73,12 +73,18 @@ function dartFinance(financial: FinancialSummary | null): SnapshotRow {
     : { source: "dartFinance", status: "absent", summary: "재무제표 미공시 (비외감)", payload: financial };
 }
 
-function fsc(outline: CorpOutline | null, businessNo: string | null): SnapshotRow {
+function fsc(outline: CorpOutline | null, businessNo: string | null, decision?: string): SnapshotRow {
+  if (decision === "none") {
+    return { source: "fsc", status: "absent", summary: "운영자가 동명 타사로 확정 — 금융위 미등재", payload: outline };
+  }
   if (!outline) {
     return { source: "fsc", status: "pending", summary: "조회하지 않았다", payload: null };
   }
   if (outline.failed) return failure("fsc", outline.reason, outline);
   if (!outline.found) return { source: "fsc", status: "absent", summary: "금융위 명단에 없음", payload: outline };
+  if (decision && outline.businessNo === decision) {
+    return { source: "fsc", status: "found", summary: `${outline.corpName ?? "기업"} · ${decision} 운영자 확정`, payload: outline };
+  }
   if (businessNo && outline.businessNo && outline.businessNo !== businessNo) {
     return {
       source: "fsc",
@@ -180,11 +186,11 @@ function nps(workplace: NpsWorkplace): SnapshotRow {
  * 원천별 조회 결과를 저장 가능한 스냅샷 행으로 접는다. 확보한 사업자번호를 주면 금융위 번호와 대조한다.
  * 조회하지 못한 원천도 pending 으로 남긴다 — 행이 빠지면 화면에서 없는 줄도 모른다.
  */
-export function toSnapshots(evidence: Evidence, businessNo: string | null = null): SnapshotRow[] {
+export function toSnapshots(evidence: Evidence, businessNo: string | null = null, decisions: { fsc?: string } = {}): SnapshotRow[] {
   return [
     dart(evidence.profile),
     dartFinance(evidence.financial),
-    fsc(evidence.outline, businessNo),
+    fsc(evidence.outline, businessNo, decisions.fsc),
     nts(evidence.businessStatus),
     narajangteo(evidence.procurement),
     venture(evidence.certification),

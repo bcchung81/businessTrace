@@ -18,7 +18,7 @@ export type Collectors = {
 
 export type BusinessNoSource = "registry" | "dart" | "fsc" | null;
 
-export type Decisions = { dart?: string; nps?: string };
+export type Decisions = { dart?: string; nps?: string; fsc?: string };
 
 export type CollectedEvidence = {
   evidence: Evidence;

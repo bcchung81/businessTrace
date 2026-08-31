@@ -11,6 +11,7 @@ function mockActions(): ReviewActions {
     decideNps: vi.fn(ok),
     holdNps: vi.fn(ok),
     decideDart: vi.fn(ok),
+    decideFsc: vi.fn(ok),
     reviewVerification: vi.fn(ok),
     confirmEvents: vi.fn(ok),
     saveAliases: vi.fn(ok),
@@ -53,6 +54,24 @@ describe("ReviewBlock", () => {
     await waitFor(() => expect(actions.decideDart).toHaveBeenCalledWith({ companyId: 1, corpCode: "none" }));
     fireEvent.click(screen.getByRole("button", { name: "이 기업이 맞다" }));
     await waitFor(() => expect(actions.decideDart).toHaveBeenCalledWith({ companyId: 1, corpCode: "00123", label: "주식회사 가" }));
+  });
+
+  test("fsc number mismatch can be accepted or rejected as a namesake", async () => {
+    const actions = mockActions();
+    render(
+      <ReviewBlock
+        companyId={1}
+        year={2026}
+        summary={summary([{ kind: "fsc_conflict", registryNo: "6258700001", fscNo: "2068117321", corpName: "주식회사 가온" }])}
+        actions={actions}
+      />,
+    );
+    expect(screen.getByText(/확보 6258700001/)).toBeInTheDocument();
+    expect(screen.getByText(/금융위 2068117321/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "동명 타사다 — 금융위 미등재로 확정" }));
+    await waitFor(() => expect(actions.decideFsc).toHaveBeenCalledWith({ companyId: 1, value: "none" }));
+    fireEvent.click(screen.getByRole("button", { name: "이 기업이 맞다" }));
+    await waitFor(() => expect(actions.decideFsc).toHaveBeenCalledWith({ companyId: 1, value: "2068117321", label: "주식회사 가온" }));
   });
 
   test("verification review shows the failed gate with thresholds and records a note", async () => {

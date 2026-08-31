@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 
-export type DecisionSource = "nps" | "dart";
+export type DecisionSource = "nps" | "dart" | "fsc";
 export type SourceDecisionRow = { source: DecisionSource; value: string; label: string | null; decidedAt: string };
 
 function toRow(row: { source: string; value: string; label: string | null; decidedAt: Date }): SourceDecisionRow {

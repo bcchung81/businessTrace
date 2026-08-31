@@ -15,6 +15,7 @@ export type ReviewActions = {
   decideNps: (input: { companyId: number; prefix: string; label: string }) => Promise<ActionResult>;
   holdNps: (input: { companyId: number }) => Promise<ActionResult>;
   decideDart: (input: { companyId: number; corpCode: string; label?: string }) => Promise<ActionResult>;
+  decideFsc: (input: { companyId: number; value: string; label?: string }) => Promise<ActionResult>;
   reviewVerification: (input: { runId: number; note: string }) => Promise<ActionResult>;
   confirmEvents: (input: { companyId: number; eventIds: number[]; action: "acknowledge" | "done" }) => Promise<ActionResult>;
   saveAliases: (input: { companyId: number; aliases: string[] }) => Promise<ActionResult>;
@@ -60,6 +61,24 @@ function NpsConflict({ item, companyId, run, actions }: { item: Extract<ReviewIt
             {candidate.registryMatch ? <span className="whitespace-nowrap border-[1.5px] border-verified px-1.5 text-[10.5px] font-bold text-verified">등록 번호 일치</span> : <span className="whitespace-nowrap border-[1.5px] border-hairline px-1.5 text-[10.5px] font-bold text-muted-foreground">일치 원천 없음</span>}
           </label>
         ))}
+      </div>
+    </Item>
+  );
+}
+
+function FscConflict({ item, companyId, run, actions }: { item: Extract<ReviewItem, { kind: "fsc_conflict" }>; companyId: number; run: Runner; actions: ReviewActions }) {
+  return (
+    <Item icon="notice" title="사업자번호 불일치" badge="금융위" why="상호 검색이 잡은 금융위 레코드의 번호가 확보한 번호와 다르다"
+      actions={
+        <>
+          <Button variant="signal-outline" size="sm" onClick={() => run(() => actions.decideFsc({ companyId, value: item.fscNo, label: item.corpName }))}>이 기업이 맞다</Button>
+          <Button variant="signal-outline" size="sm" onClick={() => run(() => actions.decideFsc({ companyId, value: "none" }))}>동명 타사다 — 금융위 미등재로 확정</Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-1 text-[12.5px]">
+        <span className="font-semibold">{item.corpName}</span>
+        <span className="font-mono tabular-nums text-muted-foreground">확보 {item.registryNo ?? "없음"} ↔ 금융위 {item.fscNo}</span>
       </div>
     </Item>
   );
@@ -198,7 +217,7 @@ export function ReviewBlock({ companyId, year, summary, actions }: { companyId: 
   const openCount = summary.items.reduce((acc, i) => acc + (i.kind === "open_events" ? i.events.length : 0), 0);
   const note = count === 0
     ? `동명 충돌 0 · 검토 필요 0 · 미확인 경보·주의 0 · 기사 있음 · ${summary.lastDecidedAt ? `마지막 정리 ${kstDate(summary.lastDecidedAt)}` : "정리 기록 없음"}`
-    : `동명 충돌 ${tally("nps_conflict") + tally("dart_conflict")} · 검토 필요 ${tally("verification")} · 미확인 경보·주의 ${openCount} · 사람이 정해야 다음 단계가 열리는 것만 모았다`;
+    : `동명 충돌 ${tally("nps_conflict") + tally("dart_conflict") + tally("fsc_conflict")} · 검토 필요 ${tally("verification")} · 미확인 경보·주의 ${openCount} · 사람이 정해야 다음 단계가 열리는 것만 모았다`;
 
   return (
     <Panel index="00" title="확인 필요" tag={count === 0 ? "없음" : `${count}건`} tone={count === 0 ? "plain" : "review"} note={note}>
@@ -210,6 +229,7 @@ export function ReviewBlock({ companyId, year, summary, actions }: { companyId: 
               case "no_business_no": return <NoBusinessNo key={index} item={item} companyId={companyId} run={run} actions={actions} />;
               case "nps_conflict": return <NpsConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
               case "dart_conflict": return <DartConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
+              case "fsc_conflict": return <FscConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
               case "verification": return <Verification key={index} item={item} run={run} actions={actions} />;
               case "open_events": return <OpenEvents key={index} item={item} companyId={companyId} run={run} actions={actions} />;
               case "no_news": return <NoNews key={index} item={item} companyId={companyId} year={year} run={run} actions={actions} />;

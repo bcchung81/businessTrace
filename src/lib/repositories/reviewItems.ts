@@ -9,6 +9,7 @@ export type ReviewItem =
   | { kind: "no_business_no"; npsPrefix: string | null }
   | { kind: "nps_conflict"; candidates: NpsCandidateItem[]; chosen: string | null }
   | { kind: "dart_conflict"; candidate: { corpCode: string; corpName: string; stockCode: string | null } }
+  | { kind: "fsc_conflict"; registryNo: string | null; fscNo: string; corpName: string }
   | {
       kind: "verification";
       runId: number;
@@ -79,6 +80,12 @@ export async function buildReviewItems(companyId: number): Promise<ReviewSummary
   if (dart?.status === "conflict" && !decision("dart") && dartPayload?.candidates?.[0]) {
     const first = dartPayload.candidates[0];
     items.push({ kind: "dart_conflict", candidate: { corpCode: first.corpCode, corpName: first.corpName, stockCode: first.stockCode ?? null } });
+  }
+
+  const fsc = snapshot("fsc");
+  const fscPayload = parse<{ corpName?: string; businessNo?: string }>(fsc?.payload);
+  if (fsc?.status === "conflict" && !decision("fsc") && fscPayload?.businessNo) {
+    items.push({ kind: "fsc_conflict", registryNo: company.businessNo, fscNo: fscPayload.businessNo, corpName: fscPayload.corpName ?? "이름 미상" });
   }
 
   const run = company.analysisRuns[0];

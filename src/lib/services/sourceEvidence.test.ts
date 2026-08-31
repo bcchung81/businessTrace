@@ -211,6 +211,26 @@ describe("toSnapshots", () => {
     expect(find(rows, "fsc")).toMatchObject({ status: "conflict", summary: "사업자번호 불일치 · 확보 1018162201 ↔ 금융위 9999999999" });
   });
 
+  it("an operator decision that the fsc record is a namesake folds it to absent", () => {
+    const rows = toSnapshots(
+      evidence({ outline: { found: true, corpName: "옥타코", businessNo: "9999999999", employeeCount: null } }),
+      "1018162201",
+      { fsc: "none" },
+    );
+
+    expect(find(rows, "fsc")).toMatchObject({ status: "absent", summary: "운영자가 동명 타사로 확정 — 금융위 미등재" });
+  });
+
+  it("an operator decision accepting the fsc record keeps it found despite the number gap", () => {
+    const rows = toSnapshots(
+      evidence({ outline: { found: true, corpName: "옥타코", businessNo: "9999999999", employeeCount: null } }),
+      "1018162201",
+      { fsc: "9999999999" },
+    );
+
+    expect(find(rows, "fsc")).toMatchObject({ status: "found", summary: "옥타코 · 9999999999 운영자 확정" });
+  });
+
   it("holds a failed financial-services lookup at pending", () => {
     const rows = toSnapshots(
       evidence({ outline: { found: false, failed: true, employeeCount: null, reason: "금융위 응답 500" } }),
