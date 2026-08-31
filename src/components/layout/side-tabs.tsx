@@ -27,7 +27,7 @@ export function SideTabs() {
             key={item.href}
             href={item.href}
             aria-current={current ? "page" : undefined}
-            className="group flex items-center gap-2 border-[1.5px] border-hairline bg-surface px-3 py-2 text-[12.5px] font-bold text-muted-foreground transition-colors hover:text-foreground aria-[current=page]:border-l-[3px] aria-[current=page]:border-l-primary aria-[current=page]:bg-background aria-[current=page]:text-foreground lg:[writing-mode:vertical-rl] lg:gap-2.5 lg:border-r-0 lg:px-2.5 lg:py-4 lg:aria-[current=page]:-mr-px lg:aria-[current=page]:border-l-[3px] lg:aria-[current=page]:pl-2"
+            className="group flex items-center gap-2 border-[1.5px] border-hairline bg-surface px-3 py-2 text-[12.5px] font-bold text-muted-foreground transition-colors hover:text-foreground aria-[current=page]:border-l-[3px] aria-[current=page]:border-l-primary aria-[current=page]:bg-background aria-[current=page]:text-foreground lg:[writing-mode:vertical-rl] lg:gap-2.5 lg:border-l-0 lg:px-2.5 lg:py-4 lg:aria-[current=page]:-ml-px lg:aria-[current=page]:border-l-0 lg:aria-[current=page]:border-r-[3px] lg:aria-[current=page]:border-r-primary lg:aria-[current=page]:pr-2"
           >
             <span className="font-mono text-[10.5px] font-semibold tracking-[0.08em] text-primary lg:[writing-mode:vertical-rl]">{item.index}</span>
             <span className="font-display tracking-[0.02em]">{item.label}</span>

@@ -26,6 +26,8 @@ describe("AppShell", () => {
 
     expect(aside.className).toContain("lg:fixed");
     expect(aside.className).toContain("lg:top-[72px]");
+    expect(aside.className).toContain("lg:right-[max(");
+    expect(aside.className).not.toContain("translate-x");
   });
 
   test("shows the three places this tool has as bookmark tabs on the left", () => {
@@ -50,7 +52,8 @@ describe("AppShell", () => {
     expect(within(nav).getByRole("link", { name: /이력/ })).toHaveTextContent("04");
     expect(within(nav).getByRole("link", { name: /리포트/ })).toHaveTextContent("05");
     const rail = nav.closest("aside");
-    expect(rail).toHaveClass("lg:fixed", "lg:-translate-x-full");
+    expect(rail).toHaveClass("lg:fixed");
+    expect(rail?.className).toContain("lg:right-[max(");
     expect(screen.getByRole("main")).toHaveClass("lg:border-l");
   });
 

@@ -19,7 +19,7 @@ export function AppShell({ children, batch = null }: { children: ReactNode; batc
       </header>
 
       <div className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-5 py-6 lg:py-8">
-        <aside className="lg:fixed lg:left-[calc(50%-32rem)] lg:top-[72px] lg:z-10 lg:-translate-x-full">
+        <aside className="lg:fixed lg:right-[max(0.5rem,calc(50%-32rem-3.25rem))] lg:top-[72px] lg:z-10">
           <SideTabs />
         </aside>
         <main className="min-w-0 flex-1 lg:-ml-5 lg:border-l lg:border-hairline lg:pl-5">{children}</main>
