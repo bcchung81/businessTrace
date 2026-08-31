@@ -13,19 +13,46 @@ function cells(over: Record<number, Partial<Pick<PivotCell, "total" | "byKind" |
 }
 
 describe("EventPivotTable", () => {
-  it("renders a company row with monthly counts", () => {
+  it("splits each company into one row per kind, without the summary column", () => {
     render(
       <EventPivotTable
         months={MONTHS}
-        rows={[{ companyId: 1, companyName: "가", total: 3, cells: cells({ 2: { total: 3, byKind: { award: 3 }, events: [] } }) }]}
+        rows={[
+          {
+            companyId: 1,
+            companyName: "에이트테크",
+            total: 3,
+            cells: cells({
+              2: {
+                total: 3,
+                byKind: { award: 2, positive_press: 1 },
+                events: [
+                  { id: 11, occurredAt: "2026-03-05T00:00:00.000Z", kind: "award", severity: "positive", title: "수상 — 대상", evidence: [{ label: "대상", link: "https://n/1" }] },
+                  { id: 12, occurredAt: "2026-03-06T00:00:00.000Z", kind: "award", severity: "positive", title: "수상 — 혁신상", evidence: [] },
+                  { id: 13, occurredAt: "2026-03-20T00:00:00.000Z", kind: "positive_press", severity: "positive", title: "긍정 보도 — 매출 급증", evidence: [] },
+                ],
+              },
+            }),
+          },
+        ]}
       />,
     );
 
-    expect(screen.getByText("가")).toBeInTheDocument();
-    expect(screen.getAllByText("3").length).toBeGreaterThanOrEqual(2);
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers[0]).toBe("기업");
+    expect(headers[1]).toBe("종류");
+    expect(headers.at(-1)).toBe("계");
+
+    const kindRows = screen.getAllByRole("row").slice(1);
+    expect(kindRows).toHaveLength(2);
+    expect(within(kindRows[0]).getByText("수상")).toBeInTheDocument();
+    expect(within(kindRows[1]).getByText("긍정 보도")).toBeInTheDocument();
+    expect(screen.getByText("에이트테크")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "에이트테크 3월 수상 2건 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "에이트테크 3월 긍정 보도 1건 보기" })).toBeInTheDocument();
   });
 
-  it("opens a popup with the cell's events and their article links on click", () => {
+  it("opens a popup with only that kind's events for the month", () => {
     render(
       <EventPivotTable
         months={MONTHS}
@@ -40,7 +67,7 @@ describe("EventPivotTable", () => {
                 byKind: { award: 1, positive_press: 1 },
                 events: [
                   { id: 11, occurredAt: "2026-03-05T00:00:00.000Z", kind: "award", severity: "positive", title: "수상 — CES 혁신상", evidence: [{ label: "CES 혁신상", link: "https://n/1" }] },
-                  { id: 12, occurredAt: "2026-03-20T00:00:00.000Z", kind: "positive_press", severity: "positive", title: "긍정 보도 — 매출 급증", evidence: [{ label: "매출 급증" }] },
+                  { id: 12, occurredAt: "2026-03-20T00:00:00.000Z", kind: "positive_press", severity: "positive", title: "긍정 보도 — 매출 급증", evidence: [] },
                 ],
               },
             }),
@@ -49,50 +76,25 @@ describe("EventPivotTable", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "가 3월 사건 2건 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "가 3월 수상 1건 보기" }));
 
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByText("가 · 2026년 3월 · 사건 2건")).toBeInTheDocument();
+    expect(within(dialog).getByText("가 · 2026년 3월 · 수상 1건")).toBeInTheDocument();
     expect(within(dialog).getByText("수상 — CES 혁신상")).toBeInTheDocument();
     expect(within(dialog).getByRole("link", { name: "CES 혁신상" })).toHaveAttribute("href", "https://n/1");
-    expect(within(dialog).getByText("긍정 보도 — 매출 급증")).toBeInTheDocument();
+    expect(within(dialog).queryByText("긍정 보도 — 매출 급증")).not.toBeInTheDocument();
   });
 
-  it("leaves empty cells unclickable", () => {
-    render(
-      <EventPivotTable
-        months={MONTHS}
-        rows={[{ companyId: 1, companyName: "가", total: 1, cells: cells({ 0: { total: 1, byKind: { award: 1 }, events: [] } }) }]}
-      />,
-    );
-
-    expect(screen.getAllByRole("button", { name: /사건 \d+건 보기/ })).toHaveLength(1);
-  });
-
-  it("explains the numbers, names kinds in Korean and sizes itself to the data", () => {
-    render(
-      <EventPivotTable
-        months={MONTHS}
-        rows={[{ companyId: 1, companyName: "가", total: 3, cells: cells({ 2: { total: 3, byKind: { award: 2, closure: 1 }, events: [] } }) }]}
-      />,
-    );
-
-    expect(screen.getByText(/칸의 숫자는 그 달의 사건 수/)).toBeInTheDocument();
-    expect(screen.getByTitle("수상 2 · 휴·폐업 1")).toBeInTheDocument();
-    expect(screen.getByText("수상 2 · 휴·폐업 1")).toBeInTheDocument();
-    expect(screen.getByRole("table").className).toContain("w-auto");
-  });
-
-  it("pages twenty company rows at a time", () => {
+  it("pages twenty companies at a time even when kinds add rows", () => {
     const rows = Array.from({ length: 25 }, (_, index) => ({
       companyId: index + 1,
       companyName: `기업${index + 1}`,
-      total: 1,
-      cells: cells({ 0: { total: 1, byKind: { award: 1 }, events: [] } }),
+      total: 2,
+      cells: cells({ 0: { total: 2, byKind: { award: 1, investment: 1 }, events: [] } }),
     }));
     const { container } = render(<EventPivotTable months={MONTHS} rows={rows} />);
 
-    expect(container.querySelectorAll("tbody tr")).toHaveLength(20);
+    expect(container.querySelectorAll("tbody tr")).toHaveLength(40);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
   });
 
