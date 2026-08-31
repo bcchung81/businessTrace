@@ -43,22 +43,20 @@ export function EventTimeline({ events }: { events: EventRow[] }) {
                 <Badge variant="signal">{trustLabel(event.trust)}</Badge>
               </td>
               <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{STATUS_LABEL[event.status]}</td>
-              <td className="px-2 py-1.5">{event.title}</td>
-              <td className="px-2 py-1.5">
+              <td className="max-w-[300px] truncate whitespace-nowrap px-2 py-1.5" title={event.title}>{event.title}</td>
+              <td className="max-w-[240px] truncate whitespace-nowrap px-2 py-1.5" title={event.evidence.map((item) => item.label).join(" · ")}>
                 {event.evidence.length === 0 ? (
                   <span className="text-muted-foreground/45">—</span>
                 ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {event.evidence.map((item, index) =>
-                      item.link ? (
-                        <a key={index} href={item.link} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2">
-                          {item.label}
-                        </a>
-                      ) : (
-                        <span key={index} className="text-muted-foreground">{item.label}</span>
-                      ),
-                    )}
-                  </div>
+                  event.evidence.map((item, index) =>
+                    item.link ? (
+                      <a key={index} href={item.link} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2">
+                        {index > 0 ? " · " : ""}{item.label}
+                      </a>
+                    ) : (
+                      <span key={index} className="text-muted-foreground">{index > 0 ? " · " : ""}{item.label}</span>
+                    ),
+                  )
                 )}
               </td>
             </tr>
