@@ -181,3 +181,13 @@ describe("buildReport", () => {
     expect(sheet.getCell("B3").value).toBe("—");
   });
 });
+describe("buildReport with nothing scored", () => {
+  it("prints a dash for the average sentiment — 0 would read as neutral", async () => {
+    const empty = result([]);
+    const workbook = await open(await buildReport({ result: { ...empty, stats: { ...empty.stats, totalNews: 3, excludedNews: 3, averageSentiment: null } } }));
+    const sheet = workbook.getWorksheet("종합 분석 결과")!;
+    const row = sheet.getRows(1, sheet.rowCount)!.find((entry) => entry.getCell(1).value === "평균 감성 점수")!;
+
+    expect(row.getCell(2).value).toBe("—");
+  });
+});

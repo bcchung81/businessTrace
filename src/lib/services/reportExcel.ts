@@ -32,6 +32,8 @@ const NEWS_HEADERS = [
   "집계 반영",
 ] as const;
 
+const DASH = "—";
+
 const VERDICT_LABEL: Record<VerificationOutput["status"], string> = {
   verified: "검증 완료",
   needs_review: "검토 필요",
@@ -91,7 +93,7 @@ function writeSummarySheet(sheet: ExcelJS.Worksheet, result: AnalysisResult) {
     ["수집 뉴스", `${result.stats.totalNews}건`],
     ["감성 집계 대상", `${result.stats.scoredNews}건`],
     ["집계 제외", `${result.stats.excludedNews}건 (회사가 기사 주제가 아님)`],
-    ["평균 감성 점수", result.stats.averageSentiment],
+    ["평균 감성 점수", result.stats.averageSentiment ?? DASH],
     ["긍정 / 중립 / 부정", `${result.stats.positiveCount} / ${result.stats.neutralCount} / ${result.stats.negativeCount}`],
     ["수상 관련", `${result.stats.awardCount}건`],
     ["투자 관련", `${result.stats.investmentCount}건`],

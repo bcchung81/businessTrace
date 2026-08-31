@@ -59,7 +59,7 @@ function emptyResult(companyName: string, model: string, total: number): Analysi
     model,
     analyses: [],
     comprehensiveOpinion: "회사가 주제인 기사가 없어 분석하지 않았습니다.",
-    stats: { totalNews: total, scoredNews: 0, excludedNews: total, averageSentiment: 0, positiveCount: 0, negativeCount: 0, neutralCount: 0, awardCount: 0, investmentCount: 0 },
+    stats: { totalNews: total, scoredNews: 0, excludedNews: total, averageSentiment: null, positiveCount: 0, negativeCount: 0, neutralCount: 0, awardCount: 0, investmentCount: 0 },
     usage: NO_USAGE,
   };
 }

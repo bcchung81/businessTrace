@@ -153,7 +153,7 @@ describe("analyzeCompany", () => {
     expect(complete(events).result.model).toBe("claude-opus-5");
   });
 
-  it("still produces an opinion when no article survives the company check", async () => {
+  it("leaves the average sentiment empty when no article survives — 0 means neutral on a −10~10 scale", async () => {
     const events = await drain(
       analyzeCompany("옥타코", [news({ title: "SK쉴더스 해킹" })], {
         llm: fakeLlm(() => ({ isAbout: "N" })),
@@ -161,7 +161,7 @@ describe("analyzeCompany", () => {
     );
 
     const result = complete(events).result;
-    expect(result.stats.averageSentiment).toBe(0);
+    expect(result.stats.averageSentiment).toBeNull();
     expect(result.comprehensiveOpinion).toBe("종합분석");
   });
 });

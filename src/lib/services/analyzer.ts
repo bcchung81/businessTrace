@@ -56,7 +56,7 @@ export type AnalysisStats = {
   totalNews: number;
   scoredNews: number;
   excludedNews: number;
-  averageSentiment: number;
+  averageSentiment: number | null;
   positiveCount: number;
   negativeCount: number;
   neutralCount: number;
@@ -121,7 +121,7 @@ function summarise(analyses: NewsAnalysis[]): AnalysisStats {
     totalNews: analyses.length,
     scoredNews: about.length,
     excludedNews: analyses.length - about.length,
-    averageSentiment: about.length === 0 ? 0 : round(total / about.length),
+    averageSentiment: about.length === 0 ? null : round(total / about.length),
     positiveCount: scores.filter((score) => score > 0).length,
     negativeCount: scores.filter((score) => score < 0).length,
     neutralCount: scores.filter((score) => score === 0).length,

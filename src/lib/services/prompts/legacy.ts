@@ -100,7 +100,7 @@ export function investmentPrompt(companyName: string, item: NewsItem) {
 export type OpinionStats = {
   totalNews: number;
   scoredNews: number;
-  averageSentiment: number;
+  averageSentiment: number | null;
   positiveCount: number;
   negativeCount: number;
   neutralCount: number;
@@ -116,7 +116,7 @@ export function opinionPrompt(companyName: string, stats: OpinionStats) {
 
 수집 뉴스: ${stats.totalNews}건
 감성 점수 집계 대상: ${stats.scoredNews}건 (회사가 주제가 아닌 ${excluded}건은 집계에서 제외)
-평균 감성 점수: ${stats.averageSentiment}
+평균 감성 점수: ${stats.averageSentiment ?? "집계 대상 없음"}
 긍정 ${stats.positiveCount}건 / 중립 ${stats.neutralCount}건 / 부정 ${stats.negativeCount}건
 수상 관련: ${stats.awardCount}건
 투자 관련: ${stats.investmentCount}건
