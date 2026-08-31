@@ -41,9 +41,9 @@ async function main() {
       continue;
     }
 
-    let news;
+    let collected;
     try {
-      news = (await collectNews({ query: company.name, limit, startDate: since })).items;
+      collected = await collectNews({ query: company.name, limit, startDate: since });
     } catch (caught) {
       const reason = caught instanceof NewsRateLimitError ? "레이트리밋" : String(caught);
       tally.failed += 1;
@@ -51,7 +51,8 @@ async function main() {
       continue;
     }
 
-    const outcome = await runCompanyAnalysis({ company, userId: user.id, news }, deps);
+    const news = collected.items;
+    const outcome = await runCompanyAnalysis({ company, userId: user.id, news, duplicatesRemoved: collected.duplicatesRemoved }, deps);
     tally[outcome.status] += 1;
     tokens += outcome.usage.inputTokens + outcome.usage.outputTokens;
     console.log(

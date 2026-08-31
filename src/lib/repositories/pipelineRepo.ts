@@ -17,20 +17,22 @@ export async function summariseCollection(year: number) {
   const runs = await prisma.analysisRun.findMany({
     where: { company: { year, isActive: true }, status: { in: ["completed", "no_news"] } },
     orderBy: { createdAt: "desc" },
-    select: { companyId: true, status: true, newsJson: true },
+    select: { companyId: true, status: true, newsJson: true, duplicatesRemoved: true },
   });
   const seen = new Set<number>();
   let articles = 0;
   let analysed = 0;
   let noNews = 0;
+  let duplicatesRemoved = 0;
   for (const run of runs) {
     if (seen.has(run.companyId)) continue;
     seen.add(run.companyId);
     articles += jsonLength(run.newsJson);
+    duplicatesRemoved += run.duplicatesRemoved;
     if (run.status === "completed") analysed += 1;
     else noNews += 1;
   }
-  return { articles, analysed, noNews };
+  return { articles, analysed, noNews, duplicatesRemoved };
 }
 
 export async function summariseCells(year: number) {

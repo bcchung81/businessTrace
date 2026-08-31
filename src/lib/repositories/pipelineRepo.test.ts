@@ -12,10 +12,10 @@ describe("pipelineRepo", () => {
     const user = await prisma.user.create({ data: { email: "p@example.com", passwordHash: "x" } });
     const a = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
     const b = await prisma.company.create({ data: { name: "㈜나", year: YEAR } });
-    await prisma.analysisRun.create({ data: { companyId: a.id, userId: user.id, model: "m", status: "completed", newsJson: JSON.stringify([{ link: "1" }, { link: "2" }]), createdAt: new Date("2026-08-01") } });
-    await prisma.analysisRun.create({ data: { companyId: a.id, userId: user.id, model: "m", status: "completed", newsJson: JSON.stringify([{ link: "1" }, { link: "2" }, { link: "3" }]), createdAt: new Date("2026-08-02") } });
-    await prisma.analysisRun.create({ data: { companyId: b.id, userId: user.id, model: "m", status: "no_news", newsJson: "[]", createdAt: new Date("2026-08-02") } });
-    expect(await summariseCollection(YEAR)).toEqual({ articles: 3, analysed: 1, noNews: 1 });
+    await prisma.analysisRun.create({ data: { companyId: a.id, userId: user.id, model: "m", status: "completed", newsJson: JSON.stringify([{ link: "1" }, { link: "2" }]), duplicatesRemoved: 99, createdAt: new Date("2026-08-01") } });
+    await prisma.analysisRun.create({ data: { companyId: a.id, userId: user.id, model: "m", status: "completed", newsJson: JSON.stringify([{ link: "1" }, { link: "2" }, { link: "3" }]), duplicatesRemoved: 5, createdAt: new Date("2026-08-02") } });
+    await prisma.analysisRun.create({ data: { companyId: b.id, userId: user.id, model: "m", status: "no_news", newsJson: "[]", duplicatesRemoved: 2, createdAt: new Date("2026-08-02") } });
+    expect(await summariseCollection(YEAR)).toEqual({ articles: 3, analysed: 1, noNews: 1, duplicatesRemoved: 7 });
   });
 
   test("summariseCells counts snapshot states and fullSourceRefreshAt finds the last day every company was refreshed", async () => {

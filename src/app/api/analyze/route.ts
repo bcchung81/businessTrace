@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       sink = out;
       try {
         const outcome = await runCompanyAnalysis(
-          { company, userId, news: collected.items },
+          { company, userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved },
           {
             ...defaultPipelineDeps(),
             onEvent: (event) => out.send(event),

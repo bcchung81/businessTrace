@@ -56,6 +56,7 @@ model AnalysisRun {
   model          String
   status         String              @default("running")
   newsJson       String
+  duplicatesRemoved Int              @default(0)
   resultJson     String?
   usageJson      String?
   createdAt      DateTime            @default(now())

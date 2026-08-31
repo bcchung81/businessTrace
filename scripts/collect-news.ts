@@ -28,7 +28,7 @@ async function main() {
   for (const company of companies) {
     try {
       const result = await collectNews({ query: company.name, limit });
-      await createCollectionRun({ companyId: company.id, userId: user.id, news: result.items });
+      await createCollectionRun({ companyId: company.id, userId: user.id, news: result.items, duplicatesRemoved: result.duplicatesRemoved });
       collected += result.items.length;
       console.log(
         `[OK]   ${company.name.padEnd(16)} ${String(result.items.length).padStart(3)}건 ` +

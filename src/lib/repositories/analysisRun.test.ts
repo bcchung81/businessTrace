@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
-import { createCollectionRun, listRunHistory, summariseRunActivity } from "@/lib/repositories/analysisRun";
+import { createCollectionRun, createRun, listRunHistory, summariseRunActivity } from "@/lib/repositories/analysisRun";
 
 async function seedCompanyAndUser() {
   const company = await prisma.company.create({ data: { name: "크립토랩", year: 2024 } });
@@ -23,6 +23,16 @@ describe("AnalysisRun schema", () => {
 
     expect(run.formulaVersion).toBe("v2-anthropic");
     expect(run.status).toBe("running");
+  });
+
+  it("stores how many duplicates collection removed so the dashboard shows measured numbers", async () => {
+    const { company, user } = await seedCompanyAndUser();
+
+    const run = await createRun({ companyId: company.id, userId: user.id, model: "m", news: [], duplicatesRemoved: 7 });
+    const collectOnly = await createCollectionRun({ companyId: company.id, userId: user.id, news: [], duplicatesRemoved: 3 });
+
+    expect(run.duplicatesRemoved).toBe(7);
+    expect(collectOnly.duplicatesRemoved).toBe(3);
   });
 
   it("deletes the verification result when its analysis run is deleted", async () => {

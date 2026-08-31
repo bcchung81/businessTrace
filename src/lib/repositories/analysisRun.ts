@@ -10,6 +10,7 @@ export async function createRun(input: {
   userId: number;
   model: string;
   news: NewsItem[];
+  duplicatesRemoved?: number;
   periodStart?: Date;
   periodEnd?: Date;
 }) {
@@ -19,6 +20,7 @@ export async function createRun(input: {
       userId: input.userId,
       model: input.model,
       newsJson: JSON.stringify(input.news),
+      duplicatesRemoved: input.duplicatesRemoved ?? 0,
       periodStart: input.periodStart ?? null,
       periodEnd: input.periodEnd ?? null,
     },
@@ -33,6 +35,7 @@ export async function createCollectionRun(input: {
   companyId: number;
   userId: number;
   news: NewsItem[];
+  duplicatesRemoved?: number;
   periodStart?: Date;
   periodEnd?: Date;
 }) {
@@ -43,6 +46,7 @@ export async function createCollectionRun(input: {
       model: "none",
       status: "collected",
       newsJson: JSON.stringify(input.news),
+      duplicatesRemoved: input.duplicatesRemoved ?? 0,
       periodStart: input.periodStart ?? null,
       periodEnd: input.periodEnd ?? null,
     },

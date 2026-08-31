@@ -69,10 +69,10 @@ function emptyResult(companyName: string, model: string, total: number): Analysi
  * 스쳐 언급된 기사까지 LLM 에 넣으면 토큰만 태우고 동명 일반명사 기업의 판정을 흐린다.
  */
 export async function runCompanyAnalysis(
-  input: { company: { id: number; name: string }; userId: number; news: NewsItem[] },
+  input: { company: { id: number; name: string }; userId: number; news: NewsItem[]; duplicatesRemoved?: number },
   deps: PipelineDeps,
 ): Promise<PipelineOutcome> {
-  const run = await createRun({ companyId: input.company.id, userId: input.userId, model: deps.model, news: input.news });
+  const run = await createRun({ companyId: input.company.id, userId: input.userId, model: deps.model, news: input.news, duplicatesRemoved: input.duplicatesRemoved });
   const emit = (event: PipelineEvent) => deps.onEvent?.(event);
   const open = () => deps.isOpen?.() ?? true;
   const persistEvents = deps.persistEvents ?? upsertEvents;

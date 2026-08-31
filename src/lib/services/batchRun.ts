@@ -23,7 +23,7 @@ export type BatchDeps = {
   userId: number;
   pipeline: PipelineDeps;
   collect: (options: { query: string; aliases: string | null; startDate?: string; endDate?: string; limit: number; naver: boolean; google: boolean }) => Promise<CollectResult>;
-  collectOnly: (input: { companyId: number; userId: number; news: CollectResult["items"] }) => Promise<unknown>;
+  collectOnly: (input: { companyId: number; userId: number; news: CollectResult["items"]; duplicatesRemoved: number }) => Promise<unknown>;
   refreshSources: (company: BatchTarget) => Promise<unknown>;
   isOpen?: () => boolean;
 };
@@ -59,11 +59,11 @@ async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDep
     return done("failed", { message: caught instanceof Error ? caught.message : "수집 실패" });
   }
   if (options.stage === "news") {
-    await deps.collectOnly({ companyId: target.id, userId: deps.userId, news: collected.items });
+    await deps.collectOnly({ companyId: target.id, userId: deps.userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved });
     return done("collected", { articles: collected.items.length });
   }
   const outcome = await runCompanyAnalysis(
-    { company: { id: target.id, name: target.name }, userId: deps.userId, news: collected.items },
+    { company: { id: target.id, name: target.name }, userId: deps.userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved },
     { ...deps.pipeline, onEvent: (event) => events.push({ type: "company_event", companyId: target.id, event }), isOpen: open },
   );
   return done(outcome.status, { articles: collected.items.length, ...(outcome.message ? { message: outcome.message } : {}) });

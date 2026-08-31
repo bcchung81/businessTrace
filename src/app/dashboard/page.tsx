@@ -106,7 +106,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const facts = buildPipelineFacts({
     companies: companies.length,
     articles: collection.articles,
-    duplicatesRemoved: 0,
+    duplicatesRemoved: collection.duplicatesRemoved,
     analysed: collection.analysed,
     noNews: collection.noNews,
     running: activity.running,
