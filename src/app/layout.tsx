@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 const gothicA1 = Gothic_A1({ weight: ["700", "900"], subsets: ["latin"], variable: "--font-gothic-a1", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "성과돋보기",
+  title: "기업성과추적",
   description: "뉴스·AI 기반 기업 분석 및 우수기업 선정 관리 시스템",
 };
 

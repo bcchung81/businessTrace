@@ -10,7 +10,7 @@ describe("AppShell", () => {
     render(<AppShell>본문</AppShell>);
 
     expect(
-      within(screen.getByRole("banner")).getByText("성과돋보기", { selector: ".sr-only" }),
+      within(screen.getByRole("banner")).getByText("기업성과추적", { selector: ".sr-only" }),
     ).toBeInTheDocument();
   });
 

@@ -234,7 +234,7 @@ export async function buildReport(input: {
   contributions?: Contribution[];
 }) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "성과돋보기";
+  workbook.creator = "기업성과추적";
   workbook.created = new Date();
 
   writeSummarySheet(workbook.addWorksheet("종합 분석 결과"), input.result);

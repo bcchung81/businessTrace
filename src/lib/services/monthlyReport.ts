@@ -181,7 +181,7 @@ export function buildMonthlyWorkbook(input: {
   freshness: FreshnessInput;
 }): ExcelJS.Workbook {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "성과돋보기";
+  workbook.creator = "기업성과추적";
   workbook.created = new Date();
 
   const stats = computeStats(input.year, input.month, input.events, input.cards);
