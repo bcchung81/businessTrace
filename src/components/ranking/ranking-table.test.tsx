@@ -58,6 +58,13 @@ describe("RankingTable", () => {
     expect(within(da).getByText("미분석")).toBeInTheDocument();
   });
 
+  test("offers only 순위 and 기업명 sorts — 총점 duplicated the rank order", () => {
+    render(<RankingTable rows={rows()} industries={["SW"]} />);
+    const group = screen.getByRole("radiogroup", { name: "정렬" });
+
+    expect(within(group).getAllByRole("radio").map((b) => b.textContent)).toEqual(["순위", "기업명"]);
+  });
+
   test("filters by industry and sorts by name", () => {
     render(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     fireEvent.click(screen.getByRole("radio", { name: "기업명" }));

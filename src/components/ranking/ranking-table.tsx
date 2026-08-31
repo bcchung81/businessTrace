@@ -10,11 +10,10 @@ import type { Verdict } from "@/lib/services/verdictRollup";
 
 export type RankingRow = BenchmarkRow & { verdict: Verdict; businessNo: string | null };
 
-type Sort = "rank" | "name" | "total";
+type Sort = "rank" | "name";
 
 const SORTS: Array<{ value: Sort; label: string }> = [
   { value: "rank", label: "순위" },
-  { value: "total", label: "총점" },
   { value: "name", label: "기업명" },
 ];
 
