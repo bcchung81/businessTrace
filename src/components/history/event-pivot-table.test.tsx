@@ -26,6 +26,31 @@ describe("EventPivotTable", () => {
     expect(screen.getAllByText("3").length).toBeGreaterThanOrEqual(2);
   });
 
+  it("explains the numbers, names kinds in Korean and sizes itself to the data", () => {
+    render(
+      <EventPivotTable
+        months={Array.from({ length: 12 }, (_, index) => `2026${String(index + 1).padStart(2, "0")}`)}
+        rows={[
+          {
+            companyId: 1,
+            companyName: "가",
+            total: 3,
+            cells: Array.from({ length: 12 }, (_, index) => ({
+              ym: `2026${String(index + 1).padStart(2, "0")}`,
+              total: index === 2 ? 3 : 0,
+              byKind: index === 2 ? { award: 2, closure: 1 } : {},
+            })),
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText(/칸의 숫자는 그 달의 사건 수/)).toBeInTheDocument();
+    expect(screen.getByTitle("수상 2 · 휴·폐업 1")).toBeInTheDocument();
+    expect(screen.getByText("수상 2 · 휴·폐업 1")).toBeInTheDocument();
+    expect(screen.getByRole("table").className).toContain("w-auto");
+  });
+
   it("explains an empty year instead of an empty table", () => {
     render(<EventPivotTable months={[]} rows={[]} />);
 
