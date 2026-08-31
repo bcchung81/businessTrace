@@ -1,0 +1,32 @@
+# 성과돋보기 프로덕션 구성 — 웹 1컨테이너.
+# 사이드카(Task 3)는 아직 없다. 붙일 때 python-sidecar 서비스를 여기에 더한다.
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    image: seonggwa-web:latest
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      # 컨테이너·리버스프록시 뒤에서는 Auth.js 가 호스트를 신뢰하지 않으면 세션 요청이 전부 막힌다.
+      AUTH_TRUST_HOST: "true"
+      DATABASE_URL: "file:/app/prisma/prod.db"
+      TZ: Asia/Seoul
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      # SQLite 파일과 업로드·리포트 산출물은 이미지 밖에 둔다 — 재배포로 지워지면 안 된다.
+      - db:/app/prisma
+      - files:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  db:
+  files:

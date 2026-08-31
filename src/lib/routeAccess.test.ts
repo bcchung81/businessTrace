@@ -11,6 +11,10 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/api/auth/session")).toBe(true);
   });
 
+  it("lets the container health probe through — a probe carries no cookies", () => {
+    expect(isPublicPath("/api/health")).toBe(true);
+  });
+
   it("protects the dashboard and every analysis route", () => {
     expect(isPublicPath("/")).toBe(false);
     expect(isPublicPath("/api/analyze")).toBe(false);
@@ -20,5 +24,6 @@ describe("isPublicPath", () => {
   it("does not treat a lookalike prefix as public", () => {
     expect(isPublicPath("/loginhack")).toBe(false);
     expect(isPublicPath("/api/authorize")).toBe(false);
+    expect(isPublicPath("/api/healthz")).toBe(false);
   });
 });

@@ -1,0 +1,47 @@
+# 성과돋보기 웹 컨테이너 — 빌드와 실행을 같은 베이스로 맞춘다.
+# better-sqlite3 는 네이티브 모듈이라 빌드 이미지와 실행 이미지의 플랫폼이 어긋나면 런타임에 죽는다.
+ARG NODE_IMAGE=node:24-slim
+
+FROM ${NODE_IMAGE} AS deps
+WORKDIR /app
+# node-gyp 폴백용 — 프리빌트 바이너리가 없는 플랫폼에서 better-sqlite3 를 직접 빌드한다.
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ openssl \
+    && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+RUN npm ci
+
+FROM ${NODE_IMAGE} AS builder
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npx prisma generate && npm run build
+
+FROM ${NODE_IMAGE} AS runner
+WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --system --uid 1001 --create-home appuser
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# 기동 시 마이그레이션을 적용하기 위한 최소 CLI — standalone 트레이스에는 들어가지 않는다.
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh && mkdir -p /app/data /app/prisma && chown -R appuser:appuser /app
+
+USER appuser
+EXPOSE 3000
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["node", "server.js"]

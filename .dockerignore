@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.env*
+!.env.example
+backup
+docs
+data
+prisma/*.db
+prisma/*.db-journal
+sidecar
+deploy
+**/*.test.ts
+**/*.test.tsx
+coverage
+.DS_Store
