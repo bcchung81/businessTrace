@@ -1,0 +1,25 @@
+[project]
+name = "seonggwa-sidecar"
+version = "0.1.0"
+description = "성과돋보기 파이썬 사이드카 — 파이썬 전용 라이브러리만 맡는 선택적 계층"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+]
+
+# 딥리서치(Task 15)·재무 정규화(Task 6)는 무거운 트리라 기본 설치에서 뺀다.
+# gpt-researcher 0.15.1 핀의 근거는 .claude/skills/sidecar-runtime 참조 — 0.16.0 은 3.12 에서 import 가 죽는다.
+[project.optional-dependencies]
+research = ["gpt-researcher==0.15.1"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "httpx>=0.27",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
