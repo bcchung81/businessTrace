@@ -244,7 +244,7 @@ export function WordCloud({
             ) : null}
           </>
         ) : (
-          <span className="text-muted-foreground">기업에 마우스를 올리면 값을 보여줍니다.</span>
+          <span className="text-muted-foreground">—</span>
         )}
       </p>
     </div>

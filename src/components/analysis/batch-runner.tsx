@@ -155,7 +155,7 @@ export function BatchRunner({
               <label className="flex flex-col gap-1">
                 <span className="font-bold">시작일</span>
                 <Input type="date" aria-label="시작일" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 text-[12px]" />
-                <span className="text-[10.5px] text-muted-foreground">기본 최근 90일 — 오래된 기사는 사건 창에 들어오지 않는다</span>
+                <span className="text-[10.5px] text-muted-foreground">기본 최근 90일</span>
               </label>
               <label className="flex flex-col gap-1">
                 <span className="font-bold">종료일</span>

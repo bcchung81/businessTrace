@@ -64,7 +64,7 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
         index="01"
         title="시상 카테고리"
         tag="자동 산출"
-        note="선택한 기간과 그 직전 기간들의 확정 기록이 근거다"
+       
         aside={
           yearPeriods.length > 1 ? (
             <nav aria-label="기간" className="flex">
@@ -84,10 +84,10 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
       >
         <AwardBoard categories={computeAwards(awardRecords, targetPeriod)} />
       </Panel>
-      <Panel index="02" title="점수 추이" tag="확정 기록" note="총점을 한 색조 진하기로 · 셀을 누르면 확정 상세 · 마지막 열은 실시간">
+      <Panel index="02" title="점수 추이" tag="확정 기록">
         <ScoreHeatmap periods={heat.periods} rows={heat.rows} />
       </Panel>
-      <Panel index="03" title="사건 연간 피벗" tag="실측" note="기업당 한 행 · 달마다 수·투·긍·부 네 칸">
+      <Panel index="03" title="사건 연간 피벗" tag="실측">
         <EventPivotTable months={pivot.months} rows={pivot.rows} />
       </Panel>
     </div>

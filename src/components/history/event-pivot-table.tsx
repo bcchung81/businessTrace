@@ -45,7 +45,6 @@ export function EventPivotTable({ months, rows }: { months: string[]; rows: Pivo
 
   return (
     <div className="flex flex-col gap-2 overflow-x-auto">
-      <p className="text-[11px] text-muted-foreground">달마다 수상·투자·긍정·부정 순 네 칸 — 누르면 사건과 근거 기사가 열린다. 그 외 종류는 기업 상세의 사건 이력에.</p>
       <table className="w-auto border-collapse text-[11px]">
         <thead>
           <tr className="text-left">

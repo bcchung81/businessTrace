@@ -21,7 +21,6 @@ export function SourceCoverageBars({ coverage }: { coverage: SourceCoverage }) {
 
   return (
     <div className="flex flex-1 flex-col gap-2.5 p-5">
-      <p className="text-[11.5px] text-muted-foreground">원천별로 몇 개사를 확인했나. 빗금은 원천에 기업이 없는 결측이다.</p>
       <ul className="flex flex-col gap-2 pt-1">
         {rows.map((entry) => {
           const full = coverage.total > 0 && entry.found >= coverage.total;

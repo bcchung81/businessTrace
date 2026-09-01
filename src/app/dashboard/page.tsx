@@ -182,7 +182,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </Panel>
       </div>
 
-      <Panel index="03" title="최근 이슈" tag="실측" note="최근 5건 최상위 · 나머지는 페이지로" empty="등록된 기업이 없습니다." className="scroll-mt-20" id="events">
+      <Panel index="03" title="최근 이슈" tag="실측" empty="등록된 기업이 없습니다." className="scroll-mt-20" id="events">
         {companies.length === 0 ? null : <EventTable events={events} silence={silence} lastEventAt={lastEventAt} now={now} pageSize={5} />}
       </Panel>
 

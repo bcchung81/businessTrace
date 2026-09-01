@@ -87,7 +87,6 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         index="01"
         title="기여도 · 인용 근거"
         tag="분석 산출"
-        note="감점 전 점수를 100% 로 나눈 몫 · 문장에 올리면 일치 기사 단락"
         aside={explanation ? <VerificationPanel layers={explanation.layers} /> : null}
       >
         {explanation ? (
@@ -143,7 +142,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         ) : null}
       </Panel>
 
-      <Panel index="02" title="사건 이력" note="원천·분석에서 추출한 기록 · 최신순">
+      <Panel index="02" title="사건 이력">
         <EventTimeline events={events} />
       </Panel>
     </div>

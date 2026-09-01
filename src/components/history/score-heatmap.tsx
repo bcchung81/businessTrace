@@ -99,7 +99,7 @@ export function ScoreHeatmap({ periods, rows }: { periods: string[]; rows: HeatR
                 <dd className="font-display text-[18px] font-black">{open.cell.grade}</dd>
               </div>
               {open.cell.period === LIVE_PERIOD ? (
-                <p className="col-span-3 m-0 text-[11.5px] text-muted-foreground">실시간 — 아직 확정되지 않은 현재 랭킹 값이다.</p>
+                <p className="col-span-3 m-0 text-[11.5px] text-muted-foreground">실시간 · 미확정</p>
               ) : null}
             </dl>
           ) : null}

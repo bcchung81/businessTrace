@@ -120,7 +120,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
         </nav>
       ) : null}
 
-      <Panel index="01" title="일괄 분석 실행" tag="실측" note="대상을 고르고 실행 — 진행은 4단 스테퍼로, 상단 밴드에도 표시된다" className="scroll-mt-20" empty="등록된 기업이 없습니다.">
+      <Panel index="01" title="일괄 분석 실행" tag="실측" className="scroll-mt-20" empty="등록된 기업이 없습니다.">
         {candidates.length === 0 ? null : (
           <details open={preselected.length > 0}>
             <summary className="cursor-pointer select-none px-3.5 py-2.5 text-[12px] font-semibold text-muted-foreground">

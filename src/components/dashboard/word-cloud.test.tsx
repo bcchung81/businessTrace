@@ -118,7 +118,7 @@ describe("WordCloud hover readout", () => {
   test("holds the readout empty until a company is pointed at", () => {
     render(<WordCloud items={MENTIONS} unit="회" />);
 
-    expect(screen.getByRole("status")).toHaveTextContent("기업에 마우스를 올리면 값을 보여줍니다");
+    expect(screen.getByRole("status")).toHaveTextContent("—");
   });
 
   test("shows the value of the company under the pointer", () => {
@@ -145,7 +145,7 @@ describe("WordCloud hover readout", () => {
     fireEvent.mouseEnter(item);
     fireEvent.mouseLeave(item);
 
-    expect(screen.getByRole("status")).toHaveTextContent("기업에 마우스를 올리면 값을 보여줍니다");
+    expect(screen.getByRole("status")).toHaveTextContent("—");
   });
 
   test("answers the keyboard too so the value is not mouse-only", () => {
