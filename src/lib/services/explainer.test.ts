@@ -91,7 +91,7 @@ describe("summariseEvidence", () => {
         analysis({ title: "중간", link: "https://n.example/d", sentiment: 4 }),
         analysis({ title: "타사", link: "https://n.example/e", sentiment: 10, about: false }),
       ]),
-      finance: { found: true, fiscalYear: 2025, revenue: 1_000, operatingIncome: 100, netIncome: 50, totalAssets: 900 },
+      finance: { found: true, fiscalYear: 2025, revenue: 1_000, operatingIncome: 100, netIncome: 50, totalAssets: 900, totalLiabilities: null, totalEquity: null },
       verification: "verified",
     });
     expect(summary.headlines.map((h) => h.title)).toEqual(["강한 긍정", "강한 부정", "중간"]);
@@ -102,7 +102,7 @@ describe("summariseEvidence", () => {
   test("is empty but well-formed with nothing analysed", () => {
     expect(summariseEvidence({ result: null, finance: null, verification: null })).toEqual({ headlines: [], finance: null, verification: null });
     expect(
-      summariseEvidence({ result: null, finance: { found: false, fiscalYear: 2025, revenue: null, operatingIncome: null, netIncome: null, totalAssets: null }, verification: null }).finance,
+      summariseEvidence({ result: null, finance: { found: false, fiscalYear: 2025, revenue: null, operatingIncome: null, netIncome: null, totalAssets: null, totalLiabilities: null, totalEquity: null }, verification: null }).finance,
     ).toBeNull();
   });
 });

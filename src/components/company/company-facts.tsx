@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { CompanyFacts, FactValue } from "@/lib/services/companyFacts";
+import type { Ratio } from "@/lib/services/financeRatios";
 import type { SourceKey } from "@/lib/services/sourceEvidence";
 
 const SOURCE_LABEL: Record<SourceKey, string> = { dart: "DART", dartFinance: "재무제표", fsc: "금융위", nts: "국세청", narajangteo: "나라장터", venture: "벤처확인", nps: "국민연금" };
@@ -130,7 +131,15 @@ function growth(value: number | null) {
 }
 
 /**
- * DART 재무 한 줄 — 규모(매출·자산) · 성장(전년비) · 상장 여부. 미공시는 빗금이다.
+ * 비율 하나를 적는다 — 낼 수 없는 사정이 있으면 숫자 자리에 그 사유를 쓴다.
+ */
+function ratio({ value, note }: Ratio) {
+  if (value !== null) return `${Math.round(value * 100)}%`;
+  return note ?? "—";
+}
+
+/**
+ * DART 재무 한 줄 — 규모(매출·자산) · 성장(전년비) · 비율(부채·ROE·영업이익률) · 상장 여부. 미공시는 빗금이다.
  */
 export function FinanceLine({ facts }: { facts: CompanyFacts }) {
   const listing = facts.listing?.label ?? "상장 여부 미상";
@@ -139,6 +148,9 @@ export function FinanceLine({ facts }: { facts: CompanyFacts }) {
   return (
     <span className="font-mono tabular-nums">
       {f.fiscalYear} 매출 {amount(f.revenue)} {growth(f.growth.revenue)} · 영업이익 {amount(f.operatingIncome)} {growth(f.growth.operatingIncome)} · 순이익 {amount(f.netIncome)} · 자산총계 {amount(f.totalAssets)} · {listing}
+      <span className="text-muted-foreground">
+        {" · "}부채비율 {ratio(f.ratios.debtRatio)} · ROE {ratio(f.ratios.roe)} · 영업이익률 {ratio(f.ratios.operatingMargin)}
+      </span>
       {f.source === "auditReport" ? <span className="text-muted-foreground"> · 감사보고서 원문</span> : null}
     </span>
   );

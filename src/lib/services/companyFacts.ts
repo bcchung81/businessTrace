@@ -1,4 +1,5 @@
 import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
+import { financeRatios, type FinanceRatios } from "@/lib/services/financeRatios";
 import type { CompanyProfile, FinancialSummary } from "@/lib/services/dart";
 import type { CorpOutline } from "@/lib/services/fscCorpOutline";
 import type { ProcurementProfile } from "@/lib/services/narajangteo";
@@ -24,6 +25,7 @@ export type CompanyFacts = {
     netIncome: number | null;
     totalAssets: number | null;
     growth: { revenue: number | null; operatingIncome: number | null };
+    ratios: FinanceRatios;
   } | null;
   payroll: { averageBaseIncome: number; annualPayroll: number } | null;
   turnover: { hired: number; departed: number; rate: number | null; months: number } | null;
@@ -119,7 +121,7 @@ export function buildCompanyFacts(input: { businessNo: string | null; snapshots:
     corporateNo: merge([[SOURCE_NAME.dart, dart?.corporateNo ?? null], [SOURCE_NAME.fsc, fsc?.corporateNo ?? null]]),
     employees,
     listing: dart ? (dart.stockCode ? { stockCode: dart.stockCode, label: `상장 ${dart.stockCode}` } : { stockCode: null, label: "비상장" }) : null,
-    finance: finance && growth ? { fiscalYear: finance.fiscalYear, source: finance.source, revenue: finance.revenue, operatingIncome: finance.operatingIncome, netIncome: finance.netIncome, totalAssets: finance.totalAssets, growth } : null,
+    finance: finance && growth ? { fiscalYear: finance.fiscalYear, source: finance.source, ratios: financeRatios(finance), revenue: finance.revenue, operatingIncome: finance.operatingIncome, netIncome: finance.netIncome, totalAssets: finance.totalAssets, growth } : null,
     payroll: nps && typeof nps.averageBaseIncome === "number" && typeof nps.annualPayroll === "number" ? { averageBaseIncome: nps.averageBaseIncome, annualPayroll: nps.annualPayroll } : null,
     turnover: months.length > 0 ? { hired, departed, rate: average > 0 ? Math.round((departed / average) * 100) / 100 : null, months: months.length } : null,
     sourceDetails,

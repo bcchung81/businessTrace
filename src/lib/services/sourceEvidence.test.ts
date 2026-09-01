@@ -279,7 +279,7 @@ describe("toSnapshots", () => {
   it("labels an audit-report-sourced statement so the screen can cite the origin", () => {
     const rows = toSnapshots(
       evidence({
-        financial: { found: true, source: "auditReport", fiscalYear: 2025, revenue: 100, operatingIncome: null, netIncome: null, totalAssets: null },
+        financial: { found: true, source: "auditReport", fiscalYear: 2025, revenue: 100, operatingIncome: null, netIncome: null, totalAssets: null, totalLiabilities: null, totalEquity: null },
       }),
     );
 
@@ -289,7 +289,7 @@ describe("toSnapshots", () => {
   it("does not call every absent statement 비외감 — audit-only filers were being mislabeled", () => {
     const rows = toSnapshots(
       evidence({
-        financial: { found: false, fiscalYear: 2025, revenue: null, operatingIncome: null, netIncome: null, totalAssets: null },
+        financial: { found: false, fiscalYear: 2025, revenue: null, operatingIncome: null, netIncome: null, totalAssets: null, totalLiabilities: null, totalEquity: null },
       }),
     );
 
@@ -306,7 +306,7 @@ describe("toSnapshots", () => {
           revenue: null,
           operatingIncome: null,
           netIncome: null,
-          totalAssets: null,
+          totalAssets: null, totalLiabilities: null, totalEquity: null,
           reason: "DART 조회 실패",
         },
       }),

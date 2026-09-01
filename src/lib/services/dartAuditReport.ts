@@ -12,6 +12,8 @@ const ACCOUNTS: Array<{ field: keyof FinancialFigures; names: string[] }> = [
   { field: "operatingIncome", names: ["영업이익", "영업손실", "영업이익(손실)", "영업손익"] },
   { field: "netIncome", names: ["당기순이익", "당기순손실", "당기순이익(손실)", "당기순손익"] },
   { field: "totalAssets", names: ["자산총계"] },
+  { field: "totalLiabilities", names: ["부채총계"] },
+  { field: "totalEquity", names: ["자본총계"] },
 ];
 
 function requireApiKey() {
@@ -116,8 +118,8 @@ export function parseAuditReportFinancials(xml: string): AuditFinancials | null 
   const tables = useDelim ? financeTables : [...xml.matchAll(/<TABLE[\s\S]*?<\/TABLE>/g)];
 
   const result: AuditFinancials = {
-    revenue: null, operatingIncome: null, netIncome: null, totalAssets: null,
-    previous: { revenue: null, operatingIncome: null, netIncome: null, totalAssets: null },
+    revenue: null, operatingIncome: null, netIncome: null, totalAssets: null, totalLiabilities: null, totalEquity: null,
+    previous: { revenue: null, operatingIncome: null, netIncome: null, totalAssets: null, totalLiabilities: null, totalEquity: null },
   };
   let found = false;
 

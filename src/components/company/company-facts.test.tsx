@@ -13,7 +13,7 @@ const facts: CompanyFacts = {
     { source: "narajangteo", label: "조달 종업원", count: 39 },
   ],
   listing: { stockCode: "654321", label: "상장 654321" },
-  finance: { fiscalYear: 2025, revenue: 1200, operatingIncome: 120, netIncome: 90, totalAssets: 5000, growth: { revenue: 0.2, operatingIncome: null } },
+  finance: { fiscalYear: 2025, revenue: 1200, operatingIncome: 120, netIncome: 90, totalAssets: 5000, growth: { revenue: 0.2, operatingIncome: null }, ratios: { debtRatio: { value: 0.67, note: null }, roe: { value: 0.03, note: null }, operatingMargin: { value: 0.1, note: null } } },
   payroll: { averageBaseIncome: 4_200_000, annualPayroll: 5_594_400_000 },
   turnover: { hired: 24, departed: 12, rate: 0.11, months: 12 },
   sourceDetails: { dart: ["주식회사 한빛", "대표 김한빛", "상장 654321"], dartFinance: [], fsc: [], nts: ["계속사업자", "부가가치세 일반과세자"], narajangteo: [], venture: [], nps: [] },
@@ -94,6 +94,25 @@ describe("FinanceLine", () => {
     render(<FinanceLine facts={facts} />);
     const line = screen.getByText(/2025 매출/);
     expect(line).toHaveTextContent("2025 매출 1,200 (▲20%) · 영업이익 120 (전년 —) · 순이익 90 · 자산총계 5,000 · 상장 654321");
+  });
+
+  test("prints the three ratios beside the figures", () => {
+    render(<FinanceLine facts={facts} />);
+    const line = screen.getByText(/2025 매출/);
+
+    expect(line).toHaveTextContent("부채비율 67%");
+    expect(line).toHaveTextContent("ROE 3%");
+    expect(line).toHaveTextContent("영업이익률 10%");
+  });
+
+  test("says 자본잠식 where a ratio cannot mean anything", () => {
+    render(
+      <FinanceLine
+        facts={{ ...facts, finance: { ...facts.finance!, ratios: { debtRatio: { value: null, note: "자본잠식" }, roe: { value: null, note: "자본잠식" }, operatingMargin: { value: 0.1, note: null } } } }}
+      />,
+    );
+
+    expect(screen.getByText(/2025 매출/)).toHaveTextContent("부채비율 자본잠식");
   });
 
   test("cites the audit report when the figures came from its document", () => {

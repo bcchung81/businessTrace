@@ -20,7 +20,7 @@ function collectors(over: Partial<Collectors> = {}): Collectors {
       revenue: null,
       operatingIncome: null,
       netIncome: null,
-      totalAssets: null,
+      totalAssets: null, totalLiabilities: null, totalEquity: null,
     })),
     lookupCorpOutline: vi.fn(async () => ({ found: false, employeeCount: null })),
     checkBusinessStatus: vi.fn(async () => ({ checked: true, isActive: true, businessNo: "6258700800" })),

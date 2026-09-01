@@ -9,7 +9,7 @@ const months = Array.from({ length: 12 }, (_, i) => ({ ym: `2025${String(i + 8).
 
 const SNAPSHOTS: StoredSnapshot[] = [
   snap("dart", "found", { found: true, corpName: "주식회사 한빛", ceoName: "김한빛", corporateNo: "110111-1234567", stockCode: "654321" }),
-  snap("dartFinance", "found", { found: true, fiscalYear: 2025, source: "auditReport", revenue: 1200, operatingIncome: 120, netIncome: 90, totalAssets: 5000, previous: { revenue: 1000, operatingIncome: 80, netIncome: -10, totalAssets: 4500 } }),
+  snap("dartFinance", "found", { found: true, fiscalYear: 2025, source: "auditReport", revenue: 1200, operatingIncome: 120, netIncome: 90, totalAssets: 5000, totalLiabilities: 2000, totalEquity: 3000, previous: { revenue: 1000, operatingIncome: 80, netIncome: -10, totalAssets: 4500 } }),
   snap("narajangteo", "found", { found: true, corpName: "(주)한빛", ceoName: "김한빛", address: "서울특별시 금천구 가산디지털1로 1", openedAt: "20190301", employeeCount: 39 }),
   snap("fsc", "found", { found: true, corpName: "주식회사 한빛", establishedAt: "20190301", employeeCount: 41, address: "서울특별시 금천구 가산디지털1로 1", isSmallBusiness: true, mainBusiness: "소프트웨어 개발" }),
   snap("nps", "found", { found: true, businessNoPrefix: "123456", address: "서울 금천구 가산디지털1로", registeredAt: "20190401", subscribers: 111, averageBaseIncome: 4_200_000, annualPayroll: 5_594_400_000, months }),
@@ -60,6 +60,24 @@ describe("buildCompanyFacts", () => {
     expect(facts.sourceDetails.venture).toEqual(["혁신성장유형", "2024-03-29 ~ 2027-03-28"]);
     expect(facts.sourceDetails.fsc).toEqual(["중소기업", "소프트웨어 개발", "종업원 41"]);
     expect(facts.sourceDetails.dartFinance).toEqual(["2025년 매출 1,200 (▲20%)", "영업이익 120 (▲50%)", "자산총계 5,000"]);
+  });
+
+  test("derives the three ratios from the balance sheet totals", () => {
+    expect(facts.finance?.ratios).toMatchObject({
+      debtRatio: { value: 2000 / 3000 },
+      roe: { value: 90 / 3000 },
+      operatingMargin: { value: 120 / 1200 },
+    });
+  });
+
+  test("names 자본잠식 instead of a ratio that would flip sign", () => {
+    const wiped = SNAPSHOTS.map((snap) =>
+      snap.source === "dartFinance" ? { ...snap, payload: { ...(snap.payload as object), totalEquity: -400 } } : snap,
+    );
+
+    const negative = buildCompanyFacts({ businessNo: null, snapshots: wiped });
+
+    expect(negative.finance?.ratios.debtRatio).toEqual({ value: null, note: "자본잠식" });
   });
 
   test("is empty but well-formed with no snapshots", () => {

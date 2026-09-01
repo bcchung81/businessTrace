@@ -8,6 +8,8 @@ const AUDIT_XML = `
 <TBODY>
 <TR><TE ACODE="11200000040000" ADELIM="0" ALEVEL="0">Ⅰ.유동자산</TE><TE ALIGN="RIGHT" ACODE="11200000040000" ADELIM="1"></TE><TE ALIGN="RIGHT" ACODE="11200000040000" ADELIM="2">1,646,100,805</TE><TE ALIGN="RIGHT" ACODE="11200000040000" ADELIM="3"></TE><TE ALIGN="RIGHT" ACODE="11200000040000" ADELIM="4">1,742,936,125</TE></TR>
 <TR><TE ACODE="11500000010000" ADELIM="0" ALIGN="CENTER">자      산      총      계</TE><TE ALIGN="RIGHT" ADELIM="1"></TE><TE ALIGN="RIGHT" ADELIM="2">8,112,399,519</TE><TE ALIGN="RIGHT" ADELIM="3"></TE><TE ALIGN="RIGHT" ADELIM="4">7,008,285,176</TE></TR>
+<TR><TE ACODE="11800000010000" ADELIM="0" ALIGN="CENTER">부      채      총      계</TE><TE ALIGN="RIGHT" ADELIM="1"></TE><TE ALIGN="RIGHT" ADELIM="2">2,894,896,630</TE><TE ALIGN="RIGHT" ADELIM="3"></TE><TE ALIGN="RIGHT" ADELIM="4">3,146,227,473</TE></TR>
+<TR><TE ACODE="11890000010000" ADELIM="0" ALIGN="CENTER">자      본      총      계</TE><TE ALIGN="RIGHT" ADELIM="1"></TE><TE ALIGN="RIGHT" ADELIM="2">5,217,502,889</TE><TE ALIGN="RIGHT" ADELIM="3"></TE><TE ALIGN="RIGHT" ADELIM="4">3,862,057,703</TE></TR>
 </TBODY>
 </TABLE>
 <TABLE ACLASS="FINANCE" AFIXTABLE="N" WIDTH="849">
@@ -28,11 +30,15 @@ describe("parseAuditReportFinancials", () => {
       operatingIncome: -4_434_846_147,
       netIncome: -4_614_521_325,
       totalAssets: 8_112_399_519,
+      totalLiabilities: 2_894_896_630,
+      totalEquity: 5_217_502_889,
       previous: {
         revenue: 2_551_883_107,
         operatingIncome: -5_616_259_051,
         netIncome: -5_619_046_264,
         totalAssets: 7_008_285_176,
+        totalLiabilities: 3_146_227_473,
+        totalEquity: 3_862_057_703,
       },
     });
   });

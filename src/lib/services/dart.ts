@@ -28,6 +28,9 @@ export type FinancialFigures = {
   operatingIncome: number | null;
   netIncome: number | null;
   totalAssets: number | null;
+  /** 비율(부채비율·ROE)에 필요한 두 줄 — 없으면 비율을 낼 수 없다. */
+  totalLiabilities: number | null;
+  totalEquity: number | null;
 };
 
 export type FinancialSummary = {
@@ -37,6 +40,8 @@ export type FinancialSummary = {
   operatingIncome: number | null;
   netIncome: number | null;
   totalAssets: number | null;
+  totalLiabilities: number | null;
+  totalEquity: number | null;
   previous?: FinancialFigures;
   source?: "annualReport" | "auditReport";
   failed?: boolean;
@@ -147,6 +152,8 @@ export async function getFinancialSummary(
     operatingIncome: null,
     netIncome: null,
     totalAssets: null,
+    totalLiabilities: null,
+    totalEquity: null,
   };
 
   const exact = hints.corpCode ? { corpCode: hints.corpCode } : (await resolveCorp(companyName)).exact;
@@ -183,6 +190,8 @@ export async function getFinancialSummary(
           operatingIncome: audit.operatingIncome,
           netIncome: audit.netIncome,
           totalAssets: audit.totalAssets,
+          totalLiabilities: audit.totalLiabilities,
+          totalEquity: audit.totalEquity,
           previous: audit.previous,
         };
       }
@@ -206,11 +215,15 @@ export async function getFinancialSummary(
     operatingIncome: pick("영업이익"),
     netIncome: pick("당기순이익"),
     totalAssets: pick("자산총계"),
+    totalLiabilities: pick("부채총계"),
+    totalEquity: pick("자본총계"),
     previous: {
       revenue: pick("매출액", "frmtrm_amount"),
       operatingIncome: pick("영업이익", "frmtrm_amount"),
       netIncome: pick("당기순이익", "frmtrm_amount"),
       totalAssets: pick("자산총계", "frmtrm_amount"),
+      totalLiabilities: pick("부채총계", "frmtrm_amount"),
+      totalEquity: pick("자본총계", "frmtrm_amount"),
     },
   };
 }
