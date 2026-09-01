@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기업성과추적 3분 발표 — 한국방송통신전파진흥원</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&display=swap">
+<style>
+
+    :root {
+      --navy: #1B3A6B; --navy-dk: #12294C; --navy-lt: #3B6199;
+      --ink: #1A1D23; --muted: #5C6270; --hair: #D4D8DF; --tint: #F4F6F9;
+      --paper: #FFFFFF; --alert: #A02B2B;
+      --serif: 'Noto Serif KR', 'Apple SD Gothic Neo', serif;
+      --sans: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+    }
+    body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--paper);
+           font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+    a { color: var(--navy); text-decoration: underline; }
+    a:hover { color: var(--navy-lt); }
+
+    .slide { width: 1280px; height: 720px; background: var(--paper); display: flex;
+             flex-direction: column; overflow: hidden; }
+    .topbar { height: 5px; background: var(--navy); flex-shrink: 0; }
+
+    .head { padding: 20px 52px 13px; display: flex; align-items: flex-end;
+            justify-content: space-between; gap: 28px; border-bottom: 3px solid var(--navy);
+            flex-shrink: 0; }
+    .head-l { display: flex; align-items: baseline; gap: 15px; }
+    .sec-no { font-family: var(--serif); font-weight: 700; font-size: 25px; color: var(--navy);
+              letter-spacing: 0.02em; }
+    .sec-title { font-family: var(--serif); font-weight: 700; font-size: 28px; color: var(--ink);
+                 letter-spacing: -0.01em; margin: 0; }
+    .head-r { text-align: right; flex-shrink: 0; }
+    .head-time { display: inline-block; border: 1px solid var(--navy); color: var(--navy);
+                 padding: 2px 9px; font-size: 11.5px; font-weight: 700; }
+    .head-page { font-size: 11.5px; color: var(--muted); margin-top: 6px; font-weight: 500; }
+
+    .body { flex: 1; min-height: 0; padding: 24px 52px 20px; display: flex;
+            flex-direction: column; gap: 18px; }
+
+    .sub { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; }
+    .mark { width: 9px; height: 9px; background: var(--navy); flex-shrink: 0; }
+    .sub h3 { font-size: 15px; font-weight: 700; margin: 0; letter-spacing: -0.01em; flex-shrink: 0; }
+    .sub .line { flex: 1; height: 1px; background: var(--hair); }
+    .sub .aside { font-size: 11.5px; color: var(--muted); flex-shrink: 0; font-weight: 500; }
+
+    ul.kj { list-style: none; margin: 0; padding: 0; }
+    ul.kj li { position: relative; padding-left: 15px; font-size: 13px; line-height: 1.7;
+               margin-bottom: 7px; }
+    ul.kj li:last-child { margin-bottom: 0; }
+    ul.kj-inv li::before { color: #A9C2E8; }
+    ul.kj li::before { content: "\2219"; position: absolute; left: 2px; top: -1px; color: var(--navy);
+                       font-weight: 700; font-size: 15px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    thead th { background: var(--tint); border-top: 2px solid var(--navy);
+               border-bottom: 1px solid var(--navy); padding: 9px 11px; text-align: left;
+               font-weight: 700; font-size: 11.5px; color: var(--navy); letter-spacing: 0.01em; }
+    tbody td { border-bottom: 1px solid var(--hair); padding: 12px 11px; vertical-align: top;
+               line-height: 1.55; }
+    tbody tr:last-child td { border-bottom: 1.5px solid var(--navy); }
+    table.tight tbody td { padding: 8px 11px; }
+    .c { text-align: center; }
+    .r { text-align: right; }
+    .n { font-weight: 700; }
+    .t-navy { color: var(--navy); font-weight: 700; }
+    .t-alert { color: var(--alert); font-weight: 700; }
+    .t-mut { color: var(--muted); }
+
+    .box { background: var(--tint); padding: 17px 20px; }
+    .box-line { border: 1px solid var(--hair); padding: 14px 18px; }
+    .note { border-top: 1px dashed var(--hair); padding-top: 9px; font-size: 11.5px;
+            color: var(--muted); line-height: 1.6; }
+
+    .flow { display: flex; align-items: stretch; gap: 7px; }
+    .step { flex: 1; border: 1px solid var(--hair); border-top: 3px solid var(--navy);
+            padding: 11px 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .step-no { font-size: 10.5px; font-weight: 700; color: var(--navy); letter-spacing: 0.1em; }
+    .step-nm { font-size: 14px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+    .step ul.kj li { font-size: 11.5px; line-height: 1.55; padding-left: 11px; margin-bottom: 3px; }
+    .step ul.kj li::before { font-size: 13px; left: 0; }
+    .arrow { align-self: center; color: var(--navy-lt); font-size: 11px; flex-shrink: 0; }
+
+    .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px;
+             background: var(--hair); border: 1px solid var(--hair); }
+    .stat { background: var(--paper); padding: 11px 14px; }
+    .stat-v { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; }
+    .stat-u { font-size: 12px; font-weight: 500; }
+    .stat-l { font-size: 11.5px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+
+
+    html, body { height: 100%; margin: 0; background: #2B3038; overflow: hidden; }
+    #stage { position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px;
+             transform-origin: center center; }
+    .slide { display: none; box-shadow: 0 12px 44px rgba(0, 0, 0, 0.38); }
+    .slide.on { display: flex; }
+
+    #hud { position: fixed; right: 20px; bottom: 15px; color: #fff; opacity: 0.5;
+           font-family: var(--sans); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; }
+    #hint { position: fixed; left: 20px; bottom: 15px; color: #fff; opacity: 0.45;
+            font-family: var(--sans); font-size: 11.5px; font-weight: 500; line-height: 1.6;
+            transition: opacity 0.8s; }
+    #hint.gone { opacity: 0; }
+    #bar { position: fixed; left: 0; top: 0; height: 3px; background: var(--navy-lt); width: 0;
+           transition: width 0.25s ease; }
+
+    @page { size: 1280px 720px; margin: 0; }
+    @media print {
+      html, body { height: auto; background: #fff; overflow: visible; }
+      #stage { position: static; transform: none !important; width: auto; height: auto; }
+      #hud, #hint, #bar { display: none; }
+      .slide { display: flex !important; box-shadow: none; break-after: page; page-break-after: always; }
+      .slide:last-child { break-after: auto; page-break-after: auto; }
+    }
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="stage">
+<div class="slide">
+  <div class="topbar"></div>
+  <div style="flex: 1; min-height: 0; padding: 46px 64px 40px; display: flex; flex-direction: column">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span style="font-size: 13px; font-weight: 700; color: var(--navy); letter-spacing: 0.04em">한국방송통신전파진흥원</span>
+      <span style="font-size: 12.5px; color: var(--muted); font-weight: 500">2026. 9. 1.</span>
+    </div>
+
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center">
+      <p style="font-size: 13px; color: var(--muted); margin: 0 0 14px; font-weight: 500; letter-spacing: 0.02em">AI 챔피언 평가 발표</p>
+      <h1 style="font-family: var(--serif); font-weight: 700; font-size: 56px; margin: 0; letter-spacing: -0.02em; color: var(--ink)">기업성과추적</h1>
+      <div style="width: 92px; height: 3px; background: var(--navy); margin: 22px 0"></div>
+      <p style="font-size: 18px; line-height: 1.6; margin: 0; color: var(--ink); max-width: 780px">
+        뉴스·공공데이터 AI 분석 기반<br>우수기업 선정 근거 생성 및 자동 검증 시스템
+      </p>
+      <p style="font-size: 13.5px; color: var(--muted); margin: 26px 0 0; font-weight: 500">
+        경영기획본부 AI디지털심화팀 &nbsp;<span style="color: var(--ink); font-weight: 700">정백철</span>
+      </p>
+    </div>
+
+    <div>
+      <div class="sub"><span class="mark"></span><h3>발표 순서</h3><span class="line"></span><span class="aside">발표 3분 · 질의응답 2분</span></div>
+      <table>
+        <thead><tr><th style="width: 8%">구분</th><th style="width: 30%">내용</th><th>요지</th><th class="c" style="width: 11%">배정</th></tr></thead>
+        <tbody>
+          <tr><td class="t-navy">Ⅰ</td><td class="n">전체 파이프라인</td><td>수집 → 정제 → 분석 → 검증 → 산출 5단계</td><td class="c n">40초</td></tr>
+          <tr><td class="t-navy">Ⅱ</td><td class="n">활용 데이터 및 수집 주기</td><td>공공데이터 9종 · 뉴스 2종의 확보 항목과 갱신 주기</td><td class="c n">40초</td></tr>
+          <tr><td class="t-navy">Ⅲ</td><td class="n">시연</td><td>실제 데이터 56개사로 화면 직접 조작</td><td class="c n">60초</td></tr>
+          <tr><td class="t-navy">Ⅳ</td><td class="n">현재 문제점</td><td>구축 과정에서 식별된 과제 4건</td><td class="c n">20초</td></tr>
+          <tr><td class="t-navy">Ⅴ</td><td class="n">개선방안</td><td>과제별 대응 방안과 추진 시기</td><td class="c n">20초</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="slide">
+  <div class="topbar"></div>
+  <div class="head">
+    <div class="head-l">
+      <span class="sec-no">Ⅰ</span>
+      <h2 class="sec-title">전체 파이프라인</h2>
+    </div>
+    <div class="head-r">
+      <span class="head-time">40초</span>
+      <div class="head-page">1 / 5</div>
+    </div>
+  </div>
+  <div class="body">
+    <div>
+      <div class="sub"><span class="mark"></span><h3>처리 흐름</h3><span class="line"></span><span class="aside">전 구간이 단일 애플리케이션 안에서 동작</span></div>
+      <div class="flow">
+        <div class="step">
+          <span class="step-no">STEP 1</span>
+          <h4 class="step-nm">수집</h4>
+          <ul class="kj"><li>뉴스 2종 · 공공데이터 9종</li><li>기업별 기간 창 단위 수집</li><li>네이버 정확도순 우선</li></ul>
+        </div>
+        <span class="arrow">&#9654;</span><div class="step">
+          <span class="step-no">STEP 2</span>
+          <h4 class="step-nm">정제</h4>
+          <ul class="kj"><li>기사 본문 자동 추출</li><li>중복 기사 제거</li><li>관련도 3등급 판정</li></ul>
+        </div>
+        <span class="arrow">&#9654;</span><div class="step">
+          <span class="step-no">STEP 3</span>
+          <h4 class="step-nm">분석</h4>
+          <ul class="kj"><li>LLM 다차원 분석</li><li>항목별 근거 문장 인용</li><li>동일 기업 여부 재확인</li></ul>
+        </div>
+        <span class="arrow">&#9654;</span><div class="step">
+          <span class="step-no">STEP 4</span>
+          <h4 class="step-nm">검증</h4>
+          <ul class="kj"><li>기사 원문과 자동 대조</li><li>공식 출처와 사실 대조</li><li>검증완료 / 검토필요 분류</li></ul>
+        </div>
+        <span class="arrow">&#9654;</span><div class="step">
+          <span class="step-no">STEP 5</span>
+          <h4 class="step-nm">산출</h4>
+          <ul class="kj"><li>대시보드 · 기업 상세</li><li>엑셀 리포트 3시트</li><li>월간 문서 · 랭킹</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sub"><span class="mark"></span><h3>검증 판정 기준</h3><span class="line"></span><span class="aside">AI 환각 방지 — 이 시스템의 핵심 요구사항</span></div>
+      <div class="box">
+        <ul class="kj">
+          <li><span class="n">근거 충실도 0.85 이상</span> · <span class="n">출처 커버리지 0.5 이상</span> · <span class="n">어휘 일치도 0.5 이상</span> 을 모두 충족한 경우에만 &lsquo;검증 완료&rsquo;로 판정</li>
+          <li>조회 실패 · 응답 오류 · 판정 불가는 예외 없이 &lsquo;검토 필요&rsquo;로 분류 — 검증 실패를 통과로 처리하지 않음</li>
+          <li>미통과 건은 항목별 점수와 반증 사유를 함께 제시하여 담당자 확인 대상으로 회부</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-v">56<span class="stat-u">개사</span></div><div class="stat-l">등록 기업 (2025년 50 · 2024년 6)</div></div>
+      <div class="stat"><div class="stat-v">183<span class="stat-u">회</span></div><div class="stat-l">분석 실행</div></div>
+      <div class="stat"><div class="stat-v">119<span class="stat-u">건</span></div><div class="stat-l">검증 판정</div></div>
+      <div class="stat"><div class="stat-v">330<span class="stat-u">건</span></div><div class="stat-l">자동 적립 사건</div></div>
+      <div class="stat"><div class="stat-v">86.6<span class="stat-u">%</span></div><div class="stat-l">검증 완료 비율 (103 / 119)</div></div>
+    </div>
+
+    <p class="note">※ 분석과 검증은 동일 계열 모델을 사용하되 검증은 기사 원문만을 근거로 별도 호출하며, 판정 자체는 임계값 비교로 코드가 수행함.</p>
+  </div>
+</div>
+<div class="slide">
+  <div class="topbar"></div>
+  <div class="head">
+    <div class="head-l">
+      <span class="sec-no">Ⅱ</span>
+      <h2 class="sec-title">활용 데이터 및 수집 주기</h2>
+    </div>
+    <div class="head-r">
+      <span class="head-time">40초</span>
+      <div class="head-page">2 / 5</div>
+    </div>
+  </div>
+  <div class="body">
+    <div>
+      <div class="sub"><span class="mark"></span><h3>연계 현황</h3><span class="line"></span><span class="aside">공공데이터 9종 · 뉴스 2종 · 분석엔진 2종</span></div>
+      <table class="tight">
+        <thead>
+          <tr>
+            <th style="width: 8%">구분</th>
+            <th style="width: 21%">원천</th>
+            <th style="width: 33%">확보 항목</th>
+            <th style="width: 20%">수집 주기</th>
+            <th class="c" style="width: 13%">확보 현황</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="t-navy">뉴스</td><td class="n">네이버 뉴스 검색 (API HUB)</td><td>기사 제목 · 본문 · 발행일 · 언론사</td><td>분석 실행 시점</td><td class="c">전 기업 대상</td>
+          </tr>
+          <tr>
+            <td class="t-navy">뉴스</td><td class="n">구글 뉴스 RSS</td><td>보조 수집 · RSS 링크의 원문 URL 복원</td><td>분석 실행 시점</td><td class="c">전 기업 대상</td>
+          </tr>
+          <tr>
+            <td class="t-navy">기업식별</td><td class="n">OpenDART 고유번호 · 기업개황</td><td>사업자등록번호 · 대표자 · 업종 · 주소</td><td>고유번호 24시간 캐시</td><td class="c">18 / 56</td>
+          </tr>
+          <tr>
+            <td class="t-navy">기업식별</td><td class="n">금융위원회 기업기본정보</td><td>DART 미등록 기업의 사업자번호 · 설립일</td><td>분석 실행 시점</td><td class="c">38 / 56</td>
+          </tr>
+          <tr>
+            <td class="t-navy">재무</td><td class="n">OpenDART 재무제표</td><td>매출액 · 영업이익 · 당기순이익 · 자산총계</td><td>분기 공시 반영</td><td class="c">13 / 56</td>
+          </tr>
+          <tr>
+            <td class="t-navy">신뢰성</td><td class="n">국세청 사업자 휴폐업</td><td>계속사업자 여부 · 과세유형</td><td>분석 실행 시점</td><td class="c">52 / 56</td>
+          </tr>
+          <tr>
+            <td class="t-navy">실적</td><td class="n">나라장터 조달업체 정보</td><td>종업원수 · 조달업무구분 · 개업일</td><td>월 1회 배치</td><td class="c">52 / 56</td>
+          </tr>
+          <tr>
+            <td class="t-navy">실적</td><td class="n">나라장터 낙찰 정보</td><td>공공조달 낙찰 실적 (재무 결측 대리지표)</td><td>월 1회 배치 · 12개월 창</td><td class="c">26 / 56</td>
+          </tr>
+          <tr>
+            <td class="t-navy">인증</td><td class="n">중소벤처기업부 벤처기업명단</td><td>벤처확인 여부 · 유형 · 유효기간</td><td>월 1회 배치 · 전수 39,668행</td><td class="c">41 / 56</td>
+          </tr>
+          <tr>
+            <td class="t-navy">고용</td><td class="n">국민연금공단 가입 사업장</td><td>가입자수 · 사업장 규모 · 등록일</td><td>월 1회 배치 · 매월 15일 이후</td><td class="c">55 / 56</td>
+          </tr>
+          <tr>
+            <td class="t-navy">분석엔진</td><td class="n">Anthropic Claude · OpenAI (대체)</td><td>다차원 분석 · 검증 심사 · 반증 생성 (공급자 전환 가능)</td><td>분석 실행 시점</td><td class="c">&#8212;</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      ※ 확보 현황은 56개사 기준 해당 원천에서 자료가 조회된 기업 수임. 공공데이터는 전량 공공데이터포털 무료 개방 API 로 <span class="n">별도 구독료가 발생하지 않음.</span><br>
+      ※ 국민연금은 제공 시점 기준 12개월분만 유지되므로 월 스냅샷을 자체 적재하여 시계열을 확보하며, 사업자번호가 앞 6자리만 제공되어 상호·주소·업종 교차 대조로 기업을 식별함.
+    </p>
+  </div>
+</div>
+<div class="slide">
+  <div class="topbar"></div>
+  <div class="head">
+    <div class="head-l">
+      <span class="sec-no">Ⅲ</span>
+      <h2 class="sec-title">시연</h2>
+    </div>
+    <div class="head-r">
+      <span class="head-time">60초</span>
+      <div class="head-page">3 / 5</div>
+    </div>
+  </div>
+  <div class="body">
+    <div style="background: var(--navy); color: #fff; padding: 26px 34px; display: flex; align-items: center; gap: 40px">
+      <p style="font-family: var(--serif); font-weight: 700; font-size: 58px; margin: 0; letter-spacing: 0.14em; line-height: 1; flex-shrink: 0">시 연</p>
+      <div>
+        <p style="font-size: 17px; font-weight: 700; margin: 0 0 9px">지금 화면을 직접 조작하여 시연합니다.</p>
+        <ul class="kj kj-inv" style="color: rgba(255,255,255,0.86)">
+          <li style="font-size: 13.5px">시연 데이터는 <span class="n">2025년 우수기업 50개사 및 2024년 6개사, 총 56개사의 실제 데이터</span>임</li>
+          <li style="font-size: 13.5px">화면 캡처나 사전 녹화가 아닌 <span class="n">운영 중인 애플리케이션을 실행</span>하여 시연함</li>
+        </ul>
+      </div>
+    </div>
+
+    <div>
+      <div class="sub"><span class="mark"></span><h3>시연 순서</h3><span class="line"></span><span class="aside">총 60초</span></div>
+      <table>
+        <thead>
+          <tr><th class="c" style="width: 6%">순서</th><th style="width: 22%">화면</th><th>확인할 내용</th><th class="c" style="width: 10%">소요</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="c t-navy n">1</td><td class="n">분석 대시보드</td><td>기업별 추이 상승·하락, 최근 이슈, 주의 기업, 홍보 후보를 한 화면에서 확인</td><td class="c">10초</td></tr>
+          <tr><td class="c t-navy n">2</td><td class="n">검토 필요 건</td><td>검증 미통과 사유를 항목별 점수와 반증 근거로 제시하는 화면 — 본 시스템의 핵심 기능</td><td class="c">20초</td></tr>
+          <tr><td class="c t-navy n">3</td><td class="n">기업 상세</td><td>분석 항목별 인용 근거와 공식 원천 대조 결과(국세청 · DART · 조달 · 벤처확인) 확인</td><td class="c">20초</td></tr>
+          <tr><td class="c t-navy n">4</td><td class="n">엑셀 리포트</td><td>평가위원회 제출용 산출물(종합 분석 · 뉴스별 분석 · 다차원 검증 3시트) 생성</td><td class="c">10초</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">※ 이용자는 계정 발급 외 별도의 설치 · API 키 등록 · 사전 교육이 필요하지 않으며, 모델 · 프롬프트 등 내부 개념은 화면에 노출되지 않음.</p>
+  </div>
+</div>
+<div class="slide">
+  <div class="topbar"></div>
+  <div class="head">
+    <div class="head-l">
+      <span class="sec-no">Ⅳ</span>
+      <h2 class="sec-title">현재 문제점</h2>
+    </div>
+    <div class="head-r">
+      <span class="head-time">20초</span>
+      <div class="head-page">4 / 5</div>
+    </div>
+  </div>
+  <div class="body">
+    <div>
+      <div class="sub"><span class="mark"></span><h3>구축 과정에서 식별된 과제</h3><span class="line"></span><span class="aside">4건</span></div>
+      <table>
+        <thead>
+          <tr><th class="c" style="width: 5%">연번</th><th style="width: 20%">과제</th><th style="width: 40%">현황</th><th>영향</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="c t-navy n">1</td>
+            <td class="n">재무 데이터의 구조적 결측</td>
+            <td>비상장 · 비외감 기업은 재무제표 공시 의무가 없어 원천 자체에 자료가 없음. DART 재무 확보 <span class="t-alert">13 / 56 (23%)</span></td>
+            <td>정량 비교 항목이 일부 기업에서 공란이 되어 조달 실적 · 벤처확인 · 고용 규모 등 대리지표로 보완 중</td>
+          </tr>
+          <tr>
+            <td class="c t-navy n">2</td>
+            <td class="n">검토 필요 건의 확인 부하</td>
+            <td>검증 119건 중 <span class="t-alert">16건(13.4%)</span>이 담당자 확인 대상으로 분류됨. 판정을 가르는 지표는 어휘 일치도(평균 0.686)</td>
+            <td>확인 건수가 증가할 경우 담당자가 일괄 승인하게 되어 검증이 형식화될 소지가 있음</td>
+          </tr>
+          <tr>
+            <td class="c t-navy n">3</td>
+            <td class="n">운영 환경 미전환</td>
+            <td>개발용 데이터베이스(SQLite)로 동작 중이며, 배포용 컨테이너는 작성 완료했으나 이미지 빌드 검증이 미완료 상태</td>
+            <td>다수 이용자 동시 접속 및 정식 운영 배포에 앞서 데이터베이스 전환과 배포 검증이 선행되어야 함</td>
+          </tr>
+          <tr>
+            <td class="c t-navy n">4</td>
+            <td class="n">운영 인력의 단일화</td>
+            <td>과제 내 AI 활용 부분을 개인프로젝트 형태로 구축하여 설계 · 운영 지식이 1인에게 집중되어 있음</td>
+            <td>담당자 변경 시 유지보수 연속성 확보가 필요하며, 타 부서 확산에도 인수인계 체계가 전제됨</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="sub"><span class="mark"></span><h3>소결</h3><span class="line"></span></div>
+      <div class="box">
+        <ul class="kj">
+          <li><span class="n">1 · 2</span> 는 데이터 원천의 공개 범위와 판정 기준에 관한 <span class="n">구조적 과제</span>로, 대리지표 확대와 검토 절차 개선으로 대응</li>
+          <li><span class="n">3 · 4</span> 는 정식 운영 이관에 관한 <span class="n">실행 과제</span>로, 단기 일정 내 처리 가능</li>
+          <li>구축 과정에서 수집 정밀도 · 동명 기업 오인 · 대량 조회 중단 등 <span class="n">데이터 오류 3건을 사전에 식별</span>하여 수집 로직에 반영하고, 재발을 차단하는 검증 테스트를 상시 수행 중(1,198건)</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="note">※ 각 과제의 대응 방안과 추진 시기는 Ⅴ에서 제시함.</p>
+  </div>
+</div>
+<div class="slide">
+  <div class="topbar"></div>
+  <div class="head">
+    <div class="head-l">
+      <span class="sec-no">Ⅴ</span>
+      <h2 class="sec-title">개선방안</h2>
+    </div>
+    <div class="head-r">
+      <span class="head-time">20초</span>
+      <div class="head-page">5 / 5</div>
+    </div>
+  </div>
+  <div class="body">
+    <div>
+      <div class="sub"><span class="mark"></span><h3>과제별 대응 방안</h3><span class="line"></span><span class="aside">Ⅳ의 연번과 대응</span></div>
+      <table>
+        <thead>
+          <tr><th class="c" style="width: 5%">연번</th><th style="width: 19%">과제</th><th>개선방안</th><th class="c" style="width: 14%">추진 시기</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="c t-navy n">1</td>
+            <td class="n">재무 데이터 결측</td>
+            <td>조달 계약정보 연계를 추가하여 거래 지속성을 확보하고, 국민연금 월 스냅샷을 누적하여 고용 추이 시계열을 자체 구축</td>
+            <td class="c">2026. 4분기</td>
+          </tr>
+          <tr>
+            <td class="c t-navy n">2</td>
+            <td class="n">검토 필요 부하</td>
+            <td>미통과 사유를 유형화하여 일괄 검토 화면을 제공하고, 누적된 운영 데이터를 근거로 임계값을 재조정</td>
+            <td class="c">2026. 4분기</td>
+          </tr>
+          <tr>
+            <td class="c t-navy n">3</td>
+            <td class="n">운영 환경 전환</td>
+            <td>PostgreSQL 전환 및 컨테이너 이미지 빌드 검증을 완료하여 정식 운영 배포</td>
+            <td class="c">2026. 9월 말</td>
+          </tr>
+          <tr>
+            <td class="c t-navy n">4</td>
+            <td class="n">운영 연속성</td>
+            <td>설계 문서 15종 · 사고 기록 · 자동 테스트 1,198건을 기반으로 인수인계 체계를 정비하고 운영 담당을 이원화</td>
+            <td class="c">2026. 4분기</td>
+          </tr>
+          <tr>
+            <td class="c t-navy n">5</td>
+            <td class="n">타 부서 확산</td>
+            <td>동일 수요가 확인된 방송미디어진흥팀과 공동 활용 — 기업목록 · 분석항목 · 리포트 서식만 팀별로 분리하고 파이프라인은 공용</td>
+            <td class="c">2027. 상반기</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="sub"><span class="mark"></span><h3>기대효과</h3><span class="line"></span></div>
+      <div class="box">
+        <ul class="kj">
+          <li>선정 근거를 <span class="n">기사 원문 단위로 추적</span>할 수 있어 평가위원회 질의에 즉시 대응 가능</li>
+          <li>공공데이터 기반으로 상용 기업정보 구독료(<span class="n">연 5천만원 이상</span>) 없이 동일 목적의 기초 데이터 확보</li>
+          <li>두 팀이 하나의 기반을 공유하여 중복 구축을 방지하고, 과년도 성과의 데이터화를 함께 달성</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div id="hud"><span id="cur">1</span> / 6</div>
+<div id="hint">&#8592; &#8594; 슬라이드 이동 &nbsp;·&nbsp; F 전체화면 &nbsp;·&nbsp; 1&#8211;6 바로가기 &nbsp;·&nbsp; Cmd/Ctrl+P 로 PDF 저장</div>
+
+<script>
+(function () {
+  var slides = [].slice.call(document.querySelectorAll('.slide'));
+  var stage = document.getElementById('stage');
+  var cur = document.getElementById('cur');
+  var bar = document.getElementById('bar');
+  var hint = document.getElementById('hint');
+  var i = 0;
+
+  function fit() {
+    var s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stage.style.transform = 'translate(-50%, -50%) scale(' + s + ')';
+  }
+
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (el, k) { el.classList.toggle('on', k === i); });
+    cur.textContent = i + 1;
+    bar.style.width = ((i + 1) / slides.length * 100) + '%';
+    try { location.hash = String(i + 1); } catch (e) {}
+  }
+
+  document.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === ' ' || k === 'PageDown') { show(i + 1); e.preventDefault(); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { show(i - 1); e.preventDefault(); }
+    else if (k === 'Home') { show(0); }
+    else if (k === 'End') { show(slides.length - 1); }
+    else if (k === 'f' || k === 'F') {
+      if (document.fullscreenElement) { document.exitFullscreen(); }
+      else { document.documentElement.requestFullscreen(); }
+    }
+    else if (k >= '1' && k <= String(slides.length)) { show(parseInt(k, 10) - 1); }
+    hint.classList.add('gone');
+  });
+
+  document.addEventListener('click', function (e) {
+    show(e.clientX < window.innerWidth * 0.25 ? i - 1 : i + 1);
+    hint.classList.add('gone');
+  });
+
+  window.addEventListener('resize', fit);
+  fit();
+  var start = parseInt((location.hash || '').replace('#', ''), 10);
+  show(isNaN(start) ? 0 : start - 1);
+  setTimeout(function () { hint.classList.add('gone'); }, 6000);
+})();
+</script>
+</body>
+</html>

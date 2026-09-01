@@ -84,7 +84,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     .map((row) => ({ companyId: row.companyId, companyName: row.name, latest: row.latest }));
   const watchlist = tallyByCompany(events30.filter((event) => event.severity === "alert" || event.severity === "notice"));
   const promoted = tallyByCompany(events30.filter((event) => event.severity === "positive"));
-  const latestRun = verdicts.companies.map((entry) => entry.runAt).filter((value): value is string => value !== null).sort().at(-1) ?? null;
 
   const selections = await listSelections();
   const periods = [...new Set(selections.map((record) => record.period))].sort((a, b) => periodEndYm(a).localeCompare(periodEndYm(b)) || a.localeCompare(b));
@@ -102,22 +101,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     fullSourceRefreshAt(year),
     countReviewCompanies(year),
   ]);
-  const monthLabelOf = (y: number, m: number) => `${y}-${String(m).padStart(2, "0")}`;
   const facts = buildPipelineFacts({
     companies: companies.length,
     articles: collection.articles,
-    duplicatesRemoved: collection.duplicatesRemoved,
     analysed: collection.analysed,
     noNews: collection.noNews,
     running: activity.running,
-    latestRunAt: latestRun,
     counts: verdicts.counts,
-    gateDropouts: verdicts.gateDropouts,
     cells,
-    events30: events30.length,
     staleNews: silence.length,
     reviewCompanies: review.companies,
-    monthLabel: monthLabelOf(thisMonth.year, thisMonth.month),
   });
   const ribbon = buildRibbonGroups({
     now,
