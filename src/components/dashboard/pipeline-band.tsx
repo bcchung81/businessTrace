@@ -20,7 +20,7 @@ export function PipelineBand({ year, facts, summary, aside }: { year: number; fa
         {facts.nodes.map((node, index) => (
           <li key={node.key} className="contents" aria-current={node.active ? "step" : undefined}>
             <div
-              className={`flex flex-1 flex-col gap-1.5 border-[1.5px] px-3.5 py-3 ${node.active ? "border-primary bg-primary/15" : "border-band-foreground/35 bg-band-foreground/[0.03]"}`}
+              className={`flex flex-1 flex-col gap-1.5 border-[1.5px] px-3.5 py-3 ${node.active ? "border-primary bg-primary/15" : "border-band-foreground/25 bg-band-foreground/[0.03]"}`}
             >
               <div className="flex items-baseline justify-between gap-2">
                 <h2 className="font-display text-[15px] font-black">{node.title}</h2>

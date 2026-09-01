@@ -79,6 +79,14 @@ describe("AppShell", () => {
     render(<AppShell batch={{ stage: "full", total: 2, done: 0, startedAt: "x", current: null }}>본문</AppShell>);
     expect(within(screen.getByRole("banner")).getByRole("status")).toHaveTextContent("2개사 분석 중");
   });
+  test("draws the header edge with the hairline token — the band is paper coloured in light mode", () => {
+    render(<AppShell>본문</AppShell>);
+    const bar = screen.getByRole("banner").firstElementChild;
+
+    expect(bar).toHaveClass("border-hairline");
+    expect(bar?.className).not.toContain("border-band-foreground");
+  });
+
   test("offers the theme toggle in the header", () => {
     render(<AppShell>본문</AppShell>);
 

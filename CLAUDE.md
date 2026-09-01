@@ -146,7 +146,7 @@ Next.js 는 저장소 루트, 스크립트는 `scripts/`. **Python 파일은 `sc
 
 **방향 B「신호(Signal)」** — `docs/superpowers/specs/2026-08-30-visual-redesign-design.md` 가 원천이다. 구현은 shadcn/ui + Tailwind v4 그대로다. Montage 토큰과 코믹북 층(크림지·잉크 2px·하드 그림자·Anton 리본)은 걷어냈다 — 다시 들이지 않는다.
 
-- 토큰은 `src/app/globals.css` 세 곳(`:root` · `.dark` · `@theme inline`)에 있다. band `#0B1220`(헤더 밴드) · ink/foreground `#0B1220` · hairline `#E3E5EA` · primary `#2B6BFF` 하나. 다크는 밴드를 배경보다 한 단계 더 어둡게 둔다. **기본은 라이트고, 헤더의 토글로 전환한다** — 선택은 `localStorage.theme` 에 남고 `layout.tsx` 인라인 스크립트가 첫 페인트 전에 적용한다. 운영체제 설정(`prefers-color-scheme`)은 따르지 않는다
+- 토큰은 `src/app/globals.css` 세 곳(`:root` · `.dark` · `@theme inline`)에 있다. band 는 **라이트에서 종이색 `#F5F6F8`+잉크 글자, 다크에서 `#060A14`+밝은 글자**로 뒤집힌다(헤더·히어로 공용) · ink/foreground `#0B1220` · hairline `#E3E5EA` · primary `#2B6BFF` 하나. 다크는 밴드를 배경보다 한 단계 더 어둡게 둔다. **기본은 라이트고, 헤더의 토글로 전환한다** — 선택은 `localStorage.theme` 에 남고 `layout.tsx` 인라인 스크립트가 첫 페인트 전에 적용한다. 운영체제 설정(`prefers-color-scheme`)은 따르지 않는다
 - 서체는 Pretendard 본문 + **Gothic A1 900** 디스플레이(`font-display` — H1·절 번호·절 제목·리본). Gothic A1 은 `next/font/google` 로 self-host 한다(`--font-gothic-a1`)
 - 절은 상자가 아니라 **4px 상단 괘선 + 큰 번호**(`Panel`·`SectionHead`)로 나뉜다. 배지·버튼·카드는 `signal`/`signal-outline` 변형 — 사각, 그림자 없음
 - 워드마크는 `src/components/layout/wordmark.tsx` 하나로 헤더·로그인에 쓴다. 브랜드색은 currentColor·primary 만
