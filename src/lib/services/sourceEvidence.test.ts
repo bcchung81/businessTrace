@@ -344,3 +344,19 @@ describe("procurementSnapshot", () => {
     expect(row.summary).toContain("상호 일치 후보 2건");
   });
 });
+
+describe("procurementSnapshot when the scan did not finish", () => {
+  it("refuses to call an incomplete scan 미참여 — that would be a failure read as a fact", () => {
+    const row = procurementSnapshot({ count: 0, total: 0, candidates: 0, years: [] }, { complete: false });
+
+    expect(row.status).toBe("pending");
+    expect(row.summary).toContain("스캔 미완료");
+  });
+
+  it("still reports the awards it did find on an incomplete scan", () => {
+    const row = procurementSnapshot({ count: 1, total: 20000000, candidates: 0, years: [] }, { complete: false });
+
+    expect(row.status).toBe("found");
+    expect(row.summary).toContain("스캔 미완료");
+  });
+});

@@ -212,13 +212,22 @@ export function toSnapshots(evidence: Evidence, businessNo: string | null = null
  * 배치가 모은 낙찰 집계를 스냅샷 한 행으로 접는다 — 전수 스캔이라 단건 새로고침 경로(toSnapshots)에 들어가지 않는다.
  * 스캔했는데 없는 것은 결측이 아니라 측정 불가다. 조달 미참여를 실적 0으로 읽으면 조달과 무관한 기업이 부당하게 깎인다.
  */
-export function procurementSnapshot(summary: ProcurementSummary): SnapshotRow {
+export function procurementSnapshot(summary: ProcurementSummary, scan: { complete: boolean } = { complete: true }): SnapshotRow {
   const candidates = summary.candidates > 0 ? ` · 상호 일치 후보 ${summary.candidates}건(미확정)` : "";
+  const incomplete = scan.complete ? "" : " · 스캔 미완료";
   if (summary.count > 0) {
     return {
       source: "procurement",
       status: "found",
-      summary: `낙찰 ${summary.count}건 · ${summary.total.toLocaleString("en-US")}원${candidates}`,
+      summary: `낙찰 ${summary.count}건 · ${summary.total.toLocaleString("en-US")}원${candidates}${incomplete}`,
+      payload: summary,
+    };
+  }
+  if (!scan.complete) {
+    return {
+      source: "procurement",
+      status: "pending",
+      summary: `스캔 미완료 — 조달청이 기간을 다 주지 않았다${candidates}`,
       payload: summary,
     };
   }

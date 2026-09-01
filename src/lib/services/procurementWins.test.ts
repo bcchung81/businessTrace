@@ -209,3 +209,36 @@ describe("monthlyWindows", () => {
     expect(gaps).toEqual([]);
   });
 });
+
+describe("scanAwards under throttling", () => {
+  it("treats an empty page as a failure while totalCount says rows remain", async () => {
+    const full = page(Array.from({ length: 999 }, (_, i) => ({ ...ROW, bidNtceNo: `A${i}` })), 5000);
+    const fetchImpl = responder([full, page([], 5000)]);
+
+    const result = await scanAwards({ from: "20250902", to: "20251001", category: "물품" }, { fetchImpl, pauseMs: 0, retries: 1 });
+
+    expect(result.failed).toBe(true);
+    expect(result.reason).toContain("빈 응답");
+  });
+
+  it("retries an empty page before giving up — the throttle clears on its own", async () => {
+    const full = page(Array.from({ length: 999 }, (_, i) => ({ ...ROW, bidNtceNo: `A${i}` })), 1500);
+    const rest = page(Array.from({ length: 501 }, (_, i) => ({ ...ROW, bidNtceNo: `B${i}` })), 1500);
+    const fetchImpl = responder([full, page([], 1500), rest]);
+
+    const result = await scanAwards({ from: "20250902", to: "20251001", category: "물품" }, { fetchImpl, pauseMs: 0, retries: 2 });
+
+    expect(result.failed).toBeUndefined();
+    expect(result.awards).toHaveLength(1500);
+  });
+
+  it("an empty first page with a zero totalCount is a real empty window, not a failure", async () => {
+    const result = await scanAwards(
+      { from: "20250902", to: "20251001", category: "물품" },
+      { fetchImpl: responder([page([], 0)]), pauseMs: 0, retries: 1 },
+    );
+
+    expect(result.failed).toBeUndefined();
+    expect(result.awards).toEqual([]);
+  });
+});

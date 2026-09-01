@@ -6,7 +6,13 @@ const SCAN_URL = "https://apis.data.go.kr/1230000/as/ScsbidInfoService";
 const OPERATION = { 물품: "getScsbidListSttusThngPPSSrch", 용역: "getScsbidListSttusServcPPSSrch" } as const;
 const PAGE_SIZE = 999;
 const MAX_PAGES = 200;
-const REQUEST_TIMEOUT_MS = 30000;
+const REQUEST_TIMEOUT_MS = 60000;
+const DEFAULT_PAUSE_MS = 700;
+const DEFAULT_RETRIES = 4;
+
+function pause(ms: number) {
+  return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
+}
 
 export type AwardCategory = keyof typeof OPERATION;
 
@@ -83,15 +89,19 @@ function toAward(row: Record<string, string>, category: AwardCategory): Procurem
  */
 export async function scanAwards(
   input: { from: string; to: string; category: AwardCategory },
-  deps: { fetchImpl?: typeof fetch } = {},
+  deps: { fetchImpl?: typeof fetch; pauseMs?: number; retries?: number } = {},
 ): Promise<ScanResult> {
   const serviceKey = process.env.NTS_SERVICE_KEY;
   if (!serviceKey) return { awards: [], scanned: 0, failed: true, reason: "NTS_SERVICE_KEY 가 설정되지 않았습니다." };
 
   const fetchImpl = deps.fetchImpl ?? fetch;
+  const pauseMs = deps.pauseMs ?? DEFAULT_PAUSE_MS;
+  const retries = deps.retries ?? DEFAULT_RETRIES;
   const awards: ProcurementAward[] = [];
+  let total = Number.POSITIVE_INFINITY;
+  let emptyAttempts = 0;
 
-  for (let page = 1; page <= MAX_PAGES; page += 1) {
+  for (let page = 1, request = 0; request <= MAX_PAGES; request += 1) {
     const url = new URL(`${SCAN_URL}/${OPERATION[input.category]}`);
     url.searchParams.set("serviceKey", serviceKey);
     url.searchParams.set("inqryDiv", "1");
@@ -117,10 +127,28 @@ export async function scanAwards(
     }
 
     const rows = itemsOf(body);
-    for (const row of rows) awards.push(toAward(row, input.category));
+    total = body.response?.body?.totalCount ?? total;
 
-    const total = body.response?.body?.totalCount ?? awards.length;
+    if (rows.length === 0) {
+      if (awards.length >= total) break;
+      emptyAttempts += 1;
+      if (emptyAttempts >= retries) {
+        return {
+          awards,
+          scanned: awards.length,
+          failed: true,
+          reason: `조달청이 ${total}건 중 ${awards.length}건까지만 주고 빈 응답을 반복했습니다 — 스캔 미완료`,
+        };
+      }
+      await pause(pauseMs * emptyAttempts);
+      continue;
+    }
+
+    emptyAttempts = 0;
+    for (const row of rows) awards.push(toAward(row, input.category));
     if (rows.length < PAGE_SIZE || awards.length >= total) break;
+    page += 1;
+    await pause(pauseMs);
   }
 
   return { awards, scanned: awards.length };
