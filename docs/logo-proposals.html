@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <style>
     :root {
       --background: #ffffff;
@@ -401,8 +402,8 @@
     <section class="filters" aria-label="보기 설정">
       <span class="filter-note">각 시안은 본 로고, 헤더 적용 예시, 64/48/32/16 아이콘 스케일을 함께 보여줍니다.</span>
       <div class="mode-switch" role="group" aria-label="배경 모드">
-        <button type="button" class="mode-button active" data-mode="light" onclick="setPreviewMode('light')">라이트</button>
-        <button type="button" class="mode-button" data-mode="band" onclick="setPreviewMode('band')">밴드</button>
+        <button type="button" class="mode-button active" data-mode="light" aria-pressed="true" onclick="setPreviewMode('light')">라이트</button>
+        <button type="button" class="mode-button" data-mode="band" aria-pressed="false" onclick="setPreviewMode('band')">밴드</button>
       </div>
     </section>
 
@@ -661,7 +662,9 @@
 
     function setPreviewMode(mode, silent = false) {
       document.querySelectorAll(".mode-button").forEach((button) => {
-        button.classList.toggle("active", button.dataset.mode === mode);
+        const active = button.dataset.mode === mode;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
       });
       document.querySelectorAll(".preview-frame").forEach((frame) => {
         const isBand = frame.classList.contains("band");
@@ -678,7 +681,7 @@
       clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
       const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
       const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-      style.textContent = ".logo-text{font-family:'Gothic A1','Pretendard Variable',Pretendard,sans-serif;font-weight:900;letter-spacing:0}.micro-text{font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-weight:800;letter-spacing:0}.fill-foreground{fill:#0b1220}.fill-background{fill:#ffffff}.fill-primary{fill:#2b6bff}.fill-muted{fill:#5b6170}.fill-verified{fill:#158a3e}.fill-review{fill:#b85a00}.fill-risk{fill:#d42b2b}.stroke-foreground{stroke:#0b1220}.stroke-primary{stroke:#2b6bff}.stroke-muted{stroke:#5b6170}";
+      style.textContent = "@import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@800;900&display=swap');@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');.logo-text{font-family:'Gothic A1','Pretendard Variable',Pretendard,sans-serif;font-weight:900;letter-spacing:0}.micro-text{font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-weight:800;letter-spacing:0}.fill-foreground{fill:#0b1220}.fill-background{fill:#ffffff}.fill-primary{fill:#2b6bff}.fill-muted{fill:#5b6170}.fill-verified{fill:#158a3e}.fill-review{fill:#b85a00}.fill-risk{fill:#d42b2b}.stroke-foreground{stroke:#0b1220}.stroke-primary{stroke:#2b6bff}.stroke-muted{stroke:#5b6170}";
       defs.appendChild(style);
       clone.prepend(defs);
       const source = new XMLSerializer().serializeToString(clone);
