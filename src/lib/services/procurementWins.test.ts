@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { matchAwards, scanAwards, summariseAwards, type ProcurementAward } from "@/lib/services/procurementWins";
+import { matchAwards, monthlyWindows, scanAwards, summariseAwards, type ProcurementAward } from "@/lib/services/procurementWins";
 
 function page(items: Array<Record<string, string>>, totalCount = items.length) {
   return {
@@ -186,5 +186,26 @@ describe("summariseAwards", () => {
 
   it("reports an empty scan as zero confirmed rather than as missing data", () => {
     expect(summariseAwards([])).toEqual({ count: 0, total: 0, candidates: 0, years: [] });
+  });
+});
+
+describe("monthlyWindows", () => {
+  it("splits the lookback into whole months ending on the given day", () => {
+    expect(monthlyWindows(new Date("2026-03-15T00:00:00+09:00"), 3)).toEqual([
+      { from: "20260216", to: "20260315" },
+      { from: "20260116", to: "20260215" },
+      { from: "20251216", to: "20260115" },
+    ]);
+  });
+
+  it("covers every day exactly once — no gap and no overlap between windows", () => {
+    const windows = monthlyWindows(new Date("2026-03-15T00:00:00+09:00"), 12);
+    const gaps = windows.slice(1).filter((window, i) => {
+      const next = new Date(`${window.to.slice(0, 4)}-${window.to.slice(4, 6)}-${window.to.slice(6)}T00:00:00Z`);
+      next.setUTCDate(next.getUTCDate() + 1);
+      return next.toISOString().slice(0, 10).replace(/-/g, "") !== windows[i].from;
+    });
+
+    expect(gaps).toEqual([]);
   });
 });

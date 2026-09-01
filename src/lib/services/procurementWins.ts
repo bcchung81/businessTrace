@@ -1,3 +1,4 @@
+import { KST_OFFSET_MS } from "@/lib/services/kst";
 import { normaliseCompanyName } from "@/lib/services/ventureCertification";
 import { normaliseBusinessNo } from "@/lib/services/nts";
 
@@ -183,4 +184,28 @@ export function summariseAwards(rows: AwardRow[]): ProcurementSummary {
       .sort(([a], [b]) => b - a)
       .map(([year, bucket]) => ({ year, ...bucket })),
   };
+}
+
+function stamp(date: Date) {
+  return date.toISOString().slice(0, 10).replace(/-/g, "");
+}
+
+function monthsBack(year: number, month: number, day: number, back: number) {
+  const lastDay = new Date(Date.UTC(year, month - back + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month - back, Math.min(day, lastDay)));
+}
+
+/**
+ * 조회 기간을 월 단위 창으로 쪼갠다 — 낙찰 API 는 한 번에 넓은 기간을 주지 않는다.
+ * 창은 KST 달력 기준으로 하루도 겹치거나 비지 않게 이어 붙인다.
+ */
+export function monthlyWindows(end: Date, months: number) {
+  const kst = new Date(end.getTime() + KST_OFFSET_MS);
+  const [year, month, day] = [kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()];
+
+  return Array.from({ length: months }, (_, i) => {
+    const from = monthsBack(year, month, day, i + 1);
+    from.setUTCDate(from.getUTCDate() + 1);
+    return { from: stamp(from), to: stamp(monthsBack(year, month, day, i)) };
+  });
 }
