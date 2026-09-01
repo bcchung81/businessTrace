@@ -22,7 +22,6 @@ Next.js 가 사이드카를 부르게 하려면 `.env` 에 `SIDECAR_URL=http://1
 | 메서드 | 경로 | 상태 |
 |---|---|---|
 | GET | `/health` | 동작 |
-| POST | `/finance/normalize` | 501 — 채택하지 않음 |
 
 ## 지금 이 계층은 비어 있다
 

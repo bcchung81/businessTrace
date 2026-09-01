@@ -7,13 +7,12 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from app.routers import finance, health
+from app.routers import health
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title="성과돋보기 사이드카", version="0.1.0")
     app.include_router(health.router)
-    app.include_router(finance.router)
     return app
 
 

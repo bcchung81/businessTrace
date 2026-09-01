@@ -6,7 +6,8 @@ import { LlmParseError, LlmRefusalError } from "@/lib/services/llm";
 const schema = z.object({ verdict: z.enum(["Y", "N"]), reason: z.string() });
 
 function sdk(message: Record<string, unknown>, usage: Record<string, unknown> = {}) {
-  const create = vi.fn(async (_body: Record<string, unknown>) => ({
+  const create = vi.fn(async (body: Record<string, unknown>) => ({
+    _sent: body,
     choices: [{ message }],
     usage: { prompt_tokens: 120, completion_tokens: 30, prompt_tokens_details: { cached_tokens: 100 }, ...usage },
   }));

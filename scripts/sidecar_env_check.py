@@ -6,12 +6,11 @@
 
     python3 scripts/sidecar_env_check.py
     python3 scripts/sidecar_env_check.py --install 3.12
-    python3 scripts/sidecar_env_check.py -r gpt-researcher -r dartlab
+    python3 scripts/sidecar_env_check.py -r <패키지>
 
-gpt-researcher 0.16.0 은 query_processing.py 에서 Any/List 를 import 하지
-않는다. Python 3.14 는 PEP 649 로 애노테이션을 지연 평가해 이 버그가 드러나지
-않지만 3.12/3.13 에서는 import 시점에 NameError 로 죽는다. 그래서 아래 기본
-요구사항은 gpt-researcher 를 0.15.1 로 핀한다. 업스트림 수정 후 해제할 것.
+이 스크립트가 처음 생긴 이유였던 두 의존성(gpt-researcher·dartlab)은 2026-09-01 에
+둘 다 걷어냈다. 남은 것은 사이드카가 실제로 쓰는 얇은 트리뿐이라, 새 파이썬 전용
+라이브러리를 들일 때 -r 로 얹어 검사하는 용도로 남긴다.
 """
 
 import argparse
@@ -27,14 +26,10 @@ CANDIDATES = ["3.12", "3.13", "3.14"]
 REQUIREMENTS = [
     "fastapi",
     "uvicorn[standard]",
-    "pydantic-settings",
-    "httpx",
-    "python-dotenv",
-    "gpt-researcher==0.15.1",
-    "dartlab",
+    "pydantic",
 ]
 
-IMPORT_CHECKS = ["fastapi", "uvicorn", "dartlab", "gpt_researcher"]
+IMPORT_CHECKS = ["fastapi", "uvicorn", "pydantic"]
 
 RESOLVE_TIMEOUT = 600
 INSTALL_TIMEOUT = 1800
