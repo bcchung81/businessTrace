@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { CompanyFacts, FactValue } from "@/lib/services/companyFacts";
 import type { Ratio } from "@/lib/services/financeRatios";
 import type { SourceKey } from "@/lib/services/sourceEvidence";
@@ -29,18 +29,38 @@ function money(value: number) {
 
 type Cell = { key: string; label: string; value: React.ReactNode; chars: number; note?: React.ReactNode };
 
+const WIDE_CHARS = 34;
+
 /**
- * 셀 폭을 데이터 길이로 정한다 — 짧은 값 1칸, 긴 값일수록 넓게. 값이 셀 안에서 꺾이지 않게 하기 위해서다.
+ * 셀을 표의 행으로 묶는다 — 짧은 항목은 둘씩, 긴 항목은 한 행을 통째로.
+ * 라벨 열이 고정 폭으로 서야 값이 세로로 정렬된다. 길이가 제각각인 값을 억지로 두 칸에 넣으면 그 정렬이 깨진다.
  */
-function spanClass(chars: number) {
-  if (chars > 52) return "col-span-2 sm:col-span-3 lg:col-span-4";
-  if (chars > 34) return "col-span-2 lg:col-span-3";
-  if (chars > 17) return "col-span-2";
-  return "";
+export function packRows(cells: Cell[]): Cell[][] {
+  const rows: Cell[][] = [];
+  let pending: Cell | null = null;
+
+  for (const cell of cells) {
+    if (cell.chars > WIDE_CHARS) {
+      if (pending) {
+        rows.push([pending]);
+        pending = null;
+      }
+      rows.push([cell]);
+      continue;
+    }
+    if (pending) {
+      rows.push([pending, cell]);
+      pending = null;
+    } else {
+      pending = cell;
+    }
+  }
+  if (pending) rows.push([pending]);
+  return rows;
 }
 
 /**
- * 헤더 아래 기본 정보를 key-value 격자로 편다 — 번호·업종·기본·종업원 3원천·인건비·입퇴사가 한 표다.
+ * 헤더 아래 기본 정보를 표로 편다 — 번호·업종·기본·종업원 3원천·인건비·입퇴사가 한 표다.
  * 원천이 둘이면 일치 여부를, 3원천 인원이 20% 넘게 갈리면 동명 타사·지점 합산 의심을 셀 안에 적는다.
  */
 export function FactsTable({ facts, businessNo, industry }: { facts: CompanyFacts; businessNo: string | null; industry: string | null }) {
@@ -108,17 +128,33 @@ export function FactsTable({ facts, businessNo, industry }: { facts: CompanyFact
   ].filter((cell): cell is Cell => cell !== null);
 
   return (
-    <dl aria-label="기업 기본" className="mt-1 grid grid-flow-dense grid-cols-2 gap-x-5 gap-y-3 border-t border-hairline pt-3 text-[12px] sm:grid-cols-3 lg:grid-cols-4">
-      {cells.map((cell) => (
-        <div key={cell.key} className={`flex min-w-0 flex-col gap-1 border-l-2 border-hairline pl-2.5 ${spanClass(cell.chars)}`}>
-          <dt className="whitespace-nowrap text-[10px] font-bold tracking-[0.1em] text-muted-foreground">{cell.label}</dt>
-          <dd className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-[12.5px] font-semibold">
-            <span className="min-w-0 break-keep lg:whitespace-nowrap">{cell.value}</span>
-            {cell.note}
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <table aria-label="기업 기본" className="mt-1 w-full table-fixed border-collapse border-t-2 border-ink text-[12px]">
+      <tbody>
+        {packRows(cells).map((row) => (
+          <tr key={row.map((cell) => cell.key).join("+")} className="border-b border-hairline last:border-0">
+            {row.map((cell, index) => (
+              <Fragment key={cell.key}>
+                <th
+                  scope="row"
+                  className="w-[7.5rem] whitespace-nowrap bg-surface px-2.5 py-1.5 text-left align-baseline text-[10px] font-bold tracking-[0.1em] text-muted-foreground"
+                >
+                  {cell.label}
+                </th>
+                <td
+                  className="px-2.5 py-1.5 align-baseline"
+                  colSpan={row.length === 1 && index === 0 ? 3 : 1}
+                >
+                  <span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-[12.5px] font-semibold">
+                    <span className="min-w-0 break-keep">{cell.value}</span>
+                    {cell.note}
+                  </span>
+                </td>
+              </Fragment>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

@@ -20,53 +20,41 @@ const facts: CompanyFacts = {
 };
 
 describe("FactsTable", () => {
-  test("lays every basic out as key-value cells with sources and agreement in words", () => {
-    render(<FactsTable facts={facts} businessNo="1234567890" industry="SW" />);
-    const table = screen.getByLabelText("기업 기본");
-    expect(within(table).getByText("사업자번호")).toBeInTheDocument();
+  test("lays the facts out as a real table with label cells and value cells", () => {
+    render(<FactsTable facts={facts} businessNo="1234567890" industry="양자" />);
+
+    const table = screen.getByRole("table", { name: "기업 기본" });
+    expect(within(table).getByRole("rowheader", { name: "사업자번호" })).toBeInTheDocument();
+    expect(within(table).getByRole("rowheader", { name: "업종" })).toBeInTheDocument();
     expect(within(table).getByText("1234567890")).toBeInTheDocument();
-    expect(within(table).getByText("업종")).toBeInTheDocument();
-    expect(within(table).getByText("SW")).toBeInTheDocument();
-    expect(within(table).getByText("대표")).toBeInTheDocument();
-    expect(within(table).getByText("김한빛")).toBeInTheDocument();
-    expect(within(table).getByText("DART·나라장터 일치")).toBeInTheDocument();
-    expect(within(table).getByText("설립")).toBeInTheDocument();
-    expect(within(table).getByText("2019-03-01")).toBeInTheDocument();
-    expect(within(table).getByText("불일치 · 금융위 2019-04-01")).toHaveClass("text-review");
-    expect(within(table).getByText("상장")).toBeInTheDocument();
-    expect(within(table).getByText("상장 654321")).toBeInTheDocument();
-    expect(within(table).queryByText("법인번호")).not.toBeInTheDocument();
   });
 
-  test("folds the employee sources, payroll estimate and turnover into the same table", () => {
-    render(<FactsTable facts={facts} businessNo="1234567890" industry={null} />);
-    const table = screen.getByLabelText("기업 기본");
-    expect(within(table).getByText("국민연금 가입자")).toBeInTheDocument();
-    expect(within(table).getByText("111")).toBeInTheDocument();
-    expect(within(table).getByText("조달 종업원")).toBeInTheDocument();
-    expect(within(table).getByText("원천 간 차이 큼")).toHaveClass("text-review");
-    expect(within(table).getByText("인건비 추정")).toBeInTheDocument();
-    expect(table).toHaveTextContent("55.9억 · 인당 420만");
-    expect(within(table).getByText("추정")).toBeInTheDocument();
-    expect(within(table).getByText("12개월 입·퇴사")).toBeInTheDocument();
-    render(<FactsTable facts={{ ...facts, turnover: { hired: 3, departed: 1, rate: 0.05, months: 5 } }} businessNo="1234567890" industry={null} />);
-    expect(screen.getByText("5개월 입·퇴사")).toBeInTheDocument();
-    expect(table).toHaveTextContent("입사 24 · 퇴사 12 · 이직률 11%");
-  });
-
-  test("widens a long cell to fit its data and keeps short cells single-column", () => {
+  test("pairs short facts two to a row and gives a long one the whole row", () => {
     const long = {
-      value: "경기도 고양시 덕양구 삼원로",
-      sources: ["나라장터"],
+      value: "전남광주통합특별시 북구 첨단과기로",
+      sources: ["나라장터", "금융위"],
       agreement: "mismatch" as const,
-      alternatives: ["금융위 경기도 고양시 덕양구 원흥동 삼원로 73"],
+      alternatives: ["금융위 광주광역시 북구 첨단과기로 345"],
     };
-    render(<FactsTable facts={{ ...facts, address: long }} businessNo="1234567890" industry={null} />);
+    render(<FactsTable facts={{ ...facts, address: long }} businessNo="1234567890" industry="양자" />);
 
-    const address = screen.getByText("주소").closest("div")!;
-    expect(address.className).toContain("lg:col-span-3");
-    const ceo = screen.getByText("대표").closest("div")!;
-    expect(ceo.className).not.toContain("col-span");
+    const table = screen.getByRole("table", { name: "기업 기본" });
+    const rows = within(table).getAllByRole("row");
+    const pair = rows.find((row) => within(row).queryByRole("rowheader", { name: "사업자번호" }));
+    expect(within(pair!).getAllByRole("rowheader")).toHaveLength(2);
+
+    const wide = rows.find((row) => within(row).queryByRole("rowheader", { name: "주소" }));
+    expect(within(wide!).getAllByRole("rowheader")).toHaveLength(1);
+    expect(within(wide!).getAllByRole("cell")[0]).toHaveAttribute("colspan", "3");
+  });
+
+  test("keeps every fact — nothing is dropped by the packing", () => {
+    render(<FactsTable facts={facts} businessNo="1234567890" industry="양자" />);
+
+    const table = screen.getByRole("table", { name: "기업 기본" });
+    for (const label of ["사업자번호", "업종", "대표", "설립", "주소", "국민연금 가입자", "조달 종업원", "인건비 추정", "12개월 입·퇴사"]) {
+      expect(within(table).getByRole("rowheader", { name: label })).toBeInTheDocument();
+    }
   });
 
   test("warns in the 사업자번호 cell when the number is missing", () => {
@@ -82,10 +70,10 @@ describe("FactsTable", () => {
         industry={null}
       />,
     );
-    const table = screen.getByLabelText("기업 기본");
-    expect(within(table).getByText("사업자번호")).toBeInTheDocument();
+    const table = screen.getByRole("table", { name: "기업 기본" });
+    expect(within(table).getByRole("rowheader", { name: "사업자번호" })).toBeInTheDocument();
     expect(within(table).getByText("미확보 — 뉴스 외 근거를 붙일 수 없습니다")).toHaveClass("text-review");
-    expect(within(table).queryByText("대표")).not.toBeInTheDocument();
+    expect(within(table).queryByRole("rowheader", { name: "대표" })).not.toBeInTheDocument();
   });
 });
 
