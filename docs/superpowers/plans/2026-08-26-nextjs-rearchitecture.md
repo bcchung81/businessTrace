@@ -307,6 +307,17 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 - **검증**: 정규화 성공/폴백 동작/사이드카 다운 시 에러 처리 mock 테스트
 - **커밋**: `feat: dartlab financial normalization via sidecar`
 
+**실측 (2026-09-01) — 착수 전 재검토가 필요하다.** dartlab 0.11.0(PyPI, Apache-2.0)을 설치해 API 를 확인한 결과
+진입점이 `dartlab.company.Company(stockCode)` 로 **종목코드 기반, 즉 상장사 전용**이다.
+
+- 50개사 중 종목코드 보유는 **4개사**뿐이다 (아크릴·핀텔·한국첨단소재·케이앤에스아이앤씨)
+- 그 4개사는 **이미 재무를 확보한 기업들**이다 — dartlab 은 커버리지를 넓히지 못하고 비율만 더한다
+- 정작 비율이 없는 46개사(비상장)는 dartlab 이 손대지 못한다. Task 5 폴백이 사실상 전부가 된다
+- 감사보고서 원문 파서(`dartAuditReport.ts`)가 이미 자산·부채·자본 총계 행을 읽을 수 있어, 비율은 사이드카 없이도 낼 수 있다
+
+선택지: (a) 계획대로 dartlab 을 붙이고 46개사는 폴백 · (b) dartlab 을 채택하지 않고 비율을 자체 계산 ·
+(c) Task 6 을 보류하고 Task 15 로 간다. **결정 전까지 착수하지 않는다.**
+
 #### Task 7: 뉴스 수집 이관 (TS)
 - **파일**: `src/lib/services/newsCollector.ts`, `src/app/api/news/route.ts`, 테스트
 - **내용**: 네이버 뉴스 API + 구글 뉴스 RSS 수집을 TS로 재구현 (fetch + rss-parser), 중복 제거·언론사 매핑 유지, 기존 `domain_press_mapping.json` 복사 재사용. 기간 필터·건수 옵션 동일
