@@ -39,6 +39,7 @@ model Company {
   aliases      String?
   sourceDecisions SourceDecision[]
   selections   SelectionRecord[]
+  procurementAwards ProcurementAward[]
 
   @@unique([name, year])
   @@index([year])
@@ -231,4 +232,23 @@ model Submission {
   note        String?
   submittedAt DateTime @default(now())
   submittedBy Int
+}
+
+model ProcurementAward {
+  id          Int      @id @default(autoincrement())
+  companyId   Int
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  awardKey    String
+  bidNoticeNo String
+  category    String
+  title       String
+  agency      String?
+  amount      Int?
+  awardedAt   String?
+  matchedBy   String
+  winnerName  String
+  fetchedAt   DateTime @default(now())
+
+  @@unique([companyId, awardKey])
+  @@index([companyId, awardedAt])
 }
