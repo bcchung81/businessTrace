@@ -6,11 +6,10 @@
 **역할:** 이 문서는 **마스터 로드맵**이다 — 결정·순서·리스크를 담는다. 태스크별 파일·인터페이스·테스트 코드는 페이즈별 실행 플랜에 둔다. 외부 API 스펙의 단일 출처는 `.claude/skills/external-apis/SKILL.md` 다
 **Flask 기반 이전 플랜을 대체 — 스택 전환 및 차용 요소 반영.** 폐기본은 2026-08-27 삭제했고 고유 내용(기본 가중치·리스크 키워드)은 Task 11·12 로 이관했다. 원본이 필요하면 `git log --diff-filter=D -- docs/superpowers/plans/2026-08-26-p0-trust-verification.md` 로 찾는다
 
-**목표:** 뉴스+AI 기반 기업 분석 프로덕션을 Next.js 풀스택으로 재구축하고, Python 사이드카를 통해 딥리서치(gpt-researcher)·재무 정규화(dartlab) 기능을 차용한다. 환각 검증·DART/국세청 연동·리스크 모니터링·벤치마킹·XAI·연도별 이력 트래킹을 포함해 우수기업 선정의 신뢰성·객관성을 강화한다.
+**목표:** 뉴스+AI 기반 기업 분석 프로덕션을 Next.js 풀스택으로 재구축한다. 환각 검증·DART/국세청 연동·리스크 모니터링·벤치마킹·XAI·연도별 이력 트래킹을 포함해 우수기업 선정의 신뢰성·객관성을 강화한다.
 
 **대응 요구사항 (과제계획서):**
 - [리스크] AI 환각 방지 → 다층 검증 파이프라인 (출처 인용 + LLM judge + evidence-match + 반증 분석)
-- [Plan] 객관성·신뢰성 강화, 글로벌 지역·정책·최신동향 대응 → 딥리서치 자동화
 - [Do] 평가위원회 제공 AI 다차원 분석자료, 연도별 시상·성과 관리
 - [KPI] 우수기업 50개사 선정, 홍보채널 확대, 만족도 제고
 
@@ -24,21 +23,20 @@
 [Next.js 풀스택 앱]  ── Prisma ──→ [SQLite/PostgreSQL]
     │  - App Router 화면 (Tailwind + shadcn/ui + Recharts)
     │  - Route Handlers: 뉴스수집·GPT분석·검증·벤치마킹·리포트 API
-    │  - SSE: 분석·딥리서치 진행률 스트리밍
+    │  - SSE: 분석 진행률 스트리밍
     │
     ├──HTTP──→ [Python 사이드카 (FastAPI)]
-    │            - /research   : gpt-researcher 딥리서치 (비동기 잡)
     │            - /finance    : dartlab 재무 정규화·비율 계산
     │            - /health     : 헬스체크
     │
     ├──HTTPS─→ 외부 API: 국세청(휴폐업) · OpenDART(공시·재무)
-    │                    네이버/구글 뉴스 · Tavily(딥리서치 검색)
+    │                    네이버/구글 뉴스
     └──SMTP──→ 이메일 발송 (리포트 배포)
 ```
 
 **역할 분리 원칙:**
 - Next.js: 화면, 일반 CRUD, 뉴스 수집, GPT 분석, 검증, 벤치마킹, 리포트 생성 — 전부 TypeScript 단일 스택
-- Python 사이드카: **Python 전용 라이브러리가 필요한 기능만** (gpt-researcher, dartlab). 최소한의 API 표면 유지
+- Python 사이드카: **Python 전용 라이브러리가 필요한 기능만.** 딥리서치(gpt-researcher)와 dartlab 을 둘 다 걷어낸 지금은 남은 소비자가 없다 — 존치 여부는 미결
 - 배포: Docker Compose (next-app + python-sidecar 2컨테이너) — 기존 Ubuntu VPS 또는 클라우드
 
 ## 저장소 구조 (2026-08-26 확정)
@@ -91,7 +89,7 @@ project1000/
 | LLM | **Anthropic** `@anthropic-ai/sdk` — 모델 ID 는 `ANTHROPIC_MODEL` 환경변수 1곳에서 관리, 기본 **`claude-sonnet-5`** (2026-08-26 결정, $2/$10 per MTok). 분석·judge 는 `thinking: {type:"adaptive"}` + `output_config.format` 구조화 출력. 50개사 일괄은 Message Batches API(50% 단가) 검토 |
 | 검증 | Vitest + Testing Library + jsdom (`@vitejs/plugin-react`, `vite-tsconfig-paths`) |
 | 엑셀 | exceljs |
-| 사이드카 | FastAPI + uvicorn, **Python 3.12 핀**, `gpt-researcher==0.15.1` 핀, dartlab (uv 관리) |
+| 사이드카 | FastAPI + uvicorn, **Python 3.12 핀** (uv 관리) |
 | 배포 | Docker Compose (next-app, python-sidecar, db) |
 
 ## Next.js 16 반영 사항 (설치본 `node_modules/next/dist/docs/` 확인)
@@ -110,10 +108,9 @@ project1000/
 
 ## 전제 조건 및 제약
 
-- 모든 외부 키는 환경변수만 사용 (`.env` 실태 기준, 2026-08-26): `ANTHROPIC_API_KEY`, `NCP_APIGW_API_KEY_ID`/`NCP_APIGW_API_KEY`(네이버 API HUB), `DART_API_KEY`, `NTS_SERVICE_KEY`(나라장터 공용), `TAVILY_API_KEY`, `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD`, `SMTP_HOST`/`SMTP_PORT`, `AUTH_SECRET`, `DATABASE_URL`. `.env.example` 에 키 이름을 유지하고 평문 값은 금지. **OpenAI 키는 쓰지 않는다** — 사이드카 gpt-researcher 도 Anthropic 을 LLM 으로 설정한다 (`FAST_LLM`/`SMART_LLM=anthropic:...`, 임베딩은 OpenAI 의존이므로 Task 15 에서 대안 확정)
+- 모든 외부 키는 환경변수만 사용 (`.env` 실태 기준, 2026-08-26): `ANTHROPIC_API_KEY`, `NCP_APIGW_API_KEY_ID`/`NCP_APIGW_API_KEY`(네이버 API HUB), `DART_API_KEY`, `NTS_SERVICE_KEY`(나라장터 공용), `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD`, `SMTP_HOST`/`SMTP_PORT`, `AUTH_SECRET`, `DATABASE_URL`. `.env.example` 에 키 이름을 유지하고 평문 값은 금지. LLM 공급자는 환경변수로 고른다 — 기본은 Anthropic, OpenAI 로 대체 가능(`LLM_PROVIDER`)
 - **LLM 공급자는 Anthropic 단일**이다. 레거시 프롬프트는 gpt-4o-mini 기준으로 튜닝됐으므로 "문구 임의 개선 금지" 원칙은 유지하되, 모델 전환 자체가 결과를 바꾼다 — Task 8 에서 레거시 결과 샘플 3건과 대조해 편차를 기록하고, 산식 버전을 `v2-anthropic` 으로 시작한다
 - 외부 API 테스트 전부 mock (네트워크 의존 금지). LLM 호출도 mock — 429·타임아웃·`stop_reason: "refusal"` 케이스 포함
-- 사이드카는 **상태 비저장**이다. 딥리서치 잡 상태는 Next.js 쪽 Prisma(`ResearchJob`)에 두고, 사이드카는 잡 ID 를 받아 실행·콜백만 한다 — 컨테이너 볼륨 없이 재시작 가능
 - 기존 DB 데이터는 **`backup/instance/news_homepage.db`** (users 10 / archives 3 / companies 42) 가 원본이다. `backup/news_homepage.db` 는 빈 파일 — 이관 스크립트가 원본 경로를 인자로 받고 건수를 단정한다
 - 기존 Flask 코드(`backup/`)는 **통째로 재사용하지 않는다**. 필요하면 참조해 신규 작성하거나, 자산 성격의 것은 복사해서 쓴다
   - **복사**: `domain_press_mapping.json`(도메인→언론사 181건), `news_analyzer.py` 의 GPT 프롬프트 문자열, `routes.py:1520~2065` 의 엑셀 시트 구성·스타일, `email_service.py` 의 발송 템플릿
@@ -127,15 +124,13 @@ project1000/
 
 macOS arm64 에서 후보 버전별로 의존성 해결 + venv 설치 + import 를 실제 수행한 결과다.
 
-| 파이썬 | gpt-researcher 0.16.0 | gpt-researcher 0.15.1 (핀) |
 |---|---|---|
 | 3.12 | **FAIL** — import 시 `NameError: name 'Any' is not defined` | PASS |
 | 3.13 | **FAIL** — 동일 | PASS |
 | 3.14 | PASS | PASS |
 
-**원인:** gpt-researcher 0.16.0 의 `gpt_researcher/actions/query_processing.py` 가 `Any`·`List` 를 import 하지 않는 업스트림 버그. Python 3.14 는 PEP 649 로 애노테이션을 지연 평가해 버그가 드러나지 않을 뿐, 코드가 정상인 것이 아니다.
 
-**결정:** Python 3.12 + `gpt-researcher==0.15.1` 핀. 3.14 로 최신 버전을 쓰는 선택지는, 언어의 애노테이션 평가 방식 변경이 실제 버그를 가려주는 데 의존하므로 채택하지 않는다. 업스트림 수정 후 핀을 해제한다.
+**결정:** Python 3.12 핀(uv 로 강제). 딥리서치 폐기로 gpt-researcher 핀 근거는 사라졌으나, 3.14 가 기본인 로컬에서 사이드카를 재현 가능하게 두려면 핀 자체는 유지한다.
 
 **미검증:** 위 결과는 macOS arm64 기준이다. 211개 패키지 트리의 리눅스 휠 가용성은 다를 수 있으므로 Task 3 에서 컨테이너 안에서 재검증한다 (venv 약 1.1GB).
 
@@ -147,7 +142,6 @@ macOS arm64 에서 후보 버전별로 의존성 해결 + venv 설치 + import �
 | DART 공시(`list.json`) | **PASS** | 삼성전자 2024년 10건, 올림플래닛 1건(감사보고서 2023.12) |
 | DART 재무(`fnlttSinglAcnt`) | **PASS**(상장사만) | 삼성전자 사업보고서 30항목. 올림플래닛은 `status=013` |
 | DART 사업자번호(`company.json`) | **PASS** | 삼성전자 1248100998, 올림플래닛 1208824298 |
-| Tavily | **PASS** | 검색결과 정상 |
 | Anthropic | **PASS** | claude-sonnet-4-5 응답 정상 |
 | 네이버 뉴스 | **PASS** | API HUB 키로 총 4,439,545건 조회 확인 |
 | 나라장터 | **PASS** | 삼성전자·올림플래닛 조회 성공. 엔드포인트 정정 후 해결 |
@@ -234,9 +228,8 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 #### Task 3: Python 사이드카 스캐폴딩
 - **파일**: `sidecar/pyproject.toml`, `sidecar/app/main.py`, `sidecar/app/routers/{health,research,finance}.py`, `sidecar/tests/`, `sidecar/Dockerfile`, `sidecar/.dockerignore`, `deploy/docker-compose.yml`, `deploy/Dockerfile.web`, `scripts/setup.sh`, `scripts/dev.sh`, `.dockerignore` — 사이드카 라우터 경로는 전 태스크에서 `sidecar/app/routers/` 로 통일
 - **내용**:
-  - `sidecar/pyproject.toml`: uv 관리, `requires-python = ">=3.12,<3.13"`, `gpt-researcher==0.15.1` 핀
-  - FastAPI 앱: `/health`, `/research`(POST — 잡 생성, GET — 상태·결과 조회), `/finance/normalize`(POST — dartlab 정규화·비율)
-  - 딥리서치 비동기 잡 구조: 잡 ID 발급 → 백그라운드 실행 → JSON 결과 파일 저장 → 폴링/SSE로 상태 전달
+  - `sidecar/pyproject.toml`: uv 관리, `requires-python = ">=3.12,<3.13"`
+  - FastAPI 앱: `/health`, `/finance/normalize`(POST — dartlab 정규화·비율)
   - Docker Compose: next-app(3000) + python-sidecar(8000), 사이드카 헬스체크. 사이드카는 `context: ./sidecar`
   - `scripts/setup.sh`(npm ci + uv sync + prisma migrate), `scripts/dev.sh`(next dev + uvicorn --reload 동시 기동)
   - 경계 강화: 루트 `.dockerignore`, `tsconfig.json` `exclude` 와 `eslint.config.mjs` `globalIgnores` 에 `sidecar/` 추가
@@ -316,7 +309,7 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 - 감사보고서 원문 파서(`dartAuditReport.ts`)가 이미 자산·부채·자본 총계 행을 읽을 수 있어, 비율은 사이드카 없이도 낼 수 있다
 
 선택지: (a) 계획대로 dartlab 을 붙이고 46개사는 폴백 · (b) dartlab 을 채택하지 않고 비율을 자체 계산 ·
-(c) Task 6 을 보류하고 Task 15 로 간다. **결정 전까지 착수하지 않는다.**
+**결정 (2026-09-01): (b) 채택.** dartlab 을 쓰지 않고 감사보고서·정기보고서에서 부채·자본 총계를 마저 뽑아 비율을 자체 계산한다 (`financeRatios.ts`). Task 6 은 이로써 닫는다.
 
 #### Task 7: 뉴스 수집 이관 (TS)
 - **파일**: `src/lib/services/newsCollector.ts`, `src/app/api/news/route.ts`, 테스트
@@ -349,7 +342,7 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 
 #### Task 10: 엑셀 리포트 통합
 - **파일**: `src/lib/services/reportExcel.ts`, 테스트
-- **내용**: exceljs로 리포트 생성 — 기존 구성(뉴스·종합의견) + 신설 시트: "다차원 검증"(재무/적격성/검증상태/반증 요약), "심층조사"(Task 15 결과, 있을 때). 이메일 발송(SMTP) 연동
+- **내용**: exceljs로 리포트 생성 — 기존 구성(뉴스·종합의견) + 신설 시트: "다차원 검증"(재무/적격성/검증상태/반증 요약). 이메일 발송(SMTP) 연동
 - **검증**: 시트 구성/옵션 데이터 누락 시에도 생성/이메일 mock 테스트
 - **커밋**: `feat: excel report with verification and research sheets`
 
@@ -400,31 +393,11 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 - **파일**: `src/lib/services/{batchRegistry,batchRun,batchProgress}.ts`, `src/app/api/analyze/{batch,status}/route.ts`, `src/components/analysis/batch-runner.tsx`, `src/components/layout/batch-indicator.tsx`, 실행 플랜 `docs/superpowers/plans/2026-08-30-batch-runner.md`
 - **내용**: `/companies` 에서 다중 선택 → SSE 로 순차 실행 · 4단 스테퍼 · 헤더 진행 배지(프로세스 메모리 레지스트리, 인스턴스 1개 전제) · 등록 직후 실행 링크. 자동 스케줄은 두지 않았다(사용자 결정)
 
-### Phase C: 딥리서치 및 검증 엔진 고도화
+### Phase C: 검증 엔진 고도화
 
-#### Task 15: STORM 아키텍처 기반 기업 딥리서치 (사이드카)
-- **파일**: `sidecar/app/routers/research.py`, `src/lib/services/deepResearch.ts`, `src/app/api/company/deep-research/route.ts`, UI 컴포넌트, 테스트
-- **내용**:
-  - **Stanford STORM 벤치마킹 (다관점 질의 분할 및 인용 트리)**:
-    - 단일 쿼리 검색 대신 4대 평가 관점(① 정책·기금 부합성, ② 기술력·특허·제품 경쟁력, ③ 시장·조달실적·매출지표, ④ 리스크·제재·소송·부정 이슈)으로 하위 에이전트 질의 자동 분할
-    - Tavily 검색 결과를 기반으로 인용 트리(Citation Tree) 구축 후 구조화된 심층 리포트 합성
-  - 사이드카 gpt-researcher/STORM 엔진 래핑: 잡 ID + 기업명 + 관점별 범위 입력 → 재귀 탐색 → 완료 시 Next.js 콜백 POST (사이드카 무상태 유지)
-  - Next.js: `ResearchJob` 생성/상태 조회 API + SSE 진행률, 완료 시 리포트를 Archive 저장 + 엑셀 "심층조사" 시트 통합
-  - 비용 제어: 모드 선택(경량 report / 심층 deep), 50개사 일괄 시 경량 모드 기본
-  - 검색 백엔드 Tavily(무료 티어), LLM 은 `anthropic:` 프로바이더 설정. 로컬 임베딩(`EMBEDDING=huggingface:...`) 가용성 점검 후 적용
-  - 리포트에 인용 URL이 포함되므로 Task 9의 1층 출처 검사를 재적용해 신뢰성 연결
-- **검증**: 잡 생성/폴링/완료/다관점 분할/타임아웃/사이드카 다운 시 처리 mock 테스트
-- **커밋**: `feat: storm-style multi-perspective deep research sidecar`
-
-#### Task 15b: RAGAS / Patronus Lynx 기반 검증 벤치마킹 및 임계값 최적화
-- **파일**: `scripts/benchmark-verification.ts`, `src/lib/services/verificationBenchmark.ts`, `data/golden-dataset.json`, 테스트
-- **내용**:
-  - **RAGAS / Patronus Lynx 벤치마킹 (정량적 환각 검증 최적화)**:
-    - 과거 실제 기사 50건 + 레이블링된 정답(Golden Dataset) 기반으로 Faithfulness, Context Precision, Counter-evidence Recall 정량 측정 스위트 구축
-    - 현재의 경험적 임계값(`faithfulness ≥ 0.85`, `sourceCoverage ≥ 0.5`, `evidenceMatch ≥ 0.4`)을 벤치마크 데이터셋에 대해 민감도/특이도 그리드 서치로 튜닝
-    - '검토 필요(needs_review)' 오탐률을 줄이면서 실제 환각(Hallucination) 방어율 100%를 달성하는 최적 파라미터 도출 및 설정 분리
-- **검증**: 벤치마크 실행 스크립트 동작 및 메트릭 산출 테스트
-- **커밋**: `feat: verification benchmarking and threshold tuning`
+> **딥리서치(구 Task 15·15b)는 2026-09-01 에 폐기했다.** STORM 다관점 딥리서치와 그에 딸린
+> RAGAS 임계값 튜닝을 함께 걷어냈다. 근거는 `docs/incidents.md` 가 아니라 이 결정 자체다 —
+> 필요해지면 이 커밋을 되짚어 복원한다(`git log -S "STORM"`).
 
 #### Task 16: 배포 패키징
 - **파일**: `deploy/Dockerfile.web`(next-app, multi-stage), `sidecar/Dockerfile`, `deploy/docker-compose.prod.yml`, 배포 문서
@@ -443,7 +416,6 @@ Task 1 → 2a → 2b → 2c                       (Phase 0 기반, 사이드카 
       → Task 7 → Task 8 → Task 9 → Task 10  (핵심 루프: 수집→분석→검증→리포트)
 Task 10 이후 병렬:
   ├─ Task 4 (국세청) · Task 5 → 5b (DART·나라장터)   외부 데이터 보강
-  ├─ Task 3 (사이드카 스캐폴딩) → Task 6 → Task 15 → 15b (STORM 딥리서치·RAGAS 튜닝)
   └─ Task 11 · Task 12 → 13 (AlphaSense 인용 UI) · Task 14   Phase B
 Task 16 (배포) — 전부 완료 후
 ```
@@ -455,7 +427,6 @@ Task 16 (배포) — 전부 완료 후
 | 리스크 | 대응 |
 |---|---|
 | 사이드카 장애 시 딥리서치·재무정규화 불가 | 폴백 설계: 정규화는 Task 5 1차 매핑으로, 딥리서치는 기능 비활성화 후 기존 분석만 제공 — 메인 기능은 사이드카 없이 동작 |
-| gpt-researcher 1회 비용·시간(수분) | 모드 선택(경량/심층), 일괄 처리 시 경량 기본, 비동기 잡 + SSE로 UX 확보 |
 | Vercel 서버리스 제약 | Docker Compose 자체호스팅 전제 (기존 Ubuntu VPS) |
 | React 전환 학습 비용 | shadcn/ui 표준 컴포넌트 중심으로 자체 UI 로직 최소화 |
 | Next.js 16 신규 릴리스로 서드파티(Auth.js·Prisma·shadcn) 호환 미검증 | 각 태스크 착수 시 설치본 문서(`node_modules/next/dist/docs/`) 우선 확인, 비호환 라이브러리는 자체 구현으로 폴백 |
@@ -465,7 +436,6 @@ Task 16 (배포) — 전부 완료 후
 | 리스크 키워드 오탐 | 담당자 확인 플래그 필수, 확인된 알림만 감점 |
 | 연도별 점수 산식 변경 | SelectionRecord에 산식 버전 필드, 버전 간 비교 시 주석 |
 | 기존 데이터 이관 실패 | 이관 스크립트 + 건수·샘플 검증 절차, 이관 전 DB 백업 |
-| gpt-researcher 0.16.0 이 3.12/3.13 에서 import 불가 (업스트림 버그) | 0.15.1 핀 + `scripts/sidecar_env_check.py` 로 회귀 검증. 업스트림 수정 시 핀 해제 |
 | 사이드카 venv 가 1.1GB — 이미지 비대 | 멀티스테이지 빌드, 런타임 스테이지에 venv 만 복사 |
 | 리눅스 휠 가용성 미검증 (실측은 macOS arm64) | Task 3 에서 컨테이너 내 재검증, 실패 시 파이썬 버전 재선택 |
 | 네이버 검색 API 가 NAVER API HUB 로 이관 (개발자센터 신규 신청 종료) | 네이버 클라우드에서 키 발급 후 `NCP_APIGW_API_KEY_ID/KEY` 설정. 수집기는 엔드포인트·헤더를 환경변수로 분기 |

@@ -9,11 +9,11 @@ afterEach(() => {
 });
 
 describe("sidecarHealth", () => {
-  it("reads what the sidecar reports, including which extras it has", async () => {
+  it("reads what the sidecar reports", async () => {
     process.env.SIDECAR_URL = "http://sidecar:8000";
-    const fetchImpl = vi.fn(async () => Response.json({ status: "ok", features: { research: true } })) as unknown as typeof fetch;
+    const fetchImpl = vi.fn(async () => Response.json({ status: "ok" })) as unknown as typeof fetch;
 
-    expect(await sidecarHealth({ fetchImpl })).toEqual({ status: "ok", features: { research: true } });
+    expect(await sidecarHealth({ fetchImpl })).toEqual({ status: "ok" });
     expect(String((fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])).toBe("http://sidecar:8000/health");
   });
 

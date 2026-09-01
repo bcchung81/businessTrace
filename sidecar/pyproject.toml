@@ -9,11 +9,6 @@ dependencies = [
     "pydantic>=2.9",
 ]
 
-# 딥리서치(Task 15)·재무 정규화(Task 6)는 무거운 트리라 기본 설치에서 뺀다.
-# gpt-researcher 0.15.1 핀의 근거는 .claude/skills/sidecar-runtime 참조 — 0.16.0 은 3.12 에서 import 가 죽는다.
-[project.optional-dependencies]
-research = ["gpt-researcher==0.15.1"]
-
 [dependency-groups]
 dev = [
     "pytest>=8.3",

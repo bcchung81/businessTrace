@@ -1,6 +1,6 @@
 ---
 name: external-apis
-description: 국세청 휴폐업·OpenDART 재무/공시/사업자번호·나라장터 조달업체·네이버 뉴스 검색·Tavily API를 호출하는 코드를 쓰거나 디버깅할 때 사용한다. 실측으로 확정된 엔드포인트·인증 방식·에러 코드 해석과, 과거에 실제로 틀렸던 함정을 담고 있다. data.go.kr 인증키, serviceKey, NCP_APIGW, corp_code, bizno 를 다룰 때도 사용한다.
+description: 국세청 휴폐업·OpenDART 재무/공시/사업자번호·나라장터 조달업체·네이버 뉴스 검색 API를 호출하는 코드를 쓰거나 디버깅할 때 사용한다. 실측으로 확정된 엔드포인트·인증 방식·에러 코드 해석과, 과거에 실제로 틀렸던 함정을 담고 있다. data.go.kr 인증키, serviceKey, NCP_APIGW, corp_code, bizno 를 다룰 때도 사용한다.
 ---
 
 # 외부 API 연동 규약
@@ -79,4 +79,4 @@ developers.naver.com 애플리케이션 등록 화면의 "사용 API" 목록에 
 
 ## 환경변수
 
-전부 `.env`(gitignore 됨): `ANTHROPIC_API_KEY`(LLM 은 Anthropic 단일, 기본 모델 `claude-sonnet-5`), `NCP_APIGW_API_KEY_ID`·`NCP_APIGW_API_KEY`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `TAVILY_API_KEY`, `GMAIL_*`, `SMTP_*`.
+전부 `.env`(gitignore 됨): `ANTHROPIC_API_KEY`·`OPENAI_API_KEY`(공급자는 `LLM_PROVIDER` 로 고른다), `NCP_APIGW_API_KEY_ID`·`NCP_APIGW_API_KEY`, `DART_API_KEY`, `NTS_SERVICE_KEY`, `GMAIL_*`, `SMTP_*`.

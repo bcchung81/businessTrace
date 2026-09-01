@@ -1,6 +1,6 @@
 const REQUEST_TIMEOUT_MS = 3000;
 
-export type SidecarHealth = { status: string; features: Record<string, boolean> };
+export type SidecarHealth = { status: string };
 type Deps = { fetchImpl?: typeof fetch };
 
 /**
