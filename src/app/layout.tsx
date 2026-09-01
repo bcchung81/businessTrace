@@ -21,8 +21,10 @@ export const metadata: Metadata = {
   description: "뉴스·AI 기반 기업 분석 및 우수기업 선정 관리 시스템",
 };
 
+// 기본은 라이트다. 저장된 선택이 'dark' 일 때만 어둡게 연다 — 운영체제 설정은 따르지 않는다.
+// 첫 페인트 전에 돌려야 밝은 화면이 한 번 번쩍이지 않는다.
 const THEME_SCRIPT =
-  "(function(){var m=window.matchMedia('(prefers-color-scheme: dark)');var r=document.documentElement;function a(){r.classList.toggle('dark',m.matches)}a();m.addEventListener('change',a)})();";
+  "(function(){try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}})();";
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

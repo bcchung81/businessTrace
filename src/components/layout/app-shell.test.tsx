@@ -79,4 +79,9 @@ describe("AppShell", () => {
     render(<AppShell batch={{ stage: "full", total: 2, done: 0, startedAt: "x", current: null }}>본문</AppShell>);
     expect(within(screen.getByRole("banner")).getByRole("status")).toHaveTextContent("2개사 분석 중");
   });
+  test("offers the theme toggle in the header", () => {
+    render(<AppShell>본문</AppShell>);
+
+    expect(within(screen.getByRole("banner")).getByRole("button", { name: "화면 테마 전환" })).toBeInTheDocument();
+  });
 });

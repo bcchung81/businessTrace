@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { BatchIndicator } from "@/components/layout/batch-indicator";
 import { SideTabs } from "@/components/layout/side-tabs";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { BatchStatus } from "@/lib/services/batchRegistry";
 import { Wordmark } from "@/components/layout/wordmark";
 
@@ -15,6 +16,7 @@ export function AppShell({ children, batch = null }: { children: ReactNode; batc
             <span className="hidden text-[11px] text-band-foreground/65 sm:inline">우수기업 선정 근거 관리</span>
           </Link>
           <BatchIndicator initial={batch} />
+          <ThemeToggle />
         </div>
       </header>
 
