@@ -27,6 +27,15 @@ describe("buildCompanyFacts", () => {
     expect(facts.corporateNo).toEqual({ value: "110111-1234567", sources: ["DART"], agreement: "single" });
   });
 
+  test("strips html entities that leaked in from a source — 금융위 주소에 &nbsp 가 섞여 온다", () => {
+    const dirty = buildCompanyFacts({
+      businessNo: null,
+      snapshots: [{ ...SNAPSHOTS[3], payload: { ...(SNAPSHOTS[3].payload as object), address: "대전광역시 유성구 유성대로 1476-55 &nbsp" } }],
+    });
+
+    expect(dirty.address?.value).toBe("대전광역시 유성구 유성대로 1476-55");
+  });
+
   test("strips a trailing time from a source date — 나라장터 sends '2019-03-11 00:00:00'", () => {
     const timed = buildCompanyFacts({
       businessNo: null,

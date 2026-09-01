@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { FactsTable, FinanceLine, SourceDetails } from "@/components/company/company-facts";
+import { FactsTable, FinanceTable, SourceDetails } from "@/components/company/company-facts";
 import type { CompanyFacts } from "@/lib/services/companyFacts";
 
 const facts: CompanyFacts = {
@@ -89,44 +89,6 @@ describe("FactsTable", () => {
   });
 });
 
-describe("FinanceLine", () => {
-  test("prints the year, figures with growth, assets and listing; dashes what is missing", () => {
-    render(<FinanceLine facts={facts} />);
-    const line = screen.getByText(/2025 매출/);
-    expect(line).toHaveTextContent("2025 매출 1,200 (▲20%) · 영업이익 120 (전년 —) · 순이익 90 · 자산총계 5,000 · 상장 654321");
-  });
-
-  test("prints the three ratios beside the figures", () => {
-    render(<FinanceLine facts={facts} />);
-    const line = screen.getByText(/2025 매출/);
-
-    expect(line).toHaveTextContent("부채비율 67%");
-    expect(line).toHaveTextContent("ROE 3%");
-    expect(line).toHaveTextContent("영업이익률 10%");
-  });
-
-  test("says 자본잠식 where a ratio cannot mean anything", () => {
-    render(
-      <FinanceLine
-        facts={{ ...facts, finance: { ...facts.finance!, ratios: { debtRatio: { value: null, note: "자본잠식" }, roe: { value: null, note: "자본잠식" }, operatingMargin: { value: 0.1, note: null } } } }}
-      />,
-    );
-
-    expect(screen.getByText(/2025 매출/)).toHaveTextContent("부채비율 자본잠식");
-  });
-
-  test("cites the audit report when the figures came from its document", () => {
-    render(<FinanceLine facts={{ ...facts, finance: { ...facts.finance!, source: "auditReport" } }} />);
-    expect(screen.getByText(/감사보고서/)).toBeInTheDocument();
-  });
-
-  test("hatches the whole line when there is no statement", () => {
-    render(<FinanceLine facts={{ ...facts, finance: null, listing: { stockCode: null, label: "비상장" } }} />);
-    expect(screen.getByText(/미공시/)).toHaveClass("hatch");
-    expect(screen.getByText(/미공시/)).toHaveTextContent("미공시 · 비상장");
-  });
-});
-
 describe("SourceDetails", () => {
   test("expands a strip cell into its detail lines and collapses again", () => {
     render(<SourceDetails details={facts.sourceDetails} />);
@@ -140,5 +102,40 @@ describe("SourceDetails", () => {
   test("disables the button for a source with nothing to show", () => {
     render(<SourceDetails details={facts.sourceDetails} />);
     expect(screen.getByRole("button", { name: "벤처확인 상세" })).toBeDisabled();
+  });
+});
+
+describe("FinanceTable", () => {
+  test("lays the figures out as labelled rows in 억 rather than one run-on line of raw digits", () => {
+    render(
+      <FinanceTable
+        facts={{
+          ...facts,
+          finance: {
+            fiscalYear: 2025,
+            source: "auditReport",
+            revenue: 17_781_025_951,
+            operatingIncome: -1_758_542_406,
+            netIncome: -2_225_941_630,
+            totalAssets: 27_289_018_193,
+            growth: { revenue: 0.32, operatingIncome: null },
+            ratios: { debtRatio: { value: 1.32, note: null }, roe: { value: -0.19, note: null }, operatingMargin: { value: -0.1, note: null } },
+          },
+        }}
+      />,
+    );
+
+    const table = screen.getByRole("table", { name: "DART 재무" });
+    expect(within(table).getByRole("rowheader", { name: "매출" })).toBeInTheDocument();
+    expect(within(table).getByText("177.8억")).toBeInTheDocument();
+    expect(within(table).getByText("-17.6억")).toBeInTheDocument();
+    expect(within(table).getByText("132%")).toBeInTheDocument();
+    expect(within(table).getByText(/감사보고서 원문/)).toBeInTheDocument();
+  });
+
+  test("hatches the whole block when there is no statement", () => {
+    render(<FinanceTable facts={{ ...facts, finance: null, listing: { stockCode: null, label: "비상장" } }} />);
+
+    expect(screen.getByText(/미공시/)).toHaveClass("hatch");
   });
 });

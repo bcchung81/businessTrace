@@ -46,8 +46,19 @@ function normaliseDate(raw: string | undefined): string | null {
   return raw;
 }
 
+/**
+ * 원천이 흘려보낸 HTML 엔티티를 걷어낸다 — 금융위 주소 끝에 `&nbsp` 가 붙어 화면에 그대로 찍혔다.
+ * 스냅샷 원문은 받은 그대로 두고 읽는 자리에서만 씻는다. 근거는 손대지 않는다.
+ */
 function normaliseAddress(raw: string | undefined): string | null {
-  return raw ? raw.replace(/\s+/g, " ").trim() : null;
+  if (!raw) return null;
+  const cleaned = raw
+    .replace(/&nbsp;?/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&(?:lt|gt|quot|#\d+);?/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned.length > 0 ? cleaned : null;
 }
 
 /**

@@ -20,8 +20,10 @@ function Agreement({ fact }: { fact: FactValue }) {
 }
 
 function money(value: number) {
-  if (value >= 100_000_000) return `${(value / 100_000_000).toFixed(1)}억`;
-  if (value >= 10_000) return `${Math.round(value / 10_000)}만`;
+  const sign = value < 0 ? "-" : "";
+  const size = Math.abs(value);
+  if (size >= 100_000_000) return `${sign}${(size / 100_000_000).toFixed(1)}억`;
+  if (size >= 10_000) return `${sign}${Math.round(size / 10_000)}만`;
   return value.toLocaleString("en-US");
 }
 
@@ -106,11 +108,11 @@ export function FactsTable({ facts, businessNo, industry }: { facts: CompanyFact
   ].filter((cell): cell is Cell => cell !== null);
 
   return (
-    <dl aria-label="기업 기본" className="mt-1 grid grid-flow-dense grid-cols-2 gap-x-6 gap-y-2.5 border-t border-hairline pt-2.5 text-[12px] sm:grid-cols-3 lg:grid-cols-4">
+    <dl aria-label="기업 기본" className="mt-1 grid grid-flow-dense grid-cols-2 gap-x-5 gap-y-3 border-t border-hairline pt-3 text-[12px] sm:grid-cols-3 lg:grid-cols-4">
       {cells.map((cell) => (
-        <div key={cell.key} className={`flex min-w-0 flex-col gap-0.5 ${spanClass(cell.chars)}`}>
-          <dt className="whitespace-nowrap text-[10.5px] font-bold tracking-[0.06em] text-muted-foreground">{cell.label}</dt>
-          <dd className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+        <div key={cell.key} className={`flex min-w-0 flex-col gap-1 border-l-2 border-hairline pl-2.5 ${spanClass(cell.chars)}`}>
+          <dt className="whitespace-nowrap text-[10px] font-bold tracking-[0.1em] text-muted-foreground">{cell.label}</dt>
+          <dd className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-[12.5px] font-semibold">
             <span className="min-w-0 break-keep lg:whitespace-nowrap">{cell.value}</span>
             {cell.note}
           </dd>
@@ -118,10 +120,6 @@ export function FactsTable({ facts, businessNo, industry }: { facts: CompanyFact
       ))}
     </dl>
   );
-}
-
-function amount(value: number | null) {
-  return value === null ? "—" : value.toLocaleString("en-US");
 }
 
 function growth(value: number | null) {
@@ -138,21 +136,50 @@ function ratio({ value, note }: Ratio) {
   return note ?? "—";
 }
 
-/**
- * DART 재무 한 줄 — 규모(매출·자산) · 성장(전년비) · 비율(부채·ROE·영업이익률) · 상장 여부. 미공시는 빗금이다.
- */
-export function FinanceLine({ facts }: { facts: CompanyFacts }) {
-  const listing = facts.listing?.label ?? "상장 여부 미상";
-  if (!facts.finance) return <span className="hatch px-2 text-muted-foreground">미공시 · {listing}</span>;
-  const f = facts.finance;
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <span className="font-mono tabular-nums">
-      {f.fiscalYear} 매출 {amount(f.revenue)} {growth(f.growth.revenue)} · 영업이익 {amount(f.operatingIncome)} {growth(f.growth.operatingIncome)} · 순이익 {amount(f.netIncome)} · 자산총계 {amount(f.totalAssets)} · {listing}
-      <span className="text-muted-foreground">
-        {" · "}부채비율 {ratio(f.ratios.debtRatio)} · ROE {ratio(f.ratios.roe)} · 영업이익률 {ratio(f.ratios.operatingMargin)}
-      </span>
-      {f.source === "auditReport" ? <span className="text-muted-foreground"> · 감사보고서 원문</span> : null}
-    </span>
+    <tr className="border-b border-hairline last:border-0">
+      <th scope="row" className="w-24 py-1 pr-3 text-left align-baseline text-[10px] font-bold tracking-[0.1em] text-muted-foreground">
+        {label}
+      </th>
+      <td className="py-1 text-right align-baseline font-mono text-[12.5px] font-semibold tabular-nums">{children}</td>
+    </tr>
+  );
+}
+
+/**
+ * DART 재무 표 — 규모 · 전년비 · 비율 · 출처를 한 줄씩 나눈다.
+ * 한 줄로 이어 적으면 자릿수가 긴 금액들이 붙어 읽히지 않는다. 금액은 억 단위로 줄이고 원문은 툴팁에 남긴다.
+ */
+export function FinanceTable({ facts }: { facts: CompanyFacts }) {
+  const listing = facts.listing?.label ?? "상장 여부 미상";
+  if (!facts.finance) return <span className="hatch px-2 text-[12px] text-muted-foreground">미공시 · {listing}</span>;
+
+  const f = facts.finance;
+  const figure = (value: number | null) =>
+    value === null ? "—" : <span title={value.toLocaleString("en-US")}>{money(value)}</span>;
+
+  return (
+    <table aria-label="DART 재무" className="w-full border-collapse">
+      <tbody>
+        <Row label="매출">
+          {figure(f.revenue)} <span className="text-[11px] font-normal text-muted-foreground">{growth(f.growth.revenue)}</span>
+        </Row>
+        <Row label="영업이익">
+          {figure(f.operatingIncome)} <span className="text-[11px] font-normal text-muted-foreground">{growth(f.growth.operatingIncome)}</span>
+        </Row>
+        <Row label="순이익">{figure(f.netIncome)}</Row>
+        <Row label="자산총계">{figure(f.totalAssets)}</Row>
+        <Row label="부채비율">{ratio(f.ratios.debtRatio)}</Row>
+        <Row label="ROE">{ratio(f.ratios.roe)}</Row>
+        <Row label="영업이익률">{ratio(f.ratios.operatingMargin)}</Row>
+        <Row label="출처">
+          <span className="font-sans text-[11px] font-normal text-muted-foreground">
+            {f.fiscalYear}년 · {f.source === "auditReport" ? "감사보고서 원문" : "정기보고서"} · {listing}
+          </span>
+        </Row>
+      </tbody>
+    </table>
   );
 }
 

@@ -15,7 +15,7 @@ import { OpinionCitations } from "@/components/company/opinion-citations";
 import { VerificationPanel } from "@/components/company/verification-panel";
 import { EventTimeline } from "@/components/company/event-timeline";
 import { EvidenceStrip } from "@/components/company/evidence-grid";
-import { FactsTable, FinanceLine, SourceDetails } from "@/components/company/company-facts";
+import { FactsTable, FinanceTable, SourceDetails } from "@/components/company/company-facts";
 import { buildCompanyFacts } from "@/lib/services/companyFacts";
 import { RefreshSources } from "@/components/company/refresh-sources";
 import { HeadcountInline } from "@/components/dashboard/headcount-trend";
@@ -98,28 +98,33 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
               <SourceDetails details={facts.sourceDetails} />
             </div>
             <ContributionBars contributions={explanation.contributions} total={explanation.total} />
-            <div className="grid gap-5 border-t border-hairline pt-4 md:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="grid gap-6 border-t border-hairline pt-4 md:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
               <div className="flex flex-col gap-2">
-                <h3 className="text-[12px] font-bold">종합의견</h3>
+                <h3 className="border-b-2 border-ink pb-1 text-[10px] font-bold tracking-[0.1em] text-muted-foreground">종합의견</h3>
                 {explanation.sentences.length === 0 ? (
                   <p className="text-[12.5px] text-muted-foreground">분석을 아직 실행하지 않았다</p>
                 ) : (
                   <OpinionCitations sentences={explanation.sentences} />
                 )}
               </div>
-              <dl className="flex flex-col gap-2 text-[12px]">
-                <dt className="font-bold">헤드라인</dt>
-                <dd>
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="border-b-2 border-ink pb-1 text-[10px] font-bold tracking-[0.1em] text-muted-foreground">헤드라인</h3>
                   {explanation.evidence.headlines.length === 0 ? (
-                    <span className="text-muted-foreground">없음</span>
+                    <span className="text-[12px] text-muted-foreground">없음</span>
                   ) : (
-                    <ul className="flex flex-col gap-1">
+                    <ul className="flex flex-col">
                       {explanation.evidence.headlines.map((headline) => (
-                        <li key={headline.link}>
-                          <a href={headline.link} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2">
+                        <li key={headline.link} className="flex items-baseline gap-2 border-b border-hairline py-1.5 text-[12px] last:border-0">
+                          <a
+                            href={headline.link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="min-w-0 flex-1 break-keep underline decoration-dotted underline-offset-2"
+                          >
                             {headline.title}
-                          </a>{" "}
-                          <span className="font-mono text-[10.5px] text-muted-foreground">
+                          </a>
+                          <span className="shrink-0 font-mono text-[11px] font-semibold tabular-nums text-muted-foreground">
                             {headline.sentiment > 0 ? "+" : ""}
                             {headline.sentiment}
                           </span>
@@ -127,12 +132,12 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
                       ))}
                     </ul>
                   )}
-                </dd>
-                <dt className="font-bold">DART 재무</dt>
-                <dd>
-                  <FinanceLine facts={facts} />
-                </dd>
-              </dl>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="border-b-2 border-ink pb-1 text-[10px] font-bold tracking-[0.1em] text-muted-foreground">DART 재무</h3>
+                  <FinanceTable facts={facts} />
+                </div>
+              </div>
             </div>
           </div>
         ) : null}
