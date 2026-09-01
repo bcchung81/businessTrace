@@ -90,12 +90,12 @@ describe("EvidenceStrip", () => {
     snapshot({ source: "nps", status: "conflict", summary: "후보 8건" }),
   ];
 
-  test("summarises the seven sources on one row with name, status and texture, keeping the full summary as a title", () => {
+  test("summarises the eight sources on one row with name, status and texture, keeping the full summary as a title", () => {
     render(<EvidenceStrip snapshots={SNAPSHOTS} />);
     const list = screen.getByRole("list", { name: "원천 대조 요약" });
-    expect(list).toHaveClass("grid-cols-7");
+    expect(list).toHaveClass("grid-cols-8");
     const items = within(list).getAllByRole("listitem");
-    expect(items).toHaveLength(7);
+    expect(items).toHaveLength(8);
     expect(items[0]).toHaveTextContent("DART");
     expect(items[0]).toHaveTextContent("확인");
     expect(items[1]).toHaveClass("hatch");

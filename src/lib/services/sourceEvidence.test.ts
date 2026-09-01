@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toSnapshots, type Evidence } from "@/lib/services/sourceEvidence";
+import { procurementSnapshot, toSnapshots, type Evidence } from "@/lib/services/sourceEvidence";
 
 function evidence(over: Partial<Evidence> = {}): Evidence {
   return {
@@ -318,5 +318,29 @@ describe("toSnapshots", () => {
   it("reads an operator-decided absence as absent with that reason", () => {
     const rows = toSnapshots(evidence({ profile: { found: false, decidedAbsent: true, reason: "운영자가 DART 미등록으로 확정" } }));
     expect(find(rows, "dart")).toMatchObject({ status: "absent", summary: "운영자가 DART 미등록으로 확정" });
+  });
+});
+
+describe("procurementSnapshot", () => {
+  it("states the confirmed count and total when awards were found", () => {
+    const row = procurementSnapshot({ count: 3, total: 64500000, candidates: 0, years: [] });
+
+    expect(row).toMatchObject({ source: "procurement", status: "found" });
+    expect(row.summary).toContain("낙찰 3건");
+    expect(row.summary).toContain("64,500,000");
+  });
+
+  it("calls an empty scan unmeasurable, not absent — 조달 미참여는 실적 0이 아니다", () => {
+    const row = procurementSnapshot({ count: 0, total: 0, candidates: 0, years: [] });
+
+    expect(row.status).toBe("unmeasurable");
+    expect(row.summary).toContain("미참여");
+  });
+
+  it("names name-only hits as unconfirmed rather than counting them", () => {
+    const row = procurementSnapshot({ count: 0, total: 0, candidates: 2, years: [] });
+
+    expect(row.status).toBe("unmeasurable");
+    expect(row.summary).toContain("상호 일치 후보 2건");
   });
 });

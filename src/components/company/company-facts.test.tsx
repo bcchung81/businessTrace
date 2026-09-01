@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { FactsTable, FinanceTable, SourceDetails } from "@/components/company/company-facts";
+import { FactsTable, FinanceTable, ProcurementTable, SourceDetails } from "@/components/company/company-facts";
 import type { CompanyFacts } from "@/lib/services/companyFacts";
 
 const facts: CompanyFacts = {
@@ -14,9 +14,10 @@ const facts: CompanyFacts = {
   ],
   listing: { stockCode: "654321", label: "상장 654321" },
   finance: { fiscalYear: 2025, revenue: 1200, operatingIncome: 120, netIncome: 90, totalAssets: 5000, growth: { revenue: 0.2, operatingIncome: null }, ratios: { debtRatio: { value: 0.67, note: null }, roe: { value: 0.03, note: null }, operatingMargin: { value: 0.1, note: null } } },
+  procurement: { count: 2, total: 197_800_000, candidates: 1, years: [{ year: 2026, count: 2, total: 197_800_000 }] },
   payroll: { averageBaseIncome: 4_200_000, annualPayroll: 5_594_400_000 },
   turnover: { hired: 24, departed: 12, rate: 0.11, months: 12 },
-  sourceDetails: { dart: ["주식회사 한빛", "대표 김한빛", "상장 654321"], dartFinance: [], fsc: [], nts: ["계속사업자", "부가가치세 일반과세자"], narajangteo: [], venture: [], nps: [] },
+  sourceDetails: { dart: ["주식회사 한빛", "대표 김한빛", "상장 654321"], dartFinance: [], fsc: [], nts: ["계속사업자", "부가가치세 일반과세자"], narajangteo: [], procurement: [], venture: [], nps: [] },
 };
 
 describe("FactsTable", () => {
@@ -125,5 +126,33 @@ describe("FinanceTable", () => {
     render(<FinanceTable facts={{ ...facts, finance: null, listing: { stockCode: null, label: "비상장" } }} />);
 
     expect(screen.getByText(/미공시/)).toHaveClass("hatch");
+  });
+});
+
+describe("ProcurementTable", () => {
+  test("rolls the awards up by year and says it is a proxy, not a financial statement", () => {
+    render(<ProcurementTable facts={facts} />);
+
+    expect(within(screen.getByRole("row", { name: /2026년/ })).getByText(/2건/)).toBeInTheDocument();
+    expect(screen.getByText(/재무제표 대체 아님/)).toBeInTheDocument();
+  });
+
+  test("calls a clean scan 미참여 rather than showing a zero", () => {
+    render(<ProcurementTable facts={{ ...facts, procurement: { count: 0, total: 0, candidates: 0, years: [] } }} />);
+
+    expect(screen.getByText(/미참여/)).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  test("names name-only hits as unconfirmed", () => {
+    render(<ProcurementTable facts={{ ...facts, procurement: { count: 0, total: 0, candidates: 2, years: [] } }} />);
+
+    expect(screen.getByText(/상호 일치 후보 2건/)).toBeInTheDocument();
+  });
+
+  test("says nothing was collected when no scan has run", () => {
+    render(<ProcurementTable facts={{ ...facts, procurement: null }} />);
+
+    expect(screen.getByText(/미수집/)).toBeInTheDocument();
   });
 });

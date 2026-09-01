@@ -9,6 +9,7 @@ const SOURCE_LABEL: Record<SourceKey, { name: string; org: string }> = {
   fsc: { name: "기업기본정보", org: "금융위원회" },
   nts: { name: "국세청 휴폐업", org: "국세청" },
   narajangteo: { name: "조달업체 정보", org: "나라장터" },
+  procurement: { name: "조달 낙찰실적", org: "나라장터" },
   venture: { name: "벤처확인", org: "중소벤처기업부" },
   nps: { name: "가입 사업장", org: "국민연금공단" },
 };
@@ -79,6 +80,7 @@ const SHORT_NAME: Record<SourceKey, string> = {
   fsc: "금융위",
   nts: "국세청",
   narajangteo: "나라장터",
+  procurement: "조달 낙찰",
   venture: "벤처확인",
   nps: "국민연금",
 };
@@ -90,7 +92,7 @@ const SHORT_NAME: Record<SourceKey, string> = {
 export function EvidenceStrip({ snapshots }: { snapshots: StoredSnapshot[] }) {
   const bySource = new Map(snapshots.map((snapshot) => [snapshot.source, snapshot]));
   return (
-    <ul aria-label="원천 대조 요약" className="grid grid-cols-7 gap-1.5">
+    <ul aria-label="원천 대조 요약" className="grid grid-cols-8 gap-1.5">
       {(Object.keys(SHORT_NAME) as SourceKey[]).map((source) => {
         const snapshot = bySource.get(source);
         const status: SourceStatus = snapshot?.status ?? "pending";

@@ -110,7 +110,7 @@ describe("summariseSourceCoverage", () => {
 
     const coverage = await summariseSourceCoverage(2025);
 
-    expect(coverage.bySource).toHaveLength(7);
+    expect(coverage.bySource).toHaveLength(8);
   });
 });
 

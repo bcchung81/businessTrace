@@ -31,8 +31,10 @@ export async function saveAwards(matches: AwardMatch[]) {
 
 /** 기업의 낙찰 기록을 최근 순으로 낸다. */
 export async function listAwards(companyId: number) {
-  return prisma.procurementAward.findMany({
+  const rows = await prisma.procurementAward.findMany({
     where: { companyId },
     orderBy: [{ awardedAt: "desc" }, { id: "desc" }],
   });
+
+  return rows.map((row) => ({ ...row, matchedBy: row.matchedBy as AwardMatch["matchedBy"] }));
 }

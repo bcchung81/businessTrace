@@ -2,6 +2,7 @@ import type { CompanyProfile, FinancialSummary } from "@/lib/services/dart";
 import type { CorpOutline } from "@/lib/services/fscCorpOutline";
 import type { BusinessStatus } from "@/lib/services/nts";
 import type { ProcurementProfile } from "@/lib/services/narajangteo";
+import type { ProcurementSummary } from "@/lib/services/procurementWins";
 import type { Certification } from "@/lib/services/ventureCertification";
 import type { NpsWorkplace } from "@/lib/services/nps";
 
@@ -11,6 +12,7 @@ export const SOURCE_KEYS = [
   "fsc",
   "nts",
   "narajangteo",
+  "procurement",
   "venture",
   "nps",
 ] as const;
@@ -204,4 +206,26 @@ export function toSnapshots(evidence: Evidence, businessNo: string | null = null
     venture(evidence.certification),
     nps(evidence.pension),
   ];
+}
+
+/**
+ * 배치가 모은 낙찰 집계를 스냅샷 한 행으로 접는다 — 전수 스캔이라 단건 새로고침 경로(toSnapshots)에 들어가지 않는다.
+ * 스캔했는데 없는 것은 결측이 아니라 측정 불가다. 조달 미참여를 실적 0으로 읽으면 조달과 무관한 기업이 부당하게 깎인다.
+ */
+export function procurementSnapshot(summary: ProcurementSummary): SnapshotRow {
+  const candidates = summary.candidates > 0 ? ` · 상호 일치 후보 ${summary.candidates}건(미확정)` : "";
+  if (summary.count > 0) {
+    return {
+      source: "procurement",
+      status: "found",
+      summary: `낙찰 ${summary.count}건 · ${summary.total.toLocaleString("en-US")}원${candidates}`,
+      payload: summary,
+    };
+  }
+  return {
+    source: "procurement",
+    status: "unmeasurable",
+    summary: `공공조달 낙찰 없음 — 조달 미참여(매출 미측정)${candidates}`,
+    payload: summary,
+  };
 }

@@ -4,6 +4,7 @@ import type { CompanyProfile, FinancialSummary } from "@/lib/services/dart";
 import type { CorpOutline } from "@/lib/services/fscCorpOutline";
 import type { ProcurementProfile } from "@/lib/services/narajangteo";
 import type { NpsWorkplace } from "@/lib/services/nps";
+import type { ProcurementSummary } from "@/lib/services/procurementWins";
 import type { BusinessStatus } from "@/lib/services/nts";
 import type { SourceKey } from "@/lib/services/sourceEvidence";
 import type { Certification } from "@/lib/services/ventureCertification";
@@ -28,11 +29,12 @@ export type CompanyFacts = {
     ratios: FinanceRatios;
   } | null;
   payroll: { averageBaseIncome: number; annualPayroll: number } | null;
+  procurement: ProcurementSummary | null;
   turnover: { hired: number; departed: number; rate: number | null; months: number } | null;
   sourceDetails: Record<SourceKey, string[]>;
 };
 
-const SOURCE_NAME: Record<SourceKey, string> = { dart: "DART", dartFinance: "DART 재무", fsc: "금융위", nts: "국세청", narajangteo: "나라장터", venture: "벤처확인", nps: "국민연금" };
+const SOURCE_NAME: Record<SourceKey, string> = { dart: "DART", dartFinance: "DART 재무", fsc: "금융위", nts: "국세청", narajangteo: "나라장터", procurement: "조달 낙찰", venture: "벤처확인", nps: "국민연금" };
 
 function payloadOf<T>(snapshots: StoredSnapshot[], source: SourceKey): T | null {
   const row = snapshots.find((s) => s.source === source && s.status === "found");
@@ -102,6 +104,7 @@ export function buildCompanyFacts(input: { businessNo: string | null; snapshots:
   const nps = payloadOf<NpsWorkplace>(input.snapshots, "nps");
   const nts = payloadOf<BusinessStatus>(input.snapshots, "nts");
   const venture = payloadOf<Certification>(input.snapshots, "venture");
+  const procurement = payloadOf<ProcurementSummary>(input.snapshots, "procurement");
 
   const employees: EmployeeCount[] = [];
   if (nps && typeof nps.subscribers === "number") employees.push({ source: "nps", label: "국민연금 가입자", count: nps.subscribers });
@@ -121,6 +124,7 @@ export function buildCompanyFacts(input: { businessNo: string | null; snapshots:
     fsc: fsc ? [fsc.isSmallBusiness === undefined ? "" : fsc.isSmallBusiness ? "중소기업" : "중소기업 아님", fsc.mainBusiness ?? "", typeof fsc.employeeCount === "number" ? `종업원 ${fsc.employeeCount}` : ""].filter(Boolean) : [],
     nts: nts ? [nts.status ?? "", nts.taxType ?? "", nts.closedAt ? `폐업 ${normaliseDate(nts.closedAt)}` : ""].filter(Boolean) : [],
     narajangteo: nara ? [nara.businessDivision ?? "", nara.manufacturingDivision ?? "", nara.openedAt ? `개업 ${normaliseDate(nara.openedAt)}` : "", typeof nara.employeeCount === "number" ? `종업원 ${nara.employeeCount}` : ""].filter(Boolean) : [],
+    procurement: procurement ? [`낙찰 ${procurement.count}건`, `${procurement.total.toLocaleString("en-US")}원`, procurement.candidates > 0 ? `상호 일치 후보 ${procurement.candidates}건(미확정)` : ""].filter(Boolean) : [],
     venture: venture ? [venture.type ?? "", venture.validFrom && venture.validUntil ? `${venture.validFrom} ~ ${venture.validUntil}` : ""].filter(Boolean) : [],
     nps: nps ? [typeof nps.subscribers === "number" ? `가입자 ${nps.subscribers}명` : "", nps.workplaceCount ? `사업장 ${nps.workplaceCount}곳` : "", nps.registeredAt ? `등록 ${normaliseDate(nps.registeredAt)}` : "", nps.withdrawnAt ? `탈퇴 ${normaliseDate(nps.withdrawnAt)}` : ""].filter(Boolean) : [],
   };
@@ -133,6 +137,7 @@ export function buildCompanyFacts(input: { businessNo: string | null; snapshots:
     employees,
     listing: dart ? (dart.stockCode ? { stockCode: dart.stockCode, label: `상장 ${dart.stockCode}` } : { stockCode: null, label: "비상장" }) : null,
     finance: finance && growth ? { fiscalYear: finance.fiscalYear, source: finance.source, ratios: financeRatios(finance), revenue: finance.revenue, operatingIncome: finance.operatingIncome, netIncome: finance.netIncome, totalAssets: finance.totalAssets, growth } : null,
+    procurement,
     payroll: nps && typeof nps.averageBaseIncome === "number" && typeof nps.annualPayroll === "number" ? { averageBaseIncome: nps.averageBaseIncome, annualPayroll: nps.annualPayroll } : null,
     turnover: months.length > 0 ? { hired, departed, rate: average > 0 ? Math.round((departed / average) * 100) / 100 : null, months: months.length } : null,
     sourceDetails,

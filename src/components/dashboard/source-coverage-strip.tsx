@@ -7,6 +7,7 @@ const SOURCE_NAME: Record<SourceKey, string> = {
   fsc: "금융위",
   nts: "국세청",
   narajangteo: "나라장터",
+  procurement: "조달 낙찰",
   venture: "벤처확인",
   nps: "국민연금",
 };

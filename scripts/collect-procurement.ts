@@ -1,7 +1,9 @@
 import { config } from "dotenv";
 import { prisma } from "@/lib/db";
-import { saveAwards } from "@/lib/repositories/procurementAward";
-import { matchAwards, monthlyWindows, scanAwards, type AwardCategory, type AwardMatch } from "@/lib/services/procurementWins";
+import { listAwards, saveAwards } from "@/lib/repositories/procurementAward";
+import { saveSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
+import { matchAwards, monthlyWindows, scanAwards, summariseAwards, type AwardCategory, type AwardMatch } from "@/lib/services/procurementWins";
+import { procurementSnapshot } from "@/lib/services/sourceEvidence";
 
 config({ quiet: true });
 
@@ -13,7 +15,7 @@ const CATEGORIES: AwardCategory[] = ["물품", "용역"];
  * 스캔 기간은 연도와 무관하므로 연도를 주지 않으면 활성 기업 전체를 한 번에 훑는다.
  */
 async function main() {
-  const months = Number(process.argv[2]) || 12;
+  const months = process.argv[2] === undefined ? 12 : Number(process.argv[2]);
   const year = Number(process.argv[3]) || null;
 
   const companies = await prisma.company.findMany({
@@ -27,7 +29,11 @@ async function main() {
     return;
   }
 
-  console.log(`${year ? `${year}년 ` : ""}활성 기업 ${companies.length}개사 · 최근 ${months}개월 · ${CATEGORIES.join("+")}`);
+  console.log(
+    months > 0
+      ? `${year ? `${year}년 ` : ""}활성 기업 ${companies.length}개사 · 최근 ${months}개월 · ${CATEGORIES.join("+")}`
+      : `${year ? `${year}년 ` : ""}활성 기업 ${companies.length}개사 · 스캔 없이 적재분만 재집계`,
+  );
 
   const matches: AwardMatch[] = [];
   let scanned = 0;
@@ -45,19 +51,12 @@ async function main() {
   const saved = await saveAwards(matches);
   console.log(`\n스캔 ${scanned.toLocaleString()}건 · 저장 ${saved}건`);
 
-  const byCompany = new Map<number, AwardMatch[]>();
-  for (const match of matches) byCompany.set(match.companyId, [...(byCompany.get(match.companyId) ?? []), match]);
-
   for (const company of companies) {
-    const rows = byCompany.get(company.id) ?? [];
-    const confirmed = rows.filter((row) => row.matchedBy === "bizno");
-    const total = confirmed.reduce((sum, row) => sum + (row.award.amount ?? 0), 0);
-    const candidates = rows.length - confirmed.length;
-    console.log(
-      confirmed.length > 0
-        ? `[OK]   ${company.name} — 낙찰 ${confirmed.length}건 · ${total.toLocaleString()}원${candidates > 0 ? ` (상호 후보 ${candidates}건)` : ""}`
-        : `[없음] ${company.name} — 조달 낙찰 없음${company.businessNo ? "" : " · 사업자번호 미확보로 확정 대조 불가"}${candidates > 0 ? ` (상호 후보 ${candidates}건)` : ""}`,
-    );
+    const stored = await listAwards(company.id);
+    const summary = summariseAwards(stored);
+    const row = procurementSnapshot(summary);
+    await saveSourceSnapshots(company.id, [row]);
+    console.log(`${summary.count > 0 ? "[OK]  " : "[없음]"} ${company.name} — ${row.summary}${company.businessNo ? "" : " · 사업자번호 미확보"}`);
   }
 }
 

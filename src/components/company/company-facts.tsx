@@ -5,8 +5,8 @@ import type { CompanyFacts, FactValue } from "@/lib/services/companyFacts";
 import type { Ratio } from "@/lib/services/financeRatios";
 import type { SourceKey } from "@/lib/services/sourceEvidence";
 
-const SOURCE_LABEL: Record<SourceKey, string> = { dart: "DART", dartFinance: "재무제표", fsc: "금융위", nts: "국세청", narajangteo: "나라장터", venture: "벤처확인", nps: "국민연금" };
-const SOURCE_ORDER: SourceKey[] = ["dart", "dartFinance", "fsc", "nts", "narajangteo", "venture", "nps"];
+const SOURCE_LABEL: Record<SourceKey, string> = { dart: "DART", dartFinance: "재무제표", fsc: "금융위", nts: "국세청", narajangteo: "나라장터", procurement: "조달 낙찰", venture: "벤처확인", nps: "국민연금" };
+const SOURCE_ORDER: SourceKey[] = ["dart", "dartFinance", "fsc", "nts", "narajangteo", "procurement", "venture", "nps"];
 
 function agreementText(fact: FactValue) {
   if (fact.agreement === "single") return fact.sources.join("·");
@@ -220,13 +220,53 @@ export function FinanceTable({ facts }: { facts: CompanyFacts }) {
 }
 
 /**
+ * 조달 낙찰 표 — 연도별 금액과 합계. 사업자번호로 확정한 건만 센다.
+ * 스캔했는데 없는 것은 0이 아니라 미참여다. 0으로 적으면 조달과 무관한 기업이 실적 없는 기업으로 읽힌다.
+ */
+export function ProcurementTable({ facts }: { facts: CompanyFacts }) {
+  const p = facts.procurement;
+  if (!p) return <span className="hatch px-2 text-[12px] text-muted-foreground">미수집</span>;
+
+  const unconfirmed = p.candidates > 0 ? ` · 상호 일치 후보 ${p.candidates}건(미확정)` : "";
+  if (p.count === 0) {
+    return (
+      <span className="text-[12px] text-review">
+        공공조달 미참여 — 매출 미측정{unconfirmed}
+      </span>
+    );
+  }
+
+  return (
+    <table aria-label="조달 낙찰" className="w-full border-collapse">
+      <tbody>
+        {p.years.map((year) => (
+          <Row key={year.year} label={`${year.year}년`}>
+            <span title={year.total.toLocaleString("en-US")}>{money(year.total)}</span>{" "}
+            <span className="text-[11px] font-normal text-muted-foreground">{year.count}건</span>
+          </Row>
+        ))}
+        <Row label="합계">
+          <span title={p.total.toLocaleString("en-US")}>{money(p.total)}</span>{" "}
+          <span className="text-[11px] font-normal text-muted-foreground">{p.count}건</span>
+        </Row>
+        <Row label="근거">
+          <span className="font-sans text-[11px] font-normal text-muted-foreground">
+            대리지표 — 재무제표 대체 아님{unconfirmed}
+          </span>
+        </Row>
+      </tbody>
+    </table>
+  );
+}
+
+/**
  * 원천 스트립 아래 펼침 — 칸마다 "무엇을 확인했는지" 줄 몇 개. 보여줄 것이 없는 원천은 버튼을 잠근다.
  */
 export function SourceDetails({ details }: { details: Record<SourceKey, string[]> }) {
   const [open, setOpen] = useState<SourceKey | null>(null);
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-8 gap-1.5">
         {SOURCE_ORDER.map((source) => (
           <button
             key={source}

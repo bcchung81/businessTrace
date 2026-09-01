@@ -15,7 +15,7 @@ import { OpinionCitations } from "@/components/company/opinion-citations";
 import { VerificationPanel } from "@/components/company/verification-panel";
 import { EventTimeline } from "@/components/company/event-timeline";
 import { EvidenceStrip } from "@/components/company/evidence-grid";
-import { FactsTable, FinanceTable, SourceDetails } from "@/components/company/company-facts";
+import { FactsTable, FinanceTable, ProcurementTable, SourceDetails } from "@/components/company/company-facts";
 import { buildCompanyFacts } from "@/lib/services/companyFacts";
 import { RefreshSources } from "@/components/company/refresh-sources";
 import { HeadcountInline } from "@/components/dashboard/headcount-trend";
@@ -135,6 +135,10 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
                 <div className="flex flex-col gap-1.5">
                   <h3 className="border-b-2 border-ink pb-1 text-[10px] font-bold tracking-[0.1em] text-muted-foreground">DART 재무</h3>
                   <FinanceTable facts={facts} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="border-b-2 border-ink pb-1 text-[10px] font-bold tracking-[0.1em] text-muted-foreground">조달 낙찰</h3>
+                  <ProcurementTable facts={facts} />
                 </div>
               </div>
             </div>

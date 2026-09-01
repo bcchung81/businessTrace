@@ -105,3 +105,21 @@ describe("buildCompanyFacts", () => {
     expect(facts.turnover?.months).toBe(5);
   });
 });
+
+describe("buildCompanyFacts procurement", () => {
+  const awards = { count: 2, total: 197800000, candidates: 1, years: [{ year: 2026, count: 2, total: 197800000 }] };
+
+  test("carries the award rollup through as a proxy signal", () => {
+    const facts = buildCompanyFacts({ businessNo: "1234567890", snapshots: [snap("procurement", "found", awards)] });
+
+    expect(facts.procurement).toEqual(awards);
+    expect(facts.sourceDetails.procurement).toContain("낙찰 2건");
+  });
+
+  test("leaves procurement null when nothing was scanned", () => {
+    const facts = buildCompanyFacts({ businessNo: "1234567890", snapshots: [] });
+
+    expect(facts.procurement).toBeNull();
+    expect(facts.sourceDetails.procurement).toEqual([]);
+  });
+});
