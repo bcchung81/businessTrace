@@ -144,7 +144,10 @@ function narajangteo(procurement: ProcurementProfile | null): SnapshotRow {
       };
 }
 
-function venture(certification: Certification): SnapshotRow {
+/**
+ * 벤처확인 이력을 스냅샷 한 행으로 접는다 — 명단만 새로 받고 기업별 표기를 다시 낼 때도 쓴다.
+ */
+export function ventureSnapshot(certification: Certification): SnapshotRow {
   if (!certification.certified) {
     return { source: "venture", status: "absent", summary: "벤처확인 명단에 없음", payload: certification };
   }
@@ -203,7 +206,7 @@ export function toSnapshots(evidence: Evidence, businessNo: string | null = null
     fsc(evidence.outline, businessNo, decisions.fsc),
     nts(evidence.businessStatus),
     narajangteo(evidence.procurement),
-    venture(evidence.certification),
+    ventureSnapshot(evidence.certification),
     nps(evidence.pension),
   ];
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { procurementSnapshot, toSnapshots, type Evidence } from "@/lib/services/sourceEvidence";
+import { procurementSnapshot, toSnapshots, ventureSnapshot, type Evidence } from "@/lib/services/sourceEvidence";
 
 function evidence(over: Partial<Evidence> = {}): Evidence {
   return {
@@ -358,5 +358,18 @@ describe("procurementSnapshot when the scan did not finish", () => {
 
     expect(row.status).toBe("found");
     expect(row.summary).toContain("스캔 미완료");
+  });
+});
+
+describe("ventureSnapshot", () => {
+  it("names the type and the expiry when the certification is live", () => {
+    const row = ventureSnapshot({ certified: true, expired: false, type: "벤처투자유형", validUntil: "2028-02-08" });
+
+    expect(row).toMatchObject({ source: "venture", status: "found" });
+    expect(row.summary).toContain("2028-02-08");
+  });
+
+  it("calls a company that is not on the list absent", () => {
+    expect(ventureSnapshot({ certified: false, expired: false }).status).toBe("absent");
   });
 });
