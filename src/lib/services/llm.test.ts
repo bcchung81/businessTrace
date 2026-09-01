@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { z } from "zod";
-import { createLlmClient, resolveModel, LlmRefusalError, LlmParseError } from "@/lib/services/llm";
+import { createLlmClient, defaultLlmClient, resolveModel, LlmRefusalError, LlmParseError } from "@/lib/services/llm";
 
 type StreamArgs = Record<string, unknown>;
 
@@ -142,5 +142,18 @@ describe("createLlmClient", () => {
     const result = await createLlmClient(sdk).json({ system: "s", prompt: "p", schema });
 
     expect(result.data).toEqual({ score: 3 });
+  });
+});
+describe("defaultLlmClient", () => {
+  const original = process.env.LLM_PROVIDER;
+  afterEach(() => {
+    if (original === undefined) delete process.env.LLM_PROVIDER;
+    else process.env.LLM_PROVIDER = original;
+  });
+
+  it("refuses to start on an unknown provider rather than quietly using anthropic", () => {
+    process.env.LLM_PROVIDER = "gemini";
+
+    expect(() => defaultLlmClient()).toThrow(/gemini/);
   });
 });

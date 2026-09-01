@@ -77,7 +77,8 @@ Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는
 | OpenDART 재무 | 매출·영업이익·순이익·자산총계 | `opendart.fss.or.kr/api/fnlttSinglAcnt.json` | `dart.ts` |
 | 국세청 휴폐업 | 계속사업자·과세유형 | `api.odcloud.kr/api/nts-businessman/v1/status` | `nts.ts` |
 | 나라장터 조달업체 | 종업원수·조달업무구분·개업일 | `apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02` | `narajangteo.ts` |
-| Anthropic Messages | 분석·검증 judge·반증 | `api.anthropic.com/v1/messages` (SDK) | `llm.ts` |
+| Anthropic Messages | 분석·검증 judge·반증 (기본) | `api.anthropic.com/v1/messages` (SDK) | `llm.ts` |
+| OpenAI Chat Completions | 같은 역할의 대체 공급자 | `api.openai.com/v1/chat/completions` (SDK) | `llmOpenai.ts` |
 | SGIS 행정구역 | 시도·시군구 이름표 (지역 표기 정규화) | `sgisapi.mods.go.kr/OpenAPI3/boundary/hadmarea.geojson` | `scripts/fetch-regions.ts` |
 | 네이버 Maps | 주소 → 좌표(지오코딩) · 지도 표시 | `maps.apigw.ntruss.com/map-geocode/v2/geocode` · `oapi.map.naver.com/openapi/v3/maps.js` | `naverGeocode.ts` · `naver-map.tsx` |
 
@@ -111,6 +112,25 @@ Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는
 
 신규 API 를 붙이면 `scripts/api_smoke_test.py` 에 검사 함수를 함께 추가한다.
 
+
+## LLM 공급자
+
+**기본은 Anthropic이고 `LLM_PROVIDER=openai` 로 OpenAI 로 갈아탄다.** 두 어댑터가 같은 `LlmClient`
+(`json<T>(request) → {data, usage}`)를 내므로 분석·검증 호출부는 어느 쪽인지 알지 못한다.
+
+| | Anthropic | OpenAI |
+|---|---|---|
+| 어댑터 | `llm.ts` `createLlmClient` | `llmOpenai.ts` `createOpenAiClient` |
+| 기본 모델 | `claude-sonnet-5` | `gpt-5.6-terra` |
+| 모델 환경변수 | `ANTHROPIC_MODEL` | `OPENAI_MODEL` |
+| 스키마 강제 | 프롬프트 + `extractJson` → zod | `response_format: json_schema` → zod |
+| 캐시 | `cache_control: ephemeral` 명시 | 접두 일치 자동 |
+| effort | `output_config.effort` | `reasoning_effort` |
+
+- **모르는 `LLM_PROVIDER` 는 던진다.** 조용히 기본으로 떨어뜨리면 오타가 공급자를 바꿔 놓고 청구서로 알게 된다
+- **다른 공급자의 모델 변수는 읽지 않는다** — 남은 `ANTHROPIC_MODEL` 이 OpenAI 실행 기록에 적히면 기록이 거짓이 된다
+- OpenAI 는 `strict: false` 로 보낸다. strict 는 선택 필드를 전부 required 로 요구해 기존 스키마가 깨진다 — 검증은 zod 가 한 번 더 한다
+- 모델 선택(2026-09-01 공식 가격, 입력/출력 per 1M): `gpt-5.6-terra` $2/$12 가 기본이다. 이 제품은 환각 검증이 존재 이유라 judge 를 최저가 칸에 두지 않는다. 대량 기사 분류만 싸게 돌리려면 `gpt-5.4-mini` $0.75/$4.50, 그 아래 `gpt-5-nano` $0.05/$0.40 는 judge 용으로 부적절하다
 
 ## Next.js 16 함정
 

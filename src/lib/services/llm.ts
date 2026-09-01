@@ -1,7 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import type { z } from "zod";
+import { createOpenAiClient } from "@/lib/services/llmOpenai";
+import { resolveModel as resolveActiveModel, resolveProvider } from "@/lib/services/llmProvider";
 
-const DEFAULT_MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 8000;
 
 export type Effort = "low" | "medium" | "high";
@@ -25,11 +27,11 @@ export class LlmRefusalError extends Error {}
 export class LlmParseError extends Error {}
 
 /**
- * 사용할 Anthropic 모델 id 를 결정한다.
- * 모델 지정을 이 함수 한 곳으로 모아 호출부에 흩어지지 않게 한다.
+ * 활성 공급자의 모델 id 를 결정한다.
+ * 모델 지정을 이 함수 한 곳으로 모아 호출부에 흩어지지 않게 한다 — 공급자 분기는 llmProvider 가 안다.
  */
 export function resolveModel(env: Record<string, string | undefined> = process.env) {
-  return env.ANTHROPIC_MODEL || DEFAULT_MODEL;
+  return resolveActiveModel(env);
 }
 
 type StreamMessage = {
@@ -113,8 +115,12 @@ export function createLlmClient(sdk: StreamingMessages, model = resolveModel()):
 }
 
 /**
- * 환경변수 자격증명으로 기본 LLM 클라이언트를 만든다.
+ * 환경변수 자격증명으로 기본 LLM 클라이언트를 만든다 — LLM_PROVIDER 가 어느 어댑터를 쓸지 정한다.
+ * 두 어댑터가 같은 LlmClient 를 내므로 호출부(분석·검증)는 어느 쪽인지 알지 못한다.
  */
-export function defaultLlmClient() {
+export function defaultLlmClient(): LlmClient {
+  if (resolveProvider() === "openai") {
+    return createOpenAiClient(new OpenAI({ maxRetries: 3 }) as never);
+  }
   return createLlmClient(new Anthropic({ maxRetries: 3 }) as unknown as StreamingMessages);
 }
