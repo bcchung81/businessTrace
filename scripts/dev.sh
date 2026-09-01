@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # 개발 서버를 실행 가능한 상태로 만들고 기동한다.
-# 사이드카(sidecar/)가 생기면 여기에 uvicorn 동시 기동을 추가한다.
 set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)

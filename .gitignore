@@ -55,9 +55,6 @@ next-env.d.ts
 /data/submissions/
 /outcome/
 
-# python — 사이드카와 스크립트
+# python — scripts/
 __pycache__/
 *.py[cod]
-/sidecar/.venv/
-/sidecar/.pytest_cache/
-/sidecar/jobs/

@@ -1,5 +1,4 @@
-# 성과돋보기 프로덕션 구성 — 웹 + 사이드카.
-# 사이드카는 선택적 계층이다. 내려도 웹은 그대로 돈다(SIDECAR_URL 이 닿지 않으면 호출을 접는다).
+# 성과돋보기 프로덕션 구성 — 웹 1컨테이너.
 services:
   web:
     build:
@@ -13,7 +12,6 @@ services:
       # 컨테이너·리버스프록시 뒤에서는 Auth.js 가 호스트를 신뢰하지 않으면 세션 요청이 전부 막힌다.
       AUTH_TRUST_HOST: "true"
       DATABASE_URL: "file:/app/prisma/prod.db"
-      SIDECAR_URL: "http://sidecar:8000"
       TZ: Asia/Seoul
     ports:
       - "127.0.0.1:3000:3000"
@@ -27,24 +25,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
-
-  sidecar:
-    build:
-      context: ../sidecar
-      dockerfile: Dockerfile
-    image: seonggwa-sidecar:latest
-    restart: unless-stopped
-    environment:
-      TZ: Asia/Seoul
-      TZ: Asia/Seoul
-    expose:
-      - "8000"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
 
 volumes:
   db:

@@ -1,4 +1,8 @@
-# 성과돋보기 재구축 구현계획: Next.js 풀스택 + Python 사이드카
+# 성과돋보기 재구축 구현계획: Next.js 풀스택
+
+> **2026-09-01 — Python 사이드카는 폐기했다.** 맡기려던 딥리서치(Task 15)와 dartlab 재무 정규화(Task 6)가
+> 둘 다 사라져 소비자가 없는 계층이 됐다. 아래 본문에 남은 사이드카 서술은 그때의 기록이며,
+> 지금 만들 것이 아니다. 복원이 필요하면 `git log -S "FastAPI"`.
 
 **작성일:** 2026-08-26
 **갱신:** 2026-08-26 — 설치본 기준 Next.js 16.3.3으로 현행화 (v15 표기 정정, v16 breaking change 반영)
@@ -25,7 +29,6 @@
     │  - Route Handlers: 뉴스수집·GPT분석·검증·벤치마킹·리포트 API
     │  - SSE: 분석 진행률 스트리밍
     │
-    ├──HTTP──→ [Python 사이드카 (FastAPI)]
     │            - /finance    : dartlab 재무 정규화·비율 계산
     │            - /health     : 헬스체크
     │
@@ -36,24 +39,21 @@
 
 **역할 분리 원칙:**
 - Next.js: 화면, 일반 CRUD, 뉴스 수집, GPT 분석, 검증, 벤치마킹, 리포트 생성 — 전부 TypeScript 단일 스택
-- Python 사이드카: **Python 전용 라이브러리가 필요한 기능만.** 딥리서치(gpt-researcher)와 dartlab 을 둘 다 걷어낸 지금은 남은 소비자가 없다 — 존치 여부는 미결
-- 배포: Docker Compose (next-app + python-sidecar 2컨테이너) — 기존 Ubuntu VPS 또는 클라우드
+- 배포: Docker Compose (next-app 1컨테이너) — 기존 Ubuntu VPS 또는 클라우드
 
 ## 저장소 구조 (2026-08-26 확정)
 
-**Next.js 를 저장소 루트에 두고 사이드카를 `sidecar/` 하위에 둔다.** 대칭 분리(`web/` + `sidecar/`)를 검토했으나 채택하지 않았다.
+**Next.js 를 저장소 루트에 둔다.**
 
 ```
 project1000/
 ├── src/  next.config.ts  package.json      주 앱 (루트)
 ├── prisma/                                  Task 2
-├── sidecar/                                 자립형 Python 프로젝트
 │   ├── pyproject.toml                       uv, requires-python 핀
 │   ├── app/  tests/  Dockerfile  .dockerignore
 ├── scripts/
 │   ├── setup.sh  dev.sh                     실행환경 구축·동시 기동
 │   ├── api_smoke_test.py                    외부 API 실증
-│   └── sidecar_env_check.py                 파이썬 런타임 호환성 검증
 ├── deploy/
 │   ├── docker-compose.yml  docker-compose.prod.yml
 │   └── Dockerfile.web                       Next.js standalone 멀티스테이지
@@ -63,20 +63,17 @@ project1000/
 ```
 
 **루트 유지 근거:**
-- 사이드카는 대등한 서비스가 아니라 선택적 부속이다 — 엔드포인트 2개, 상태 비저장, 장애 시 폴백으로 메인 기능 계속 동작
 - `next dev` 가 `generate-agent-files.js:90` 의 `writeAgentFiles(projectDir)` 로 프로젝트 루트에 `AGENTS.md`·`CLAUDE.md` 를 재생성한다. Next 를 하위로 옮기면 `web/CLAUDE.md` 가 새로 생성되어 루트 `CLAUDE.md` 와 이원화되고, 매 `next dev` 마다 재발한다
 - 분리안의 실질 이점(빌드 컨텍스트 격리)은 `.dockerignore` 로 상쇄된다
 - shadcn·vitest·eslint 가 이미 루트 기준으로 검증 완료됐다
 
 **분리안으로 전환할 트리거** (하나라도 충족되면 재검토):
 - 두 번째 Python 서비스가 생긴다 (워커, 크론 등)
-- 웹과 사이드카가 공유하는 TypeScript 패키지가 필요해진다
 - 서비스별로 배포 파이프라인을 분리해야 한다
 
 **경계 강화** (암묵적 경계가 실제로 샌 전례가 있다 — ESLint 가 `backup/` 레거시 JS 를 훑어 경고 21건 발생):
-- `.dockerignore` 로 웹 이미지에서 `sidecar/`·`backup/`·`docs/`·`.next/` 제외, 사이드카는 `context: ./sidecar` 로 컨텍스트 자체 분리
-- `tsconfig.json` 의 `exclude` 와 `eslint.config.mjs` 의 `globalIgnores` 에 `sidecar/` 추가
-- 루트에 Python 파일을 두지 않는다 — 전부 `sidecar/` 또는 `scripts/`
+- `.dockerignore` 로 웹 이미지에서 `backup/`·`docs/`·`.next/` 제외
+- Python 파일은 `scripts/` 아래에만 둔다
 
 ## 기술 스택
 
@@ -89,8 +86,7 @@ project1000/
 | LLM | **Anthropic** `@anthropic-ai/sdk` — 모델 ID 는 `ANTHROPIC_MODEL` 환경변수 1곳에서 관리, 기본 **`claude-sonnet-5`** (2026-08-26 결정, $2/$10 per MTok). 분석·judge 는 `thinking: {type:"adaptive"}` + `output_config.format` 구조화 출력. 50개사 일괄은 Message Batches API(50% 단가) 검토 |
 | 검증 | Vitest + Testing Library + jsdom (`@vitejs/plugin-react`, `vite-tsconfig-paths`) |
 | 엑셀 | exceljs |
-| 사이드카 | FastAPI + uvicorn, **Python 3.12 핀** (uv 관리) |
-| 배포 | Docker Compose (next-app, python-sidecar, db) |
+| 배포 | Docker Compose (next-app, db) |
 
 ## Next.js 16 반영 사항 (설치본 `node_modules/next/dist/docs/` 확인)
 
@@ -118,9 +114,8 @@ project1000/
   - 프롬프트는 운영에서 튜닝된 자산이므로 문구를 임의로 개선하지 않는다 — 바꾸면 분석 결과가 달라진다
   - `backup/` 은 gitignore 되므로 복사해 온 것만 남는다. 폴더 정리 전 자산 추출 완료 여부를 확인할 것
 - 신규 코드 주석 금지, 커밋은 태스크 단위
-- 사이드카 파이썬은 **3.12 로 핀**한다. 로컬 기본이 3.14 이므로 `uv` 로 3.12 venv 를 강제 생성할 것
 
-## 사이드카 런타임 실측 (2026-08-26, `scripts/sidecar_env_check.py`)
+## 사이드카 런타임 실측 (2026-08-26) — 폐기된 계층의 기록
 
 macOS arm64 에서 후보 버전별로 의존성 해결 + venv 설치 + import 를 실제 수행한 결과다.
 
@@ -225,17 +220,15 @@ GET https://naverapihub.apigw.ntruss.com/search/v1/news?query=삼성전자&displ
 - **2c 이관**: `scripts/migrate-legacy.ts` — `backup/instance/news_homepage.db` → Prisma, 건수(10/3/42) 단정. 커밋 `feat: legacy sqlite migration script`
 - 분할 근거: 리뷰어가 스키마는 승인하고 인증만 반려할 수 있다. Auth.js 호환 스파이크는 불필요해졌다 (peer `next ^16.0.0` 확인)
 
-#### Task 3: Python 사이드카 스캐폴딩
-- **파일**: `sidecar/pyproject.toml`, `sidecar/app/main.py`, `sidecar/app/routers/{health,research,finance}.py`, `sidecar/tests/`, `sidecar/Dockerfile`, `sidecar/.dockerignore`, `deploy/docker-compose.yml`, `deploy/Dockerfile.web`, `scripts/setup.sh`, `scripts/dev.sh`, `.dockerignore` — 사이드카 라우터 경로는 전 태스크에서 `sidecar/app/routers/` 로 통일
-- **내용**:
-  - `sidecar/pyproject.toml`: uv 관리, `requires-python = ">=3.12,<3.13"`
-  - FastAPI 앱: `/health`, `/finance/normalize`(POST — dartlab 정규화·비율)
-  - Docker Compose: next-app(3000) + python-sidecar(8000), 사이드카 헬스체크. 사이드카는 `context: ./sidecar`
-  - `scripts/setup.sh`(npm ci + uv sync + prisma migrate), `scripts/dev.sh`(next dev + uvicorn --reload 동시 기동)
-  - 경계 강화: 루트 `.dockerignore`, `tsconfig.json` `exclude` 와 `eslint.config.mjs` `globalIgnores` 에 `sidecar/` 추가
-  - **컨테이너 안에서 `scripts/sidecar_env_check.py` 재실행** — 리눅스 휠 가용성 확인
-- **검증**: `/health` 200 응답 테스트(pytest), Compose 기동 후 Next.js에서 사이드카 호출 통합 테스트, `npm run lint`·`npm test` 가 사이드카 파일을 집지 않음
-- **커밋**: `feat: fastapi sidecar scaffold with docker compose`
+#### Task 3: Python 사이드카 스캐폴딩 — **폐기 2026-09-01**
+
+FastAPI 스캐폴드를 세웠으나(`feat: fastapi sidecar scaffold with docker compose`), 맡기려던 두 기능이
+모두 사라져 `/health` 만 남았고 그마저 부르는 곳이 없었다.
+
+- **Task 15 딥리서치** — 폐기
+- **Task 6 dartlab 정규화** — 미채택. 비율은 `financeRatios.ts` 로 Next.js 안에서 계산
+
+계층 전체를 걷어냈다. 파이썬 전용 라이브러리가 다시 필요해지면 `git log -S "FastAPI"` 로 되짚어 복원한다.
 
 ### Phase A: 데이터 연동·검증 (P0 대응)
 
@@ -400,8 +393,8 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 > 필요해지면 이 커밋을 되짚어 복원한다(`git log -S "STORM"`).
 
 #### Task 16: 배포 패키징
-- **파일**: `deploy/Dockerfile.web`(next-app, multi-stage), `sidecar/Dockerfile`, `deploy/docker-compose.prod.yml`, 배포 문서
-- **내용**: 2컨테이너 프로덕션 구성(Next.js standalone 빌드 + uvicorn), 환경변수 주입, SQLite 볼륨(또는 PostgreSQL 서비스), 헬스체크·재시작 정책, 기존 Ubuntu 서버 배포 가이드 갱신
+- **파일**: `deploy/Dockerfile.web`(next-app, multi-stage), `deploy/docker-compose.prod.yml`, 배포 문서
+- **내용**: 웹 1컨테이너 프로덕션 구성(Next.js standalone 빌드), 환경변수 주입, SQLite 볼륨(또는 PostgreSQL 서비스), 헬스체크·재시작 정책, 기존 Ubuntu 서버 배포 가이드 갱신
 - **검증**: Compose 기동 → 로그인 → 분석 1회 → 리포트 다운로드 E2E 수동 확인
 - **커밋**: `chore: production docker packaging`
 
@@ -409,10 +402,10 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 
 ## 실행 순서 및 의존성
 
-**원칙: 제품의 존재 이유(환각 검증)를 사이드카·외부 재무 데이터 없이 먼저 완주한다.** 사이드카가 "선택 계층"이라는 설계는 개발 순서로 보장한다.
+**원칙: 제품의 존재 이유(환각 검증)를 외부 재무 데이터 없이 먼저 완주한다.**
 
 ```
-Task 1 → 2a → 2b → 2c                       (Phase 0 기반, 사이드카 없음)
+Task 1 → 2a → 2b → 2c                       (Phase 0 기반)
       → Task 7 → Task 8 → Task 9 → Task 10  (핵심 루프: 수집→분석→검증→리포트)
 Task 10 이후 병렬:
   ├─ Task 4 (국세청) · Task 5 → 5b (DART·나라장터)   외부 데이터 보강
@@ -420,13 +413,11 @@ Task 10 이후 병렬:
 Task 16 (배포) — 전부 완료 후
 ```
 
-이전 순서(1→2→3→4·5·7...)에서 바꾼 이유: Task 3 이 모든 것의 선행이었으나 Task 4·5·7·8·9·10 은 사이드카를 쓰지 않는다. 사이드카를 뒤로 보내면 "죽어도 동작" 폴백이 설계가 아니라 기본 상태가 된다.
 
 ## 리스크 및 대응
 
 | 리스크 | 대응 |
 |---|---|
-| 사이드카 장애 시 딥리서치·재무정규화 불가 | 폴백 설계: 정규화는 Task 5 1차 매핑으로, 딥리서치는 기능 비활성화 후 기존 분석만 제공 — 메인 기능은 사이드카 없이 동작 |
 | Vercel 서버리스 제약 | Docker Compose 자체호스팅 전제 (기존 Ubuntu VPS) |
 | React 전환 학습 비용 | shadcn/ui 표준 컴포넌트 중심으로 자체 UI 로직 최소화 |
 | Next.js 16 신규 릴리스로 서드파티(Auth.js·Prisma·shadcn) 호환 미검증 | 각 태스크 착수 시 설치본 문서(`node_modules/next/dist/docs/`) 우선 확인, 비호환 라이브러리는 자체 구현으로 폴백 |
@@ -436,7 +427,6 @@ Task 16 (배포) — 전부 완료 후
 | 리스크 키워드 오탐 | 담당자 확인 플래그 필수, 확인된 알림만 감점 |
 | 연도별 점수 산식 변경 | SelectionRecord에 산식 버전 필드, 버전 간 비교 시 주석 |
 | 기존 데이터 이관 실패 | 이관 스크립트 + 건수·샘플 검증 절차, 이관 전 DB 백업 |
-| 사이드카 venv 가 1.1GB — 이미지 비대 | 멀티스테이지 빌드, 런타임 스테이지에 venv 만 복사 |
 | 리눅스 휠 가용성 미검증 (실측은 macOS arm64) | Task 3 에서 컨테이너 내 재검증, 실패 시 파이썬 버전 재선택 |
 | 네이버 검색 API 가 NAVER API HUB 로 이관 (개발자센터 신규 신청 종료) | 네이버 클라우드에서 키 발급 후 `NCP_APIGW_API_KEY_ID/KEY` 설정. 수집기는 엔드포인트·헤더를 환경변수로 분기 |
 | HUB 가 향후 유료화 예정 (단가 미정) | 월 775,000건 무료 한도 내 운영, 50개사 일괄 분석 시 호출량 로깅. 유료화 시 구글 뉴스 RSS 비중 확대 |
@@ -448,10 +438,9 @@ Task 16 (배포) — 전부 완료 후
 
 ## 완료 정의 (Definition of Done)
 
-- 전체 테스트 통과 (`vitest run`, 사이드카는 `pytest`), 프로덕션 Compose 기동 확인
+- 전체 테스트 통과 (`vitest run`), 프로덕션 Compose 기동 확인
 - E2E 시나리오: 로그인 → 기업 50개사 등록(사업자번호·산업 포함) → 일괄 뉴스 분석(SSE 진행률) → 자동 검증(다층) → 벤치마킹 랭킹 → XAI 기여도 확인 → 딥리서치 1건 → 엑셀 리포트(다차원 검증·리스크·심층조사 시트) 다운로드
 - 소스코드에 평문 API 키 없음, `.env.example` 이 실제 필요한 키 이름과 일치
-- 사이드카 중단 시에도 메인 분석·리포트 기능 정상 동작 — 수동 확인이 아니라 Task 6·15 의 "사이드카 다운" mock 테스트가 `npm test` 에 포함돼 회귀를 막는다
 - 기존 DB 데이터 이관 완료 검증 — `scripts/migrate-legacy.ts` 가 users 10 / archives 3 / companies 42 를 단정
 - 측정치: 50개사 일괄 분석(기업당 뉴스 ≤ 30건)이 **60분 이내**, 토큰 비용이 `AnalysisRun.usage` 합산 기준 **$30 이하** (Sonnet 5 단가). 초과 시 동시성·프롬프트 캐시·Batches 순으로 조정
 - 검증 임계값(0.85/0.5/0.4)은 초기값이다 — 레거시 결과 샘플 10건에 적용해 verified 비율을 완료 노트에 기록하고, 판정 근거 없이 임계값을 낮추지 않는다

@@ -14,9 +14,9 @@ deny() {
 }
 
 case "$f" in
-  */sidecar/*.py | */scripts/*.py) ;;
+  */scripts/*.py) ;;
   *.py)
-    deny "루트에 Python 파일을 두지 않는다. sidecar/ 또는 scripts/ 아래로 옮길 것. (CLAUDE.md 아키텍처 규약)"
+    deny "Python 파일은 scripts/ 아래에만 둔다. (CLAUDE.md 아키텍처 규약)"
     ;;
 esac
 

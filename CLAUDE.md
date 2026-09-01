@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **성과돋보기** — 뉴스와 공공·금융 데이터를 AI로 분석해 우수기업 50개사 선정 근거를 만들고, 평가위원회에 다차원 분석자료를 제공한다. 핵심 요구사항은 **AI 환각 방지**로, 분석 결과를 공식 출처와 대조해 자동 검증하는 것이 제품의 존재 이유다.
 
-기존 Flask 앱을 **Next.js 풀스택 + Python 사이드카**로 재구축하는 중이다. **관리자 전용 도구다** — 공개 회원가입을 열지 않고 계정은 `npx tsx scripts/create-admin.ts` 로 발급한다. 자율 가입은 향후 확장 사항이다. 레거시 데이터는 이관하지 않고 신규 시스템으로 새로 만든다. Phase 0 은 Task 1·2a·2b·2c·2d 까지 완료됐고 **핵심 루프(7 수집 → 8 분석 → 9 검증 → 10 리포트)가 완료됐다.** Phase A(4 국세청·5 DART·5b 나라장터)도 완료됐고, Task 5 잔여(동명 충돌 후보 선택·사업자번호 입력)는 기업 상세 "확인 필요" 블록으로 완료됐다. 분석 실행 UI(일괄 실행 화면 `/companies` + 배치 스크립트)와 사건 모니터링(대시보드·기업 카드·월간 문서)은 완료됐다. Phase B 도 완료됐다(12 벤치마킹 랭킹·13 기여도/인용·14 이력/시상, 11 은 사건 모니터링이 대체). 배포(16)는 웹 컨테이너까지 만들었고(`deploy/`) 이미지 빌드 검증과 PostgreSQL 전환이 남았다. Task 6(재무 비율)은 dartlab 없이 자체 계산으로 닫았고 **딥리서치(15·15b)는 폐기했다.** 남은 것은 배포 잔여(이미지 빌드 검증·PostgreSQL 전환)다.
+기존 Flask 앱을 **Next.js 풀스택**으로 재구축하는 중이다. **관리자 전용 도구다** — 공개 회원가입을 열지 않고 계정은 `npx tsx scripts/create-admin.ts` 로 발급한다. 자율 가입은 향후 확장 사항이다. 레거시 데이터는 이관하지 않고 신규 시스템으로 새로 만든다. Phase 0 은 Task 1·2a·2b·2c·2d 까지 완료됐고 **핵심 루프(7 수집 → 8 분석 → 9 검증 → 10 리포트)가 완료됐다.** Phase A(4 국세청·5 DART·5b 나라장터)도 완료됐고, Task 5 잔여(동명 충돌 후보 선택·사업자번호 입력)는 기업 상세 "확인 필요" 블록으로 완료됐다. 분석 실행 UI(일괄 실행 화면 `/companies` + 배치 스크립트)와 사건 모니터링(대시보드·기업 카드·월간 문서)은 완료됐다. Phase B 도 완료됐다(12 벤치마킹 랭킹·13 기여도/인용·14 이력/시상, 11 은 사건 모니터링이 대체). 배포(16)는 웹 컨테이너까지 만들었고(`deploy/`) 이미지 빌드 검증과 PostgreSQL 전환이 남았다. Task 6(재무 비율)은 dartlab 없이 자체 계산으로 닫았고 **딥리서치(15·15b)는 폐기했다.** 남은 것은 배포 잔여(이미지 빌드 검증·PostgreSQL 전환)다.
 
 ## 플랜 주도 개발
 
@@ -53,15 +53,15 @@ npx next typegen                                    # PageProps/RouteContext 재
    화면 · Route Handlers · SSE 진행률
    뉴스수집 · GPT분석 · 검증 · 벤치마킹 · 엑셀 리포트
         │
-        ├─HTTP─→ [Python 사이드카 (FastAPI)]  Python 전용 라이브러리만
         └─HTTPS→ 국세청 · OpenDART · 나라장터 · 네이버 뉴스
 ```
 
-**사이드카는 선택적 계층이다.** 죽어도 메인 기능은 폴백으로 동작해야 한다.
+**전부 Next.js 안에서 돈다.** Python 사이드카는 2026-09-01 에 걷어냈다 — 맡기려던 둘(딥리서치·dartlab 정규화)이
+모두 사라져 소비자가 없는 계층이 됐다. 파이썬 전용 라이브러리가 다시 필요해지면 `git log -S "FastAPI"` 로 되짚는다.
 
 디렉터리: `src/components/ui`(shadcn) · `src/components/layout` · `src/lib/services`(외부 API·도메인 로직) · `src/lib/repositories`(DB 접근). **Route Handler 는 얇게 유지하고 로직은 services 에 둔다.**
 
-Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는 `scripts/`. **루트에 Python 파일을 두지 않는다.** 새 최상위 디렉터리를 만들면 `tsconfig` `exclude` 와 `eslint.config.mjs` `globalIgnores` 를 함께 갱신한다 — 경계가 샌 전례가 있다.
+Next.js 는 저장소 루트, 스크립트는 `scripts/`. **Python 파일은 `scripts/` 아래에만 둔다.** 새 최상위 디렉터리를 만들면 `tsconfig` `exclude` 와 `eslint.config.mjs` `globalIgnores` 를 함께 갱신한다 — 경계가 샌 전례가 있다.
 
 ## 외부 API
 
@@ -163,7 +163,7 @@ Next.js 는 저장소 루트, 사이드카는 `sidecar/` 하위, 스크립트는
 
 ## 이 파일의 경계
 
-작업별 상세는 `.claude/skills/` 에 있고 해당 작업을 시작할 때 자동으로 로드된다 — `external-apis`(외부 API 연동), `legacy-migration`(backup/ 이관), `sidecar-runtime`(파이썬 사이드카), `verification-pipeline`(환각 검증).
+작업별 상세는 `.claude/skills/` 에 있고 해당 작업을 시작할 때 자동으로 로드된다 — `external-apis`(외부 API 연동), `legacy-migration`(backup/ 이관), `verification-pipeline`(환각 검증).
 
 기계적으로 판정 가능한 규칙은 `.claude/settings.json` 의 훅이 강제한다. 과거 사고 이력은 `docs/incidents.md` 에 있다.
 

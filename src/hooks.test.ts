@@ -40,12 +40,12 @@ beforeAll(() => {
 });
 
 describe("pre-write-guard", () => {
-  test("blocks python files outside sidecar/ and scripts/", () => {
+  test("blocks python files outside scripts/ — the sidecar is gone, scripts/ is the only home", () => {
     expect(preWrite("/repo/root.py").exit).toBe(2);
+    expect(preWrite("/repo/sidecar/app.py").exit).toBe(2);
   });
 
-  test("allows python files under sidecar/ and scripts/", () => {
-    expect(preWrite("/repo/sidecar/app.py").exit).toBe(0);
+  test("allows python files under scripts/", () => {
     expect(preWrite("/repo/scripts/x.py").exit).toBe(0);
   });
 
