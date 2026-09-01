@@ -77,6 +77,7 @@ Next.js 는 저장소 루트, 스크립트는 `scripts/`. **Python 파일은 `sc
 | OpenDART 재무 | 매출·영업이익·순이익·자산총계 | `opendart.fss.or.kr/api/fnlttSinglAcnt.json` | `dart.ts` |
 | 국세청 휴폐업 | 계속사업자·과세유형 | `api.odcloud.kr/api/nts-businessman/v1/status` | `nts.ts` |
 | 나라장터 조달업체 | 종업원수·조달업무구분·개업일 | `apis.data.go.kr/1230000/ao/UsrInfoService02/getPrcrmntCorpBasicInfo02` | `narajangteo.ts` |
+| 나라장터 낙찰 | 공공조달 매출 실적 (재무 결측 대리지표) | `apis.data.go.kr/1230000/as/ScsbidInfoService/getScsbidListSttus{Thng,Servc}PPSSrch` | `procurementWins.ts` |
 | Anthropic Messages | 분석·검증 judge·반증 (기본) | `api.anthropic.com/v1/messages` (SDK) | `llm.ts` |
 | OpenAI Chat Completions | 같은 역할의 대체 공급자 | `api.openai.com/v1/chat/completions` (SDK) | `llmOpenai.ts` |
 | SGIS 행정구역 | 시도·시군구 이름표 (지역 표기 정규화) | `sgisapi.mods.go.kr/OpenAPI3/boundary/hadmarea.geojson` | `scripts/fetch-regions.ts` |
@@ -88,7 +89,6 @@ Next.js 는 저장소 루트, 스크립트는 `scripts/`. **Python 파일은 `sc
 
 | API | 용도 | 상태 | 엔드포인트 / 신청 URL |
 |---|---|---|---|
-| 조달청_나라장터 **낙찰**정보 | 공공조달 매출 실적 | ✅ 개통 | `apis.data.go.kr/1230000/**as**/ScsbidInfoService/getScsbidListSttusThngPPSSrch` (용역은 `...ServcPPSSrch`) |
 | 조달청_나라장터 **계약**정보 | 계약 규모·거래 지속성 | ✅ 개통 | `apis.data.go.kr/1230000/**ao**/CntrctInfoService/getCntrctInfoListThngPPSSrch` |
 | 금융위원회_기업기본정보 | **DART 미등록 기업의 사업자번호**·설립일·종업원수 | ✅ 개통 | `apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getCorpOutline_V2` |
 | 중소벤처기업부_벤처기업명단 | 벤처확인 여부·유형·유효기간 | ✅ 개통 | `api.odcloud.kr/api/15084581/v1/uddi:47b202c9-f0bb-43b4-949c-ebe9ef56ef02` |
@@ -102,7 +102,8 @@ Next.js 는 저장소 루트, 스크립트는 `scripts/`. **Python 파일은 `sc
 - **시도 표기는 SGIS 이름표에 맞춰 옮긴다.** 원천은 `전북특별자치도`·`전남광주통합특별시` 로 오고 SGIS 2023 은 `전라북도`·`광주광역시`+`전라남도` 다. 통합 시도는 시군구로 갈라내고(`북구`→광주, `나주시`→전남), 옮길 수 없으면 추측하지 않고 미대응으로 남긴다
 - **인증키는 계정당 하나다.** `NTS_SERVICE_KEY`(Decoding)를 그대로 쓰고 API 별 활용신청만 추가한다
 - **나라장터는 서비스마다 경로 접두사가 다르다** — 낙찰은 `as/`, 계약은 `ao/`, 조달업체는 `ao/`. 틀리면 `NO_OPENAPI_SERVICE_ERROR`(12)
-- 나라장터 낙찰·계약은 **업체 단위 조회 파라미터가 없다.** 기간으로 전수 스캔한 뒤 `bidwinnrBizno`·`bidwinnrNm` 으로 걸러야 한다 — 배치 수집 전제
+- 나라장터 낙찰·계약은 **업체 단위 조회 파라미터가 없다.** 기간으로 전수 스캔한 뒤 `bidwinnrBizno`·`bidwinnrNm` 으로 걸러야 한다 — 배치 수집 전제(`scripts/collect-procurement.ts`)
+- **조달청은 연속 요청에 `정상` 헤더와 빈 배열을 돌려준다.** 행 수가 줄었다고 마지막 페이지로 읽으면 스캔이 조용히 멈춘다 — 종료는 응답의 `totalCount` 로 판정하고, 남았다는데 0행이면 실패로 본다
 - **국민연금은 사업자등록번호를 앞 6자리만 준다**(`625870****`). 기업 식별은 상호·주소·업종·사업장등록일 4중 대조로 하고, 10자리를 요구하는 국세청·나라장터는 여기서 열리지 않는다
 - 국민연금은 **사업장 단위**다. 본사 이전·지점은 별개 행으로 잡히므로 사업자번호 앞 6자리로 법인 단위 합산해야 한다 — 합치지 않으면 이전을 인원 급감으로 오독한다
 - 국민연금은 **제공 시점 기준 12개월치만 유지**하고 매년 삭제한다. 연 단위 추이가 필요하면 매월 15일 이후 스냅샷을 DB 에 적재해 직접 쌓아야 한다
