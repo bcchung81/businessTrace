@@ -202,13 +202,16 @@ function NoBusinessNo({ item, companyId, run, actions }: { item: Extract<ReviewI
 export function ReviewBlock({ companyId, year, summary, actions }: { companyId: number; year: number; summary: ReviewSummary; actions: ReviewActions }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+  const [saved, setSaved] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
   const run: Runner = (work, after) => {
     setError(null);
+    setSaved(null);
     startTransition(async () => {
       const result = await work();
       if (!result.ok) { setError(result.message); return; }
       after?.();
+      setSaved("저장했습니다 · 화면을 다시 읽는 중");
       router.refresh();
     });
   };
@@ -222,8 +225,9 @@ export function ReviewBlock({ companyId, year, summary, actions }: { companyId: 
   return (
     <Panel index="00" title="확인 필요" tag={count === 0 ? "없음" : `${count}건`} tone={count === 0 ? "plain" : "review"} note={note}>
       {count === 0 ? null : (
-        <div className="flex flex-col">
+        <fieldset disabled={pending} className="flex flex-col border-0 p-0">
           {error ? <p role="alert" className="border-l-2 border-risk bg-risk-surface px-3 py-2 text-[12px] font-medium text-risk">{error}</p> : null}
+          {saved ? <p role="status" className="border-l-2 border-primary bg-accent px-3 py-2 text-[12px] font-medium text-accent-foreground">{saved}</p> : null}
           {summary.items.map((item, index) => {
             switch (item.kind) {
               case "no_business_no": return <NoBusinessNo key={index} item={item} companyId={companyId} run={run} actions={actions} />;
@@ -235,7 +239,7 @@ export function ReviewBlock({ companyId, year, summary, actions }: { companyId: 
               case "no_news": return <NoNews key={index} item={item} companyId={companyId} year={year} run={run} actions={actions} />;
             }
           })}
-        </div>
+        </fieldset>
       )}
     </Panel>
   );

@@ -106,6 +106,20 @@ describe("ReviewBlock", () => {
     await waitFor(() => expect(actions.confirmEvents).toHaveBeenCalledWith({ companyId: 1, eventIds: [11, 12], action: "acknowledge" }));
   });
 
+  test("disables the block while an action runs and confirms afterwards", async () => {
+    const actions = mockActions();
+    let resolve!: (value: { ok: true }) => void;
+    actions.confirmEvents = vi.fn(() => new Promise<{ ok: true }>((r) => { resolve = r; }));
+    const events = [
+      { id: 11, occurredAt: "2026-08-27T00:00:00.000Z", severity: "alert" as const, kind: "closure", title: "폐업", evidence: [] },
+    ];
+    render(<ReviewBlock companyId={1} year={2026} summary={summary([{ kind: "open_events", events }])} actions={actions} />);
+    fireEvent.click(screen.getByRole("button", { name: "모두 확인" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "모두 확인" })).toBeDisabled());
+    resolve({ ok: true });
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("저장했습니다"));
+  });
+
   test("no-news collects aliases and saves them", async () => {
     const actions = mockActions();
     render(<ReviewBlock companyId={1} year={2026} summary={summary([{ kind: "no_news", aliases: ["가테크"] }])} actions={actions} />);
