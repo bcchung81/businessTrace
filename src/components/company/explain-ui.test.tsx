@@ -89,9 +89,9 @@ describe("VerificationPanel", () => {
 
   test("is a badge until clicked, then a side panel with the four layers and thresholds", () => {
     render(<VerificationPanel layers={layers} />);
-    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "검증 근거 열기" }));
-    const panel = screen.getByRole("complementary", { name: "검증 근거" });
+    const panel = screen.getByRole("dialog", { name: "검증 근거" });
     expect(within(panel).getByText("출처 인용")).toBeInTheDocument();
     expect(within(panel).getByText(/1\.00 · ≥0\.5/)).toBeInTheDocument();
     expect(within(panel).getByText("근거 충실도")).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe("VerificationPanel", () => {
     expect(within(panel).getByText("보도자료 의존")).toBeInTheDocument();
     expect(within(panel).getByText(/흑자 전환/)).toBeInTheDocument();
     fireEvent.click(within(panel).getByRole("button", { name: "닫기" }));
-    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   test("names the failed gate so the reader knows why it is 검토 필요", () => {
@@ -115,5 +115,18 @@ describe("VerificationPanel", () => {
     render(<VerificationPanel layers={null} />);
     expect(screen.getByText("미분석")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  test("opens as a dialog, focuses 닫기, closes on Escape and on the overlay", () => {
+    render(<VerificationPanel layers={layers} />);
+    fireEvent.click(screen.getByRole("button", { name: "검증 근거 열기" }));
+    const dialog = screen.getByRole("dialog", { name: "검증 근거" });
+    expect(document.activeElement).toBe(within(dialog).getByRole("button", { name: "닫기" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "검증 근거 열기" }));
+    fireEvent.click(screen.getByTestId("verification-overlay"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "검증 근거 열기" }));
   });
 });

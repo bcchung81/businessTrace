@@ -52,14 +52,16 @@ describe("EventTable", () => {
     expect(screen.getByRole("link", { name: "딥노이드" })).toHaveAttribute("href", "/companies/1");
   });
 
-  test("keeps long event and evidence text on one line with an ellipsis and the full text on hover", () => {
+  test("wraps long event titles instead of truncating, but keeps evidence on one line with the full text on hover", () => {
     const long = "부정 보도 — 한국첨단소재 유증 흥행에도 씁쓸한 뒷맛, 소액공모 틈새 노렸나 하는 아주 긴 제목";
     render(<EventTable events={[row({ title: long, evidence: [{ label: long, link: "https://n/1" }] })]} silence={[]} now={NOW} />);
 
     const links = screen.getAllByRole("link", { name: long });
     const titleCell = links.find((link) => link.getAttribute("href")?.startsWith("/companies/"))!.closest("td")!;
-    expect(titleCell.className).toContain("truncate");
-    expect(titleCell).toHaveAttribute("title", long);
+    expect(titleCell.className).toContain("min-w-[240px]");
+    expect(titleCell.className).toContain("max-w-[420px]");
+    expect(titleCell.className).toContain("break-keep");
+    expect(titleCell).not.toHaveAttribute("title");
 
     const evidenceCell = links.find((link) => link.getAttribute("href") === "https://n/1")!.closest("td")!;
     expect(evidenceCell.className).toContain("truncate");

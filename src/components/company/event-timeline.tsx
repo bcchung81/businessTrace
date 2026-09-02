@@ -47,7 +47,7 @@ export function EventTimeline({ events }: { events: EventRow[] }) {
                 <Badge variant="signal">{trustLabel(event.trust)}</Badge>
               </td>
               <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{STATUS_LABEL[event.status]}</td>
-              <td className="max-w-[300px] truncate whitespace-nowrap px-2 py-1.5" title={event.title}>{event.title}</td>
+              <td className="min-w-[240px] max-w-[420px] break-keep px-2 py-1.5">{event.title}</td>
               <td className="max-w-[240px] truncate whitespace-nowrap px-2 py-1.5" title={event.evidence.map((item) => item.label).join(" · ")}>
                 {event.evidence.length === 0 ? (
                   <span className="text-muted-foreground/45">—</span>

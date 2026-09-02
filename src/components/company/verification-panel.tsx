@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
 import { EVIDENCE_MATCH_THRESHOLD, FAITHFULNESS_THRESHOLD, SOURCE_COVERAGE_THRESHOLD, failedGates } from "@/lib/services/verificationScores";
 
@@ -26,6 +26,24 @@ function score(value: number | null, threshold: number) {
  */
 export function VerificationPanel({ layers }: { layers: VerificationLayers | null }) {
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    trigger.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    closeButton.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, close]);
+
   if (!layers) return <VerdictPill verdict="pending" />;
 
   const failed = failedGates(layers);
@@ -33,6 +51,7 @@ export function VerificationPanel({ layers }: { layers: VerificationLayers | nul
   return (
     <>
       <button
+        ref={trigger}
         type="button"
         aria-label="검증 근거 열기"
         id="verification"
@@ -43,67 +62,72 @@ export function VerificationPanel({ layers }: { layers: VerificationLayers | nul
         검증 근거
       </button>
       {open ? (
-        <aside
-          aria-label="검증 근거"
-          className="fixed inset-y-0 right-0 z-30 flex w-[380px] max-w-full flex-col gap-5 overflow-y-auto border-l-[1.5px] border-ink bg-background p-5 text-[12.5px]"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="font-display text-[18px] font-black">검증 근거</h3>
-            <button type="button" onClick={() => setOpen(false)} className="border-[1.5px] border-ink px-2 py-0.5 text-[11px] font-bold">
-              닫기
-            </button>
-          </div>
-          {failed.length > 0 ? (
-            <p className="font-semibold text-review">탈락 사유: {failed.join(" · ")}</p>
-          ) : (
-            <p className="font-semibold text-verified">세 게이트 모두 통과</p>
-          )}
-          <dl className="flex flex-col gap-3">
-            <div className="border-t-2 border-ink pt-2">
-              <dt className="font-bold">출처 인용</dt>
-              <dd className="font-mono tabular-nums">
-                {score(layers.sourceCoverage, SOURCE_COVERAGE_THRESHOLD)} · {layers.cited}/{layers.total}건
-              </dd>
-              {layers.invalid.length > 0 ? (
-                <ul className="mt-1 text-muted-foreground">
-                  {layers.invalid.map((item) => (
-                    <li key={item.link}>{item.title} — 인용 불가 링크</li>
-                  ))}
-                </ul>
-              ) : null}
+        <>
+          <div data-testid="verification-overlay" onClick={close} className="fixed inset-0 z-20 bg-ink/30" />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="검증 근거"
+            className="fixed inset-y-0 right-0 z-30 flex w-[380px] max-w-full flex-col gap-5 overflow-y-auto border-l-[1.5px] border-ink bg-background p-5 text-[12.5px]"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-[18px] font-black">검증 근거</h3>
+              <button ref={closeButton} type="button" onClick={close} className="border-[1.5px] border-ink px-2 py-0.5 text-[11px] font-bold">
+                닫기
+              </button>
             </div>
-            <div className="border-t-2 border-ink pt-2">
-              <dt className="font-bold">근거 충실도</dt>
-              <dd className="font-mono tabular-nums">{score(layers.faithfulness, FAITHFULNESS_THRESHOLD)}</dd>
-              <ul className="mt-1 flex flex-col gap-1">
-                {layers.claims.map((claim, index) => (
-                  <li key={index} className={claim.supported ? "" : "text-review"}>
-                    {claim.supported ? "지지" : "불지지"} · {claim.claim}
-                    {claim.evidence ? <span className="text-muted-foreground"> — {claim.evidence}</span> : null}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="border-t-2 border-ink pt-2">
-              <dt className="font-bold">근거 일치</dt>
-              <dd className="font-mono tabular-nums">{score(layers.evidenceMatch, EVIDENCE_MATCH_THRESHOLD)}</dd>
-            </div>
-            <div className="border-t-2 border-ink pt-2">
-              <dt className="font-bold">반증</dt>
-              <dd>
-                {layers.counterEvidence.length === 0 ? (
-                  <span className="text-muted-foreground">없음</span>
-                ) : (
-                  <ul>
-                    {layers.counterEvidence.map((item) => (
-                      <li key={item}>{item}</li>
+            {failed.length > 0 ? (
+              <p className="font-semibold text-review">탈락 사유: {failed.join(" · ")}</p>
+            ) : (
+              <p className="font-semibold text-verified">세 게이트 모두 통과</p>
+            )}
+            <dl className="flex flex-col gap-3">
+              <div className="border-t-2 border-ink pt-2">
+                <dt className="font-bold">출처 인용</dt>
+                <dd className="font-mono tabular-nums">
+                  {score(layers.sourceCoverage, SOURCE_COVERAGE_THRESHOLD)} · {layers.cited}/{layers.total}건
+                </dd>
+                {layers.invalid.length > 0 ? (
+                  <ul className="mt-1 text-muted-foreground">
+                    {layers.invalid.map((item) => (
+                      <li key={item.link}>{item.title} — 인용 불가 링크</li>
                     ))}
                   </ul>
-                )}
-              </dd>
-            </div>
-          </dl>
-        </aside>
+                ) : null}
+              </div>
+              <div className="border-t-2 border-ink pt-2">
+                <dt className="font-bold">근거 충실도</dt>
+                <dd className="font-mono tabular-nums">{score(layers.faithfulness, FAITHFULNESS_THRESHOLD)}</dd>
+                <ul className="mt-1 flex flex-col gap-1">
+                  {layers.claims.map((claim, index) => (
+                    <li key={index} className={claim.supported ? "" : "text-review"}>
+                      {claim.supported ? "지지" : "불지지"} · {claim.claim}
+                      {claim.evidence ? <span className="text-muted-foreground"> — {claim.evidence}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="border-t-2 border-ink pt-2">
+                <dt className="font-bold">근거 일치</dt>
+                <dd className="font-mono tabular-nums">{score(layers.evidenceMatch, EVIDENCE_MATCH_THRESHOLD)}</dd>
+              </div>
+              <div className="border-t-2 border-ink pt-2">
+                <dt className="font-bold">반증</dt>
+                <dd>
+                  {layers.counterEvidence.length === 0 ? (
+                    <span className="text-muted-foreground">없음</span>
+                  ) : (
+                    <ul>
+                      {layers.counterEvidence.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </aside>
+        </>
       ) : null}
     </>
   );
