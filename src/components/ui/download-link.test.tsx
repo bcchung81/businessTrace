@@ -1,14 +1,31 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { DownloadLink } from "@/components/ui/download-link";
 
 describe("DownloadLink", () => {
+  const originalCreateObjectURL = URL.createObjectURL;
+  const originalRevokeObjectURL = URL.revokeObjectURL;
+  let createObjectURL: ReturnType<typeof vi.fn>;
+  let revokeObjectURL: ReturnType<typeof vi.fn>;
+  let click: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    createObjectURL = vi.fn(() => "blob:1");
+    revokeObjectURL = vi.fn();
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+    click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalCreateObjectURL === undefined) delete (URL as { createObjectURL?: typeof URL.createObjectURL }).createObjectURL;
+    else URL.createObjectURL = originalCreateObjectURL;
+    if (originalRevokeObjectURL === undefined) delete (URL as { revokeObjectURL?: typeof URL.revokeObjectURL }).revokeObjectURL;
+    else URL.revokeObjectURL = originalRevokeObjectURL;
+  });
+
   test("fetches the file, shows 생성 중, saves it under the server's filename", async () => {
     const fetchImpl = vi.fn(async () => new Response(new Blob(["x"]), { headers: { "Content-Disposition": "attachment; filename*=UTF-8''%EC%9B%94%EA%B0%84.xlsx" } }));
-    const createObjectURL = vi.fn(() => "blob:1");
-    const revokeObjectURL = vi.fn();
-    Object.assign(URL, { createObjectURL, revokeObjectURL });
-    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     render(<DownloadLink href="/api/reports/monthly?year=2026&month=9" fetchImpl={fetchImpl}>엑셀</DownloadLink>);
     fireEvent.click(screen.getByRole("button", { name: "엑셀" }));
     expect(screen.getByRole("button")).toHaveTextContent("생성 중…");
@@ -24,5 +41,13 @@ describe("DownloadLink", () => {
     render(<DownloadLink href="/x" fetchImpl={fetchImpl}>엑셀</DownloadLink>);
     fireEvent.click(screen.getByRole("button", { name: "엑셀" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("생성 실패 (500)"));
+  });
+
+  test("wraps in a block-level span so a full-width button class resolves", () => {
+    const fetchImpl = vi.fn(async () => new Response(new Blob(["x"])));
+    render(<DownloadLink href="/x" className="w-full" fetchImpl={fetchImpl}>엑셀</DownloadLink>);
+    const wrapper = screen.getByRole("button", { name: "엑셀" }).parentElement;
+    expect(wrapper).toHaveClass("flex");
+    expect(wrapper).not.toHaveClass("inline-flex");
   });
 });

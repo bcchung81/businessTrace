@@ -40,7 +40,7 @@ export function DownloadLink({ href, children, className = "", fetchImpl = fetch
   }
 
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="flex flex-col items-start gap-1">
       <button type="button" onClick={download} disabled={busy} aria-busy={busy} className={className}>
         {busy ? "생성 중…" : children}
       </button>
