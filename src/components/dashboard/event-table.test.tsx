@@ -1,16 +1,21 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi, type MockInstance } from "vitest";
 
-const replace = vi.fn();
 let search = new URLSearchParams();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh: vi.fn(), push: vi.fn() }), usePathname: () => "/x", useSearchParams: () => search }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/x", useSearchParams: () => search }));
 
 import { EventTable } from "@/components/dashboard/event-table";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 
+let replace: MockInstance<History["replaceState"]>;
+
 beforeEach(() => {
   search = new URLSearchParams();
-  replace.mockClear();
+  replace = vi.spyOn(window.history, "replaceState").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  replace.mockRestore();
 });
 
 const NOW = new Date("2026-08-30T00:00:00.000Z");
@@ -60,7 +65,7 @@ describe("EventTable", () => {
     expect(screen.getAllByRole("row").slice(1)).toHaveLength(20);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
-    expect(replace).toHaveBeenCalledWith("/x?page=1", { scroll: false });
+    expect(replace).toHaveBeenCalledWith(null, "", "/x?page=1");
 
     search = new URLSearchParams("page=1");
     view.rerender(<EventTable events={events} silence={[]} now={NOW} />);
@@ -72,7 +77,7 @@ describe("EventTable", () => {
     const view = render(<EventTable events={events} silence={[]} now={NOW} />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "미확인만" }));
-    expect(replace).toHaveBeenCalledWith("/x?open=1", { scroll: false });
+    expect(replace).toHaveBeenCalledWith(null, "", "/x?open=1");
 
     search = new URLSearchParams("open=1");
     view.rerender(<EventTable events={events} silence={[]} now={NOW} />);
@@ -91,7 +96,7 @@ describe("EventTable", () => {
     expect(screen.getByRole("radio", { name: "90일" })).toBeChecked();
     expect(screen.getByText("두 달 전 사건")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "미확인만" }));
-    expect(replace).toHaveBeenCalledWith(expect.stringContaining("open=1"), { scroll: false });
+    expect(replace).toHaveBeenCalledWith(null, "", expect.stringContaining("open=1"));
   });
 
   test("mixes silence in as info rows", () => {

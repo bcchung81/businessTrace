@@ -47,7 +47,7 @@ describe("buildRibbonGroups", () => {
     const [, todo] = buildRibbonGroups(base);
     expect(todo.label).toBe("할 일");
     expect(todo.items).toEqual([
-      { text: "확인 필요 12개사", href: "/companies?year=2025&filter=review" },
+      { text: "확인 필요 12개사", href: "/companies?year=2025&review=1" },
       { text: "미확인 경보·주의 16", href: "/dashboard?year=2025#events" },
       { text: "검토 필요 7", href: "/ranking?year=2025" },
     ]);

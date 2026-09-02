@@ -1,16 +1,21 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi, type MockInstance } from "vitest";
 
-const replace = vi.fn();
 let search = new URLSearchParams();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh: vi.fn(), push: vi.fn() }), usePathname: () => "/x", useSearchParams: () => search }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/x", useSearchParams: () => search }));
 
 import { RankingTable, type RankingRow } from "@/components/ranking/ranking-table";
 import { loadRubrics, rankCompanies } from "@/lib/services/benchmarking";
 
+let replace: MockInstance<History["replaceState"]>;
+
 beforeEach(() => {
   search = new URLSearchParams();
-  replace.mockClear();
+  replace = vi.spyOn(window.history, "replaceState").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  replace.mockRestore();
 });
 
 function row(overrides: Partial<RankingRow> & { companyId: number; name: string }): RankingRow {
@@ -51,7 +56,7 @@ describe("RankingTable", () => {
     expect(screen.getAllByRole("row")).toHaveLength(21);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
-    expect(replace).toHaveBeenCalledWith("/x?page=1", { scroll: false });
+    expect(replace).toHaveBeenCalledWith(null, "", "/x?page=1");
 
     search = new URLSearchParams("page=1");
     view.rerender(<RankingTable rows={many} industries={["SW"]} />);
@@ -90,7 +95,7 @@ describe("RankingTable", () => {
   test("filters by industry and sorts by name", () => {
     const view = render(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     fireEvent.click(screen.getByRole("radio", { name: "기업명" }));
-    expect(replace).toHaveBeenCalledWith("/x?sort=name", { scroll: false });
+    expect(replace).toHaveBeenCalledWith(null, "", "/x?sort=name");
 
     search = new URLSearchParams("sort=name");
     view.rerender(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
@@ -98,7 +103,7 @@ describe("RankingTable", () => {
     expect(names[0]).toContain("㈜가");
 
     fireEvent.change(screen.getByRole("combobox", { name: "산업" }), { target: { value: "SW" } });
-    expect(replace).toHaveBeenCalledWith("/x?sort=name&industry=SW", { scroll: false });
+    expect(replace).toHaveBeenCalledWith(null, "", "/x?sort=name&industry=SW");
     search = new URLSearchParams("sort=name&industry=SW");
     view.rerender(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     expect(screen.getAllByRole("row")).toHaveLength(2);
@@ -114,7 +119,7 @@ describe("RankingTable", () => {
     const rows = [row({ companyId: 1, name: "옥타코" }), row({ companyId: 2, name: "넷록스" })];
     const view = render(<RankingTable rows={rows} industries={[]} />);
     fireEvent.change(screen.getByRole("searchbox", { name: "기업명 검색" }), { target: { value: "넷" } });
-    expect(replace).toHaveBeenCalledWith(`/x?q=${encodeURIComponent("넷")}`, { scroll: false });
+    expect(replace).toHaveBeenCalledWith(null, "", `/x?q=${encodeURIComponent("넷")}`);
 
     search = new URLSearchParams("q=넷");
     view.rerender(<RankingTable rows={rows} industries={[]} />);
@@ -130,6 +135,6 @@ describe("RankingTable", () => {
     expect(screen.getAllByRole("row")).toHaveLength(2);
     expect(screen.getByText("옥타코")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: "기업명" }));
-    expect(replace).toHaveBeenCalledWith(expect.stringContaining("sort=name"), { scroll: false });
+    expect(replace).toHaveBeenCalledWith(null, "", expect.stringContaining("sort=name"));
   });
 });

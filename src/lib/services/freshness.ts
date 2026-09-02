@@ -89,7 +89,7 @@ export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
     {
       label: "할 일",
       items: [
-        { text: `확인 필요 ${input.reviewCompanies}개사`, href: `/companies?year=${input.year}&filter=review` },
+        { text: `확인 필요 ${input.reviewCompanies}개사`, href: `/companies?year=${input.year}&review=1` },
         { text: `미확인 경보·주의 ${input.openAlertNotice}`, href: `/dashboard?year=${input.year}#events` },
         { text: `검토 필요 ${input.needsReview}`, href: `/ranking?year=${input.year}` },
       ],

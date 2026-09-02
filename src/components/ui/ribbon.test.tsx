@@ -4,7 +4,7 @@ import { Ribbon } from "@/components/ui/ribbon";
 
 const GROUPS = [
   { label: "기준일", items: [{ text: "뉴스 08-30 (오늘)" }, { text: "원천 07-01 (60일 전) · 낡음", stale: true }] },
-  { label: "할 일", items: [{ text: "확인 필요 12개사", href: "/companies?filter=review" }, { text: "검토 필요 7", href: "/ranking" }] },
+  { label: "할 일", items: [{ text: "확인 필요 12개사", href: "/companies?review=1" }, { text: "검토 필요 7", href: "/ranking" }] },
 ];
 
 describe("Ribbon", () => {
@@ -20,7 +20,7 @@ describe("Ribbon", () => {
     render(<Ribbon groups={GROUPS} />);
     expect(screen.getByText(/60일 전/)).toHaveClass("hatch");
     expect(screen.getByText(/뉴스 08-30/)).not.toHaveClass("hatch");
-    expect(screen.getByRole("link", { name: "확인 필요 12개사" })).toHaveAttribute("href", "/companies?filter=review");
+    expect(screen.getByRole("link", { name: "확인 필요 12개사" })).toHaveAttribute("href", "/companies?review=1");
   });
 
   test("is the primary strip in the display face, standing still", () => {

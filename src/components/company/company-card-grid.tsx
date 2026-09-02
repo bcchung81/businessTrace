@@ -12,15 +12,15 @@ const DEFAULTS = { sort: "triage", q: "", review: "", notice: "", positive: "", 
 
 /**
  * 기업 목록 표 — 정렬 세그먼트와 필터 체크박스는 URL 쿼리에 둔다. 기업 하나가 한 행이다.
- * `initialFilter` 는 `/companies?filter=review` 링크 호환용이라 URL 의 review 와 OR 로 합친다.
+ * 확인 필요 필터는 `?review=1` 하나가 원천이라 켠 뒤 다시 끌 수 있다.
  */
-export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyCardData[]; initialFilter?: CardFilter }) {
+export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
   const [url, setUrl] = useUrlState(DEFAULTS);
 
   const sort = SORTS.includes(url.sort as CardSort) ? (url.sort as CardSort) : "triage";
   const filter: CardFilter = {
     query: url.q,
-    reviewOnly: url.review === "1" || (initialFilter.reviewOnly ?? false),
+    reviewOnly: url.review === "1",
     noticeOnly: url.notice === "1",
     positiveOnly: url.positive === "1",
     missingBusinessNo: url.nobn === "1",

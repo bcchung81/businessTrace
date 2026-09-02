@@ -1,15 +1,14 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
 /**
  * 표의 정렬·필터·페이지를 URL 쿼리에 둔다 — 상세에 갔다 돌아와도, 새로고침해도 그 자리다.
+ * 쓰기는 history.replaceState 로만 한다 — 서버 왕복 없이 useSearchParams 가 따라온다.
  * 기본값과 같은 키는 지워 URL 을 짧게 유지하고, 다른 키(year 등)는 건드리지 않는다.
- * `defaults` 는 호출자가 모듈 상수로 둔다 — 렌더마다 새 객체면 메모가 매번 다시 돈다.
  */
 export function useUrlState<T extends Record<string, string>>(defaults: T): [T, (patch: Partial<T>) => void] {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
 
@@ -30,9 +29,9 @@ export function useUrlState<T extends Record<string, string>>(defaults: T): [T, 
         else next.set(key, value);
       }
       const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
     },
-    [defaults, params, pathname, router, state],
+    [defaults, params, pathname, state],
   );
 
   return [state, set];

@@ -53,7 +53,6 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   const matrix = buildMatrixRows(pipeline, rollup.companies, news.byCompany);
   const review = await countReviewCompanies(year);
   const cards = buildCompanyCards({ companies: activeCompanies, events, series, news: news.byCompany, verdicts, reviewIds: review.ids, everEventIds: await listCompanyIdsWithEvents(year) });
-  const initialFilter = params.filter === "review" ? { reviewOnly: true } : {};
   const candidates = cards.map((card) => ({
     id: card.id,
     name: card.name,
@@ -137,7 +136,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
       </Panel>
 
       <Panel index="02" title="기업 목록" tag="실측">
-        <CompanyCardGrid cards={cards} initialFilter={initialFilter} />
+        <CompanyCardGrid cards={cards} />
       </Panel>
 
       <Panel index="03" title="분석 현황" tag="분석 산출" tone="fresh">

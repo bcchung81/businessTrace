@@ -40,7 +40,7 @@ export function PipelineBand({ year, facts, summary, aside }: { year: number; fa
       </ol>
 
       <div className="flex justify-end text-[12px]">
-        <a href={`/companies?year=${year}&filter=review`} className="font-bold text-band-foreground underline decoration-primary underline-offset-4">
+        <a href={`/companies?year=${year}&review=1`} className="font-bold text-band-foreground underline decoration-primary underline-offset-4">
           확인 필요 {facts.reviewCompanies}개사 → 기업 상세
         </a>
       </div>

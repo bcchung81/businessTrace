@@ -38,7 +38,7 @@ describe("PipelineBand", () => {
     render(<PipelineBand year={2025} facts={facts} summary={<p>요약</p>} aside={<a href="/companies">미분석 2개사 보기</a>} />);
     expect(screen.queryByText(/사건 18건/)).not.toBeInTheDocument();
     expect(screen.queryByText("산출")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /확인 필요 12개사/ })).toHaveAttribute("href", "/companies?year=2025&filter=review");
+    expect(screen.getByRole("link", { name: /확인 필요 12개사/ })).toHaveAttribute("href", "/companies?year=2025&review=1");
     expect(screen.getByText("요약")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "미분석 2개사 보기" })).toBeInTheDocument();
   });
