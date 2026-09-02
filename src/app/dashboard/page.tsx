@@ -17,6 +17,7 @@ import { buildRibbonGroups } from "@/lib/services/freshness";
 import { countReviewCompanies, fullSourceRefreshAt, summariseCells, summariseCollection } from "@/lib/repositories/pipelineRepo";
 import { buildPipelineFacts } from "@/lib/services/pipelineFacts";
 import { PipelineBand } from "@/components/dashboard/pipeline-band";
+import { CompanySearch } from "@/components/dashboard/company-search";
 import { DownloadLink } from "@/components/ui/download-link";
 import { buildCoMentions } from "@/lib/services/coMention";
 import { getDashboardSummary } from "@/lib/services/dashboardSummary";
@@ -164,6 +165,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             ) : null}
           </>
         }
+        search={<CompanySearch year={year} companies={registry} />}
       />
 
       <Ribbon groups={ribbon} className="-mt-12" />
