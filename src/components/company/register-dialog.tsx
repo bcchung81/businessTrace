@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { CompanyModel } from "@/generated/prisma/models";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -28,9 +29,16 @@ export function RegisterDialog({
   runHref?: string;
 }) {
   const [tab, setTab] = useState<Tab>(notice ? "register" : "manage");
+  const [open, setOpen] = useState(Boolean(notice));
+  const router = useRouter();
+
+  const onOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next && notice) router.replace(`/companies?year=${year}`, { scroll: false });
+  };
 
   return (
-    <Dialog defaultOpen={Boolean(notice)}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button variant="signal">기업 등록</Button>
       </DialogTrigger>
