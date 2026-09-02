@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { COMPANY_COLUMNS, CompanyRow } from "@/components/company/company-row";
 import { Button } from "@/components/ui/button";
 import { Pager, paginate } from "@/components/ui/pager";
@@ -16,6 +17,13 @@ const DEFAULTS = { sort: "triage", q: "", review: "", notice: "", positive: "", 
  */
 export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
   const [url, setUrl] = useUrlState(DEFAULTS);
+  const [draft, setDraft] = useState(url.q);
+  const [synced, setSynced] = useState(url.q);
+
+  if (synced !== url.q) {
+    setSynced(url.q);
+    setDraft(url.q);
+  }
 
   const sort = SORTS.includes(url.sort as CardSort) ? (url.sort as CardSort) : "triage";
   const filter: CardFilter = {
@@ -37,8 +45,11 @@ export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
           type="search"
           aria-label="기업명 검색"
           placeholder="기업명"
-          value={filter.query ?? ""}
-          onChange={(event) => setUrl({ q: event.target.value, page: "0" })}
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            setUrl({ q: event.target.value, page: "0" });
+          }}
           className="h-7 w-40 border-[1.5px] border-hairline bg-background px-2 text-[12px] focus-visible:border-ink focus-visible:outline-none"
         />
 

@@ -9,9 +9,15 @@ import type { EventRow } from "@/lib/repositories/eventRepository";
 
 let replace: MockInstance<History["replaceState"]>;
 
+function goto(query: string) {
+  search = new URLSearchParams(query);
+  window.history.replaceState(null, "", query ? `/x?${query}` : "/x");
+  replace.mockClear();
+}
+
 beforeEach(() => {
-  search = new URLSearchParams();
-  replace = vi.spyOn(window.history, "replaceState").mockImplementation(() => {});
+  replace = vi.spyOn(window.history, "replaceState");
+  goto("");
 });
 
 afterEach(() => {
@@ -67,7 +73,7 @@ describe("EventTable", () => {
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     expect(replace).toHaveBeenCalledWith(null, "", "/x?page=1");
 
-    search = new URLSearchParams("page=1");
+    goto("page=1");
     view.rerender(<EventTable events={events} silence={[]} now={NOW} />);
     expect(screen.getAllByRole("row").slice(1)).toHaveLength(5);
   });
@@ -79,18 +85,25 @@ describe("EventTable", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "미확인만" }));
     expect(replace).toHaveBeenCalledWith(null, "", "/x?open=1");
 
-    search = new URLSearchParams("open=1");
+    goto("open=1");
     view.rerender(<EventTable events={events} silence={[]} now={NOW} />);
     expect(screen.getAllByRole("row").slice(1)).toHaveLength(1);
 
-    search = new URLSearchParams();
+    goto("");
     view.rerender(<EventTable events={events} silence={[]} now={NOW} />);
     fireEvent.click(screen.getByRole("checkbox", { name: "수상" }));
     expect(screen.getAllByRole("row").slice(1)).toHaveLength(1);
   });
 
+  test("falls back to 30일 when the URL period is not one of the two", () => {
+    goto("period=xx");
+    render(<EventTable events={[row({})]} silence={[]} now={NOW} />);
+
+    expect(screen.getByRole("radio", { name: "30일" })).toBeChecked();
+  });
+
   test("reads its state from the URL and writes changes back", () => {
-    search = new URLSearchParams("period=90");
+    goto("period=90");
     render(<EventTable events={[row({ id: 7, occurredAt: "2026-07-01T00:00:00.000Z", title: "두 달 전 사건" })]} silence={[]} now={NOW} />);
 
     expect(screen.getByRole("radio", { name: "90일" })).toBeChecked();

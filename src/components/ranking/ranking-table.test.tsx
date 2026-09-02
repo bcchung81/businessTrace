@@ -9,9 +9,15 @@ import { loadRubrics, rankCompanies } from "@/lib/services/benchmarking";
 
 let replace: MockInstance<History["replaceState"]>;
 
+function goto(query: string) {
+  search = new URLSearchParams(query);
+  window.history.replaceState(null, "", query ? `/x?${query}` : "/x");
+  replace.mockClear();
+}
+
 beforeEach(() => {
-  search = new URLSearchParams();
-  replace = vi.spyOn(window.history, "replaceState").mockImplementation(() => {});
+  replace = vi.spyOn(window.history, "replaceState");
+  goto("");
 });
 
 afterEach(() => {
@@ -58,7 +64,7 @@ describe("RankingTable", () => {
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     expect(replace).toHaveBeenCalledWith(null, "", "/x?page=1");
 
-    search = new URLSearchParams("page=1");
+    goto("page=1");
     view.rerender(<RankingTable rows={many} industries={["SW"]} />);
     expect(screen.getAllByRole("row")).toHaveLength(6);
   });
@@ -97,14 +103,14 @@ describe("RankingTable", () => {
     fireEvent.click(screen.getByRole("radio", { name: "기업명" }));
     expect(replace).toHaveBeenCalledWith(null, "", "/x?sort=name");
 
-    search = new URLSearchParams("sort=name");
+    goto("sort=name");
     view.rerender(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     const names = screen.getAllByRole("row").slice(1).map((row) => within(row).getAllByRole("cell")[1].textContent);
     expect(names[0]).toContain("㈜가");
 
     fireEvent.change(screen.getByRole("combobox", { name: "산업" }), { target: { value: "SW" } });
     expect(replace).toHaveBeenCalledWith(null, "", "/x?sort=name&industry=SW");
-    search = new URLSearchParams("sort=name&industry=SW");
+    goto("sort=name&industry=SW");
     view.rerender(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     expect(screen.getAllByRole("row")).toHaveLength(2);
   });
@@ -121,14 +127,50 @@ describe("RankingTable", () => {
     fireEvent.change(screen.getByRole("searchbox", { name: "기업명 검색" }), { target: { value: "넷" } });
     expect(replace).toHaveBeenCalledWith(null, "", `/x?q=${encodeURIComponent("넷")}`);
 
-    search = new URLSearchParams("q=넷");
+    goto("q=넷");
     view.rerender(<RankingTable rows={rows} industries={[]} />);
     expect(screen.getAllByRole("row")).toHaveLength(2);
     expect(screen.getByText("넷록스")).toBeInTheDocument();
   });
 
+  test("keeps every keystroke in the box while the URL catches up", () => {
+    render(<RankingTable rows={[row({ companyId: 1, name: "옥타코" })]} industries={[]} />);
+    const box = screen.getByRole("searchbox", { name: "기업명 검색" });
+
+    fireEvent.change(box, { target: { value: "옥" } });
+    fireEvent.change(box, { target: { value: "옥타" } });
+
+    expect(box).toHaveValue("옥타");
+    expect(replace).toHaveBeenNthCalledWith(1, null, "", `/x?q=${encodeURIComponent("옥")}`);
+    expect(replace).toHaveBeenNthCalledWith(2, null, "", `/x?q=${encodeURIComponent("옥타")}`);
+  });
+
+  test("re-syncs the box when the URL changes under it", () => {
+    const rows = [row({ companyId: 1, name: "옥타코" }), row({ companyId: 2, name: "넷록스" })];
+    const view = render(<RankingTable rows={rows} industries={[]} />);
+    fireEvent.change(screen.getByRole("searchbox", { name: "기업명 검색" }), { target: { value: "옥" } });
+
+    goto("q=넷");
+    view.rerender(<RankingTable rows={rows} industries={[]} />);
+    expect(screen.getByRole("searchbox", { name: "기업명 검색" })).toHaveValue("넷");
+  });
+
+  test("shows the first page when the URL page is not a number", () => {
+    goto("page=abc");
+    const many = rankCompanies(
+      Array.from({ length: 25 }, (_, index) => ({
+        companyId: index + 1, name: `기업${String(index + 1).padStart(2, "0")}`, industry: "SW",
+        sentiment: index, awards: 0, investments: 0, revenue: null, verification: "verified" as const, confirmedRisks: 0,
+      })),
+      loadRubrics(),
+    ).map((row) => ({ ...row, businessNo: "1234567890", verdict: "verified" as const }));
+    render(<RankingTable rows={many} industries={["SW"]} />);
+
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+  });
+
   test("reads its state from the URL and writes changes back", () => {
-    search = new URLSearchParams("industry=ICT");
+    goto("industry=ICT");
     const rows = [row({ companyId: 1, name: "옥타코", industry: "ICT" }), row({ companyId: 2, name: "넷록스", industry: "SW" })];
     render(<RankingTable rows={rows} industries={["ICT", "SW"]} />);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Pager, paginate } from "@/components/ui/pager";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
 import { Segmented } from "@/components/ui/segmented";
@@ -41,6 +42,13 @@ function score(value: number | null, digits = 2) {
  */
 export function RankingTable({ rows, industries }: { rows: RankingRow[]; industries: string[] }) {
   const [url, setUrl] = useUrlState(DEFAULTS);
+  const [draft, setDraft] = useState(url.q);
+  const [synced, setSynced] = useState(url.q);
+
+  if (synced !== url.q) {
+    setSynced(url.q);
+    setDraft(url.q);
+  }
 
   const sort: Sort = url.sort === "name" ? "name" : "rank";
   const industry = url.industry;
@@ -58,8 +66,11 @@ export function RankingTable({ rows, industries }: { rows: RankingRow[]; industr
           type="search"
           aria-label="기업명 검색"
           placeholder="기업명"
-          value={query}
-          onChange={(event) => setUrl({ q: event.target.value, page: "0" })}
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            setUrl({ q: event.target.value, page: "0" });
+          }}
           className="h-7 w-40 border-[1.5px] border-hairline bg-background px-2 text-[12px] focus-visible:border-ink focus-visible:outline-none"
         />
         <Segmented label="정렬" value={sort} options={SORTS} onChange={(value) => setUrl({ sort: value, page: "0" })} />
