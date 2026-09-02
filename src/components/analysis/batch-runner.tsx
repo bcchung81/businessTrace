@@ -15,17 +15,19 @@ const LIMITS = [10, 20, 50, 100];
 
 /**
  * 여러 기업을 골라 한 번에 돌리고 4단 스테퍼·기업별 진행·로그를 실시간으로 보인다.
- * 실행 중에는 primary 버튼이 "중단" 하나뿐이다. 화면을 떠나면 스트림을 끊어 서버도 멈추게 한다.
+ * 실행 중에는 primary 버튼이 "중단" 하나뿐이다. 화면을 떠나도 서버는 완주하고, 다시 열면 이어서 본다.
  */
 export function BatchRunner({
   candidates,
   preselected = [],
   initialStage = "full",
+  resume = false,
   fetchImpl = fetch,
 }: {
   candidates: BatchCandidate[];
   preselected?: number[];
   initialStage?: BatchStage;
+  resume?: boolean;
   fetchImpl?: typeof fetch;
 }) {
   const [selected, setSelected] = useState<Set<number>>(() => new Set(preselected));
@@ -42,8 +44,6 @@ export function BatchRunner({
   const running = useRef<AbortController | null>(null);
   const router = useRouter();
 
-  useEffect(() => () => running.current?.abort(), []);
-
   const pick = (predicate: (candidate: BatchCandidate) => boolean) => setSelected(new Set(candidates.filter(predicate).map((c) => c.id)));
   const toggle = (id: number) =>
     setSelected((prev) => {
@@ -53,32 +53,16 @@ export function BatchRunner({
       return next;
     });
 
-  async function run() {
+  async function subscribe() {
     running.current?.abort();
     const controller = new AbortController();
     running.current = controller;
     setBusy(true);
     setError(null);
-    setState(INITIAL_BATCH);
     try {
-      const response = await fetchImpl("/api/analyze/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          companyIds: [...selected],
-          stage,
-          limit,
-          force,
-          naver,
-          google,
-          ...(startDate ? { startDate } : {}),
-          ...(endDate ? { endDate } : {}),
-        }),
-      });
+      const response = await fetchImpl("/api/analyze/batch/events", { cache: "no-store", signal: controller.signal });
       if (!response.ok || !response.body) {
-        const body = (await response.json().catch(() => ({}))) as { message?: string };
-        setError(body.message ?? `실행 요청 실패 (${response.status})`);
+        setError(`진행 상태를 읽지 못했습니다 (${response.status})`);
         return;
       }
       const parser = createSseParser();
@@ -102,11 +86,41 @@ export function BatchRunner({
     }
   }
 
-  function abort() {
-    running.current?.abort();
-    running.current = null;
-    setBusy(false);
+  async function run() {
+    setError(null);
+    setState(INITIAL_BATCH);
+    const response = await fetchImpl("/api/analyze/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        companyIds: [...selected],
+        stage,
+        limit,
+        force,
+        naver,
+        google,
+        ...(startDate ? { startDate } : {}),
+        ...(endDate ? { endDate } : {}),
+      }),
+    });
+    if (response.status !== 202) {
+      const body = (await response.json().catch(() => ({}))) as { message?: string };
+      setError(body.message ?? `실행 요청 실패 (${response.status})`);
+      return;
+    }
+    await subscribe();
   }
+
+  async function abort() {
+    await fetchImpl("/api/analyze/batch/abort", { method: "POST" });
+  }
+
+  const onMount = useRef(subscribe);
+
+  useEffect(() => {
+    if (resume) void onMount.current();
+    return () => running.current?.abort();
+  }, [resume]);
 
   const countAt = (key: StepKey) => state.companies.filter((c) => stepOf(c) === key).length;
   const activeStep = STEP_ORDER.filter((key) => state.companies.some((c) => c.status === null && stepOf(c) === key)).at(-1) ?? null;

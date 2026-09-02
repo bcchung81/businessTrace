@@ -51,6 +51,14 @@ describe("reduceBatch", () => {
     expect(state.log.find((entry) => entry.text.includes("건너뜀"))?.level).toBe("warn");
   });
 
+  test("a batch-level error lands in the log", () => {
+    const state = feed([
+      { type: "batch_start", total: 1, stage: "full" },
+      { type: "error", message: "배치 실패" },
+    ]);
+    expect(state.log).toEqual([{ level: "error", text: "배치 실패" }]);
+  });
+
   test("collect-only and sources-only stages stop at their own step", () => {
     const news = feed([
       { type: "batch_start", total: 1, stage: "news" },

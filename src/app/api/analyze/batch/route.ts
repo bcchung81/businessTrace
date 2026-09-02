@@ -3,12 +3,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createCollectionRun } from "@/lib/repositories/analysisRun";
 import { defaultPipelineDeps } from "@/lib/services/analysisPipeline";
-import { readBatch } from "@/lib/services/batchRegistry";
+import { abortRequested, readBatch } from "@/lib/services/batchRegistry";
+import { launchBatch } from "@/lib/services/batchSession";
 import { runBatch, type BatchTarget } from "@/lib/services/batchRun";
 import { refreshCorpCodes } from "@/lib/services/dartCorpCode";
 import { collectForCompany } from "@/lib/services/collectForCompany";
 import { refreshSourcesFor } from "@/lib/services/refreshSources";
-import { createSseSink } from "@/lib/services/sse";
 
 const bodySchema = z.object({
   companyIds: z.array(z.number().int()).min(1),
@@ -46,32 +46,24 @@ export async function POST(request: Request) {
   if (parsed.data.stage === "sources") await refreshCorpCodes();
 
   const userId = Number(session.user.id);
-  let sink: ReturnType<typeof createSseSink> | null = null;
-  const stream = new ReadableStream({
-    async start(controller) {
-      const out = createSseSink(controller);
-      sink = out;
-      try {
-        const events = runBatch(targets, parsed.data, {
-          userId,
-          pipeline: defaultPipelineDeps(),
-          collect: ({ query, aliases, ...options }) => collectForCompany({ name: query, aliases }, options),
-          collectOnly: createCollectionRun,
-          refreshSources: (target) => refreshSourcesFor(target.id),
-          isOpen: () => out.open,
-        });
-        for await (const event of events) out.send(event);
-      } catch (caught) {
-        out.send({ type: "error", message: caught instanceof Error ? caught.message : "배치 실패" });
-      } finally {
-        out.close();
-      }
-    },
-    cancel() {
-      sink?.drop();
-    },
+  const events = runBatch(targets, parsed.data, {
+    userId,
+    pipeline: defaultPipelineDeps(),
+    collect: ({ query, aliases, ...options }) => collectForCompany({ name: query, aliases }, options),
+    collectOnly: createCollectionRun,
+    refreshSources: (target) => refreshSourcesFor(target.id),
+    isOpen: () => !abortRequested(),
   });
-  return new Response(stream, {
-    headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" },
-  });
+  const first = await events.next();
+  if (first.done) return Response.json({ message: "배치를 시작하지 못했습니다." }, { status: 500 });
+  void launchBatch(prepend(first.value, events));
+  return Response.json({ batch: readBatch() }, { status: 202 });
+}
+
+/**
+ * 제너레이터의 첫 이벤트를 먼저 뽑아 startBatch 가 요청 안에서 실행되게 한다 — 그래야 202 응답의 batch 가 null 이 아니다.
+ */
+async function* prepend(first: unknown, rest: AsyncGenerator<unknown>): AsyncGenerator<unknown> {
+  yield first;
+  for await (const event of rest) yield event;
 }

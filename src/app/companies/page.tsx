@@ -10,6 +10,7 @@ import { buildCompanyCards } from "@/lib/services/companyCards";
 import { parseRegisterLines } from "@/lib/services/companyImport";
 import { countReviewCompanies } from "@/lib/repositories/pipelineRepo";
 import { buildNewsCoverage } from "@/lib/services/newsCoverage";
+import { hasBatchEvents, readBatch } from "@/lib/services/batchRegistry";
 import { BatchRunner } from "@/components/analysis/batch-runner";
 import { CompanyCardGrid } from "@/components/company/company-card-grid";
 import { CompanyPipelineGrid } from "@/components/dashboard/company-pipeline-grid";
@@ -60,6 +61,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
     hasWarning: card.events30d.notice + card.events30d.alert > 0,
     businessNo: card.businessNo,
   }));
+  const batch = readBatch();
   const runHref = preselected.length > 0 ? `/companies?year=${year}&run=${preselected.join(",")}#batch` : undefined;
 
   async function register(formData: FormData) {
@@ -120,14 +122,14 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
         </nav>
       ) : null}
 
-      <Panel index="01" title="일괄 분석 실행" tag="실측" className="scroll-mt-20" empty="등록된 기업이 없습니다.">
+      <Panel id="batch" index="01" title="일괄 분석 실행" tag="실측" className="scroll-mt-20" empty="등록된 기업이 없습니다.">
         {candidates.length === 0 ? null : (
-          <details open={preselected.length > 0}>
+          <details open={preselected.length > 0 || batch !== null}>
             <summary className="cursor-pointer select-none px-3.5 py-2.5 text-[12px] font-semibold text-muted-foreground">
               대상 선택 · 실행 펼치기
             </summary>
             <div className="border-t border-hairline p-3.5">
-              <BatchRunner key={`${preselected.join(",")}-${initialStage}`} candidates={candidates} preselected={preselected} initialStage={initialStage} />
+              <BatchRunner key={`${preselected.join(",")}-${initialStage}`} candidates={candidates} preselected={preselected} initialStage={initialStage} resume={batch !== null || hasBatchEvents()} />
             </div>
           </details>
         )}

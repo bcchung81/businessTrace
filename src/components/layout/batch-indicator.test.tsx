@@ -12,9 +12,10 @@ describe("BatchIndicator", () => {
       .mockResolvedValueOnce(Response.json({ batch: { stage: "full", total: 4, done: 1, startedAt: "x", current: "㈜나" } }))
       .mockResolvedValueOnce(Response.json({ batch: null }));
     render(
-      <BatchIndicator initial={{ stage: "full", total: 4, done: 0, startedAt: "x", current: null }} fetchImpl={fetchImpl as unknown as typeof fetch} intervalMs={1000} />,
+      <BatchIndicator initial={{ stage: "full", total: 4, done: 0, startedAt: "x", current: null, aborting: false }} fetchImpl={fetchImpl as unknown as typeof fetch} intervalMs={1000} />,
     );
     expect(screen.getByRole("status")).toHaveTextContent("4개사 분석 중 · 0/4");
+    expect(screen.getByRole("status")).toHaveAttribute("href", "/companies#batch");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });

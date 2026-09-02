@@ -67,9 +67,10 @@ function nameOf(state: BatchState, companyId: number) {
 
 /**
  * SSE 이벤트를 배치 화면 상태로 누적한다. 기업별 파이프라인 이벤트는 단일 러너의 리듀서를 그대로 쓴다.
+ * 배치 전체가 죽은 error 이벤트도 접는다 — 서버가 끝을 알리는 유일한 통로다.
  */
 export function reduceBatch(state: BatchState, raw: unknown): BatchState {
-  const event = raw as BatchEvent;
+  const event = raw as BatchEvent | { type: "error"; message: string };
   switch (event.type) {
     case "batch_start":
       return { ...INITIAL_BATCH, phase: "running", stage: event.stage, total: event.total };
@@ -104,6 +105,8 @@ export function reduceBatch(state: BatchState, raw: unknown): BatchState {
     }
     case "batch_done":
       return { ...state, phase: "done", done: event.done, aborted: event.aborted };
+    case "error":
+      return log(state, "error", event.message);
     default:
       return state;
   }

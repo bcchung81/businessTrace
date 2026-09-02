@@ -21,6 +21,25 @@ function sse(events: unknown[]) {
   return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
 }
 
+function openStream() {
+  let close: () => void = () => {};
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: "batch_start", total: 1, stage: "full" })}\n\n`));
+      close = () => controller.close();
+    },
+  });
+  return { response: new Response(body, { status: 200 }), close: () => close() };
+}
+
+function api(events: unknown[] | (() => Response)) {
+  return vi.fn(async (url: string, init?: RequestInit) => {
+    if (url === "/api/analyze/batch" && init?.method === "POST") return Response.json({ batch: { stage: "full", total: 1 } }, { status: 202 });
+    if (url === "/api/analyze/batch/abort") return Response.json({ aborting: true });
+    return typeof events === "function" ? events() : sse(events);
+  });
+}
+
 describe("BatchRunner", () => {
   test("quick picks select the right companies", () => {
     render(<BatchRunner candidates={CANDIDATES} />);
@@ -49,15 +68,13 @@ describe("BatchRunner", () => {
   });
 
   test("posts the options, then shows the stepper, per-company progress and log; the only primary action while running is 중단", async () => {
-    const fetchImpl = vi.fn(async (_url: string, _init?: RequestInit) =>
-      sse([
-        { type: "batch_start", total: 1, stage: "full" },
-        { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
-        { type: "company_event", companyId: 1, event: { type: "progress", step: "trend", current: 2, total: 5 } },
-        { type: "company_done", companyId: 1, status: "verified", articles: 5 },
-        { type: "batch_done", done: 1, total: 1, aborted: false },
-      ]),
-    );
+    const fetchImpl = api([
+      { type: "batch_start", total: 1, stage: "full" },
+      { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
+      { type: "company_event", companyId: 1, event: { type: "progress", step: "trend", current: 2, total: 5 } },
+      { type: "company_done", companyId: 1, status: "verified", articles: 5 },
+      { type: "batch_done", done: 1, total: 1, aborted: false },
+    ]);
     render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
     fireEvent.click(screen.getByRole("radio", { name: "수집만" }));
     fireEvent.change(screen.getByLabelText("기사 상한"), { target: { value: "50" } });
@@ -70,6 +87,7 @@ describe("BatchRunner", () => {
     expect(Date.now() - Date.parse(body.startDate)).toBeGreaterThan(89 * 86_400_000);
 
     await waitFor(() => expect(screen.getByRole("list", { name: "파이프라인 단계" })).toBeInTheDocument());
+    expect(fetchImpl).toHaveBeenCalledWith("/api/analyze/batch/events", expect.objectContaining({ cache: "no-store" }));
     const steps = within(screen.getByRole("list", { name: "파이프라인 단계" })).getAllByRole("listitem").map((li) => li.textContent);
     expect(steps[0]).toContain("수집");
     expect(steps[3]).toContain("리포트");
@@ -79,51 +97,62 @@ describe("BatchRunner", () => {
     expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
   });
 
-  test("shows 중단 alone while streaming and aborts on click", async () => {
-    let release: () => void = () => {};
-    const body = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: "batch_start", total: 1, stage: "full" })}\n\n`));
-        release = () => controller.close();
-      },
-    });
-    const fetchImpl = vi.fn(async () => new Response(body, { status: 200 }));
+  test("resumes a running batch on mount without a click", async () => {
+    const fetchImpl = api([
+      { type: "batch_start", total: 1, stage: "full" },
+      { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
+    ]);
+    render(<BatchRunner candidates={CANDIDATES} resume fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
+    expect(fetchImpl).not.toHaveBeenCalledWith("/api/analyze/batch", expect.objectContaining({ method: "POST" }));
+  });
+
+  test("중단 asks the server to stop and keeps reading until batch_done", async () => {
+    const fetchImpl = api([
+      { type: "batch_start", total: 2, stage: "full" },
+      { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
+      { type: "company_done", companyId: 1, status: "verified" },
+      { type: "batch_done", done: 1, total: 2, aborted: true },
+    ]);
+    render(<BatchRunner candidates={CANDIDATES} resume fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    await waitFor(() => expect(screen.getByText("중단됨")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
+  });
+
+  test("shows 중단 alone while streaming and asks the server to stop on click", async () => {
+    const stream = openStream();
+    const fetchImpl = api(() => stream.response);
     render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
     fireEvent.click(screen.getByRole("button", { name: "실행" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
     expect(screen.queryByRole("button", { name: "실행" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "중단" }));
-    release();
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledWith("/api/analyze/batch/abort", expect.objectContaining({ method: "POST" })));
+    stream.close();
     await waitFor(() => expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument());
   });
 
-  test("a run that was replaced does not clear the busy flag of the run that replaced it", async () => {
-    const open = () => {
-      let close: () => void = () => {};
-      const body = new ReadableStream<Uint8Array>({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: "batch_start", total: 1, stage: "full" })}\n\n`));
-          close = () => controller.close();
-        },
-      });
-      return { response: new Response(body, { status: 200 }), close: () => close() };
-    };
-    const first = open();
-    const second = open();
-    const fetchImpl = vi.fn().mockResolvedValueOnce(first.response).mockResolvedValueOnce(second.response);
+  test("a subscription that was replaced does not clear the busy flag of the one that replaced it", async () => {
+    const streams = [openStream(), openStream()];
+    let release: () => void = () => {};
+    const accepted = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/analyze/batch" && init?.method === "POST") {
+        await accepted;
+        return Response.json({ batch: { stage: "full", total: 1 } }, { status: 202 });
+      }
+      return streams.shift()!.response;
+    });
     render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
 
     fireEvent.click(screen.getByRole("button", { name: "실행" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "중단" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument());
-
     fireEvent.click(screen.getByRole("button", { name: "실행" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
-    first.close();
+    release();
 
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
-    expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument();
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
     expect(screen.queryByRole("button", { name: "실행" })).not.toBeInTheDocument();
   });
 
