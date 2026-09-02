@@ -5,12 +5,14 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Segmented } from "@/components/ui/segmented";
 import { SeverityMark, trustLabel } from "@/components/dashboard/severity-ui";
+import { useUrlState } from "@/lib/hooks/useUrlState";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { KIND_LABEL, compareSeverity, type EventKind, type Severity } from "@/lib/services/eventRules";
 import { kstMonthDay } from "@/lib/services/kst";
 
 const DAY_MS = 86_400_000;
 const PERIODS = [30, 90] as const;
+const DEFAULTS = { period: "30", open: "", page: "0" };
 
 type Silence = { companyId: number; companyName: string; latest: string | null };
 type DisplayRow = { type: "event"; event: EventRow } | ({ type: "silence" } & Silence);
@@ -24,7 +26,7 @@ function dateOf(row: DisplayRow): string {
 }
 
 /**
- * 90일치 사건을 받아 기본 30일로 자르고 종류·미확인 여부로 거른다.
+ * 90일치 사건을 받아 기본 30일로 자르고 종류·미확인 여부로 거른다 — 기간·미확인·페이지는 URL 에 남는다.
  * 무보도 기업은 기간과 무관하게 정보 행으로 늘 섞는다 — 조용함도 살펴야 할 상태다.
  * 확인·조치는 기업 상세의 타임라인에서만 한다 — 이 표는 훑어보는 화면이다.
  */
@@ -41,10 +43,12 @@ export function EventTable({
   lastEventAt?: string | null;
   now?: Date;
 }) {
-  const [period, setPeriod] = useState<(typeof PERIODS)[number]>(30);
+  const [url, setUrl] = useUrlState(DEFAULTS);
   const [hiddenKinds, setHiddenKinds] = useState<Set<EventKind>>(new Set());
-  const [openOnly, setOpenOnly] = useState(false);
-  const [page, setPage] = useState(0);
+
+  const period: (typeof PERIODS)[number] = url.period === "90" ? 90 : 30;
+  const openOnly = url.open === "1";
+  const page = Math.max(0, Number(url.page) || 0);
 
   const nowMs = now.getTime();
   const periodFiltered = events.filter((event) => nowMs - Date.parse(event.occurredAt) <= period * DAY_MS);
@@ -72,7 +76,7 @@ export function EventTable({
       else next.add(kind);
       return next;
     });
-    setPage(0);
+    setUrl({ page: "0" });
   }
 
   const emptyMessage = lastEventAt
@@ -86,10 +90,7 @@ export function EventTable({
           label="기간"
           value={String(period)}
           options={PERIODS.map((value) => ({ value: String(value), label: `${value}일` }))}
-          onChange={(value) => {
-            setPeriod(Number(value) as (typeof PERIODS)[number]);
-            setPage(0);
-          }}
+          onChange={(value) => setUrl({ period: value, page: "0" })}
         />
 
         {availableKinds.length > 0 ? (
@@ -108,10 +109,7 @@ export function EventTable({
           <input
             type="checkbox"
             checked={openOnly}
-            onChange={(event) => {
-              setOpenOnly(event.target.checked);
-              setPage(0);
-            }}
+            onChange={(event) => setUrl({ open: event.target.checked ? "1" : "", page: "0" })}
           />
           미확인만
         </label>
@@ -192,11 +190,11 @@ export function EventTable({
 
           {pages > 1 ? (
             <div className="flex items-center justify-end gap-2 border-t border-hairline px-0 py-2 text-[11px] text-muted-foreground">
-              <button type="button" onClick={() => setPage(current - 1)} disabled={current === 0} className="border-[1.5px] border-hairline bg-background px-2.5 py-0.5 font-bold disabled:opacity-40">
+              <button type="button" onClick={() => setUrl({ page: String(current - 1) })} disabled={current === 0} className="border-[1.5px] border-hairline bg-background px-2.5 py-0.5 font-bold disabled:opacity-40">
                 이전
               </button>
               <span className="font-mono tabular-nums">{current + 1} / {pages}</span>
-              <button type="button" onClick={() => setPage(current + 1)} disabled={current >= pages - 1} className="border-[1.5px] border-hairline bg-background px-2.5 py-0.5 font-bold disabled:opacity-40">
+              <button type="button" onClick={() => setUrl({ page: String(current + 1) })} disabled={current >= pages - 1} className="border-[1.5px] border-hairline bg-background px-2.5 py-0.5 font-bold disabled:opacity-40">
                 다음
               </button>
             </div>

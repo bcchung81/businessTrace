@@ -1,7 +1,17 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+
+const replace = vi.fn();
+let search = new URLSearchParams();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh: vi.fn(), push: vi.fn() }), usePathname: () => "/x", useSearchParams: () => search }));
+
 import { RankingTable, type RankingRow } from "@/components/ranking/ranking-table";
 import { loadRubrics, rankCompanies } from "@/lib/services/benchmarking";
+
+beforeEach(() => {
+  search = new URLSearchParams();
+  replace.mockClear();
+});
 
 function row(overrides: Partial<RankingRow> & { companyId: number; name: string }): RankingRow {
   return {
@@ -36,11 +46,15 @@ describe("RankingTable", () => {
       })),
       loadRubrics(),
     ).map((row) => ({ ...row, businessNo: "1234567890", verdict: "verified" as const }));
-    render(<RankingTable rows={many} industries={["SW"]} />);
+    const view = render(<RankingTable rows={many} industries={["SW"]} />);
 
     expect(screen.getAllByRole("row")).toHaveLength(21);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(replace).toHaveBeenCalledWith("/x?page=1", { scroll: false });
+
+    search = new URLSearchParams("page=1");
+    view.rerender(<RankingTable rows={many} industries={["SW"]} />);
     expect(screen.getAllByRole("row")).toHaveLength(6);
   });
 
@@ -74,11 +88,19 @@ describe("RankingTable", () => {
   });
 
   test("filters by industry and sorts by name", () => {
-    render(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
+    const view = render(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     fireEvent.click(screen.getByRole("radio", { name: "기업명" }));
+    expect(replace).toHaveBeenCalledWith("/x?sort=name", { scroll: false });
+
+    search = new URLSearchParams("sort=name");
+    view.rerender(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     const names = screen.getAllByRole("row").slice(1).map((row) => within(row).getAllByRole("cell")[1].textContent);
     expect(names[0]).toContain("㈜가");
+
     fireEvent.change(screen.getByRole("combobox", { name: "산업" }), { target: { value: "SW" } });
+    expect(replace).toHaveBeenCalledWith("/x?sort=name&industry=SW", { scroll: false });
+    search = new URLSearchParams("sort=name&industry=SW");
+    view.rerender(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
@@ -89,9 +111,25 @@ describe("RankingTable", () => {
   });
 
   test("filters rows by the search box", () => {
-    render(<RankingTable rows={[row({ companyId: 1, name: "옥타코" }), row({ companyId: 2, name: "넷록스" })]} industries={[]} />);
+    const rows = [row({ companyId: 1, name: "옥타코" }), row({ companyId: 2, name: "넷록스" })];
+    const view = render(<RankingTable rows={rows} industries={[]} />);
     fireEvent.change(screen.getByRole("searchbox", { name: "기업명 검색" }), { target: { value: "넷" } });
+    expect(replace).toHaveBeenCalledWith(`/x?q=${encodeURIComponent("넷")}`, { scroll: false });
+
+    search = new URLSearchParams("q=넷");
+    view.rerender(<RankingTable rows={rows} industries={[]} />);
     expect(screen.getAllByRole("row")).toHaveLength(2);
     expect(screen.getByText("넷록스")).toBeInTheDocument();
+  });
+
+  test("reads its state from the URL and writes changes back", () => {
+    search = new URLSearchParams("industry=ICT");
+    const rows = [row({ companyId: 1, name: "옥타코", industry: "ICT" }), row({ companyId: 2, name: "넷록스", industry: "SW" })];
+    render(<RankingTable rows={rows} industries={["ICT", "SW"]} />);
+
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.getByText("옥타코")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: "기업명" }));
+    expect(replace).toHaveBeenCalledWith(expect.stringContaining("sort=name"), { scroll: false });
   });
 });

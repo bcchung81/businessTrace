@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { Pager, paginate } from "@/components/ui/pager";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
 import { Segmented } from "@/components/ui/segmented";
 import { METRIC_KEYS, METRIC_LABEL, type BenchmarkRow } from "@/lib/services/benchmarking";
 import { matchesQuery } from "@/lib/services/companyCards";
+import { useUrlState } from "@/lib/hooks/useUrlState";
 import type { Verdict } from "@/lib/services/verdictRollup";
 
 export type RankingRow = BenchmarkRow & { verdict: Verdict; businessNo: string | null };
@@ -17,6 +17,8 @@ const SORTS: Array<{ value: Sort; label: string }> = [
   { value: "rank", label: "순위" },
   { value: "name", label: "기업명" },
 ];
+
+const DEFAULTS = { sort: "rank", industry: "", q: "", page: "0" };
 
 function compare(sort: Sort) {
   return (a: RankingRow, b: RankingRow) => {
@@ -35,18 +37,19 @@ function score(value: number | null, digits = 2) {
 
 /**
  * 랭킹 표 — 순위·판정·총점·지표 5·감점·산업. 결측은 빗금 — 이고, 순위 없는 기업도 표에 남는다.
- * 루브릭 선택과 내보내기는 URL 로 다루므로 여기에는 정렬·산업 필터만 있다.
+ * 루브릭 선택과 내보내기처럼 정렬·산업 필터·검색·페이지도 전부 URL 쿼리에 둔다.
  */
 export function RankingTable({ rows, industries }: { rows: RankingRow[]; industries: string[] }) {
-  const [sort, setSort] = useState<Sort>("rank");
-  const [industry, setIndustry] = useState("");
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(0);
+  const [url, setUrl] = useUrlState(DEFAULTS);
+
+  const sort: Sort = url.sort === "name" ? "name" : "rank";
+  const industry = url.industry;
+  const query = url.q;
 
   const filtered = rows
     .filter((row) => matchesQuery(row.name, query) && (industry === "" || row.industry === industry))
     .sort(compare(sort));
-  const { slice: visible, pages, current } = paginate(filtered, page);
+  const { slice: visible, pages, current } = paginate(filtered, Number(url.page) || 0);
 
   return (
     <div className="flex flex-col">
@@ -56,16 +59,16 @@ export function RankingTable({ rows, industries }: { rows: RankingRow[]; industr
           aria-label="기업명 검색"
           placeholder="기업명"
           value={query}
-          onChange={(event) => { setQuery(event.target.value); setPage(0); }}
+          onChange={(event) => setUrl({ q: event.target.value, page: "0" })}
           className="h-7 w-40 border-[1.5px] border-hairline bg-background px-2 text-[12px] focus-visible:border-ink focus-visible:outline-none"
         />
-        <Segmented label="정렬" value={sort} options={SORTS} onChange={(value) => { setSort(value); setPage(0); }} />
+        <Segmented label="정렬" value={sort} options={SORTS} onChange={(value) => setUrl({ sort: value, page: "0" })} />
         <label className="ml-auto flex items-center gap-2 text-muted-foreground">
           산업
           <select
             aria-label="산업"
             value={industry}
-            onChange={(event) => { setIndustry(event.target.value); setPage(0); }}
+            onChange={(event) => setUrl({ industry: event.target.value, page: "0" })}
             className="border-[1.5px] border-hairline bg-background px-2 py-0.5 text-[11.5px] text-foreground"
           >
             <option value="">전체</option>
@@ -123,7 +126,7 @@ export function RankingTable({ rows, industries }: { rows: RankingRow[]; industr
           </tbody>
         </table>
       </div>
-      <Pager current={current} pages={pages} onPage={setPage} />
+      <Pager current={current} pages={pages} onPage={(next) => setUrl({ page: String(next) })} />
     </div>
   );
 }

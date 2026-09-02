@@ -1,23 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { COMPANY_COLUMNS, CompanyRow } from "@/components/company/company-row";
 import { Button } from "@/components/ui/button";
 import { Pager, paginate } from "@/components/ui/pager";
+import { useUrlState } from "@/lib/hooks/useUrlState";
 import { filterCards, sortCards, type CardFilter, type CardSort, type CompanyCardData } from "@/lib/services/companyCards";
 
 const SORT_LABEL: Record<CardSort, string> = { triage: "긴급도순", name: "이름순", news: "최근보도순" };
 const SORTS: CardSort[] = ["triage", "name", "news"];
+const DEFAULTS = { sort: "triage", q: "", review: "", notice: "", positive: "", nobn: "", page: "0" };
 
 /**
- * 기업 목록 표 — 정렬 세그먼트와 필터 체크박스는 클라이언트 상태로 둔다. 기업 하나가 한 행이다.
+ * 기업 목록 표 — 정렬 세그먼트와 필터 체크박스는 URL 쿼리에 둔다. 기업 하나가 한 행이다.
+ * `initialFilter` 는 `/companies?filter=review` 링크 호환용이라 URL 의 review 와 OR 로 합친다.
  */
 export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyCardData[]; initialFilter?: CardFilter }) {
-  const [sort, setSort] = useState<CardSort>("triage");
-  const [filter, setFilter] = useState<CardFilter>(initialFilter);
-  const [page, setPage] = useState(0);
+  const [url, setUrl] = useUrlState(DEFAULTS);
 
-  const visible = useMemo(() => sortCards(filterCards(cards, filter), sort), [cards, filter, sort]);
+  const sort = SORTS.includes(url.sort as CardSort) ? (url.sort as CardSort) : "triage";
+  const filter: CardFilter = {
+    query: url.q,
+    reviewOnly: url.review === "1" || (initialFilter.reviewOnly ?? false),
+    noticeOnly: url.notice === "1",
+    positiveOnly: url.positive === "1",
+    missingBusinessNo: url.nobn === "1",
+  };
+  const page = Number(url.page) || 0;
+
+  const visible = sortCards(filterCards(cards, filter), sort);
   const { slice, pages, current } = paginate(visible, page);
 
   return (
@@ -28,7 +38,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
           aria-label="기업명 검색"
           placeholder="기업명"
           value={filter.query ?? ""}
-          onChange={(event) => { setFilter((prev) => ({ ...prev, query: event.target.value })); setPage(0); }}
+          onChange={(event) => setUrl({ q: event.target.value, page: "0" })}
           className="h-7 w-40 border-[1.5px] border-hairline bg-background px-2 text-[12px] focus-visible:border-ink focus-visible:outline-none"
         />
 
@@ -40,7 +50,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
               variant={sort === option ? "signal" : "signal-outline"}
               size="sm"
               aria-pressed={sort === option}
-              onClick={() => { setSort(option); setPage(0); }}
+              onClick={() => setUrl({ sort: option, page: "0" })}
             >
               {SORT_LABEL[option]}
             </Button>
@@ -53,7 +63,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
               type="checkbox"
               aria-label="확인 필요만"
               checked={filter.reviewOnly ?? false}
-              onChange={(event) => { setFilter((prev) => ({ ...prev, reviewOnly: event.target.checked })); setPage(0); }}
+              onChange={(event) => setUrl({ review: event.target.checked ? "1" : "", page: "0" })}
             />
             확인 필요만
           </label>
@@ -61,7 +71,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
             <input
               type="checkbox"
               checked={filter.noticeOnly ?? false}
-              onChange={(event) => { setFilter((prev) => ({ ...prev, noticeOnly: event.target.checked })); setPage(0); }}
+              onChange={(event) => setUrl({ notice: event.target.checked ? "1" : "", page: "0" })}
             />
             주의만
           </label>
@@ -69,7 +79,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
             <input
               type="checkbox"
               checked={filter.positiveOnly ?? false}
-              onChange={(event) => { setFilter((prev) => ({ ...prev, positiveOnly: event.target.checked })); setPage(0); }}
+              onChange={(event) => setUrl({ positive: event.target.checked ? "1" : "", page: "0" })}
             />
             홍보 후보만
           </label>
@@ -77,7 +87,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
             <input
               type="checkbox"
               checked={filter.missingBusinessNo ?? false}
-              onChange={(event) => { setFilter((prev) => ({ ...prev, missingBusinessNo: event.target.checked })); setPage(0); }}
+              onChange={(event) => setUrl({ nobn: event.target.checked ? "1" : "", page: "0" })}
             />
             사업자번호 미확보만
           </label>
@@ -107,7 +117,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
               ))}
             </tbody>
           </table>
-          <Pager current={current} pages={pages} onPage={setPage} />
+          <Pager current={current} pages={pages} onPage={(next) => setUrl({ page: String(next) })} />
         </div>
       )}
     </div>

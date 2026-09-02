@@ -1,7 +1,17 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+
+const replace = vi.fn();
+let search = new URLSearchParams();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh: vi.fn(), push: vi.fn() }), usePathname: () => "/x", useSearchParams: () => search }));
+
 import { EventTable } from "@/components/dashboard/event-table";
 import type { EventRow } from "@/lib/repositories/eventRepository";
+
+beforeEach(() => {
+  search = new URLSearchParams();
+  replace.mockClear();
+});
 
 const NOW = new Date("2026-08-30T00:00:00.000Z");
 
@@ -45,19 +55,43 @@ describe("EventTable", () => {
 
   test("shows twenty rows per page by default", () => {
     const events = Array.from({ length: 25 }, (_, index) => row({ id: index + 1, title: `사건 ${index + 1}` }));
-    render(<EventTable events={events} silence={[]} now={NOW} />);
+    const view = render(<EventTable events={events} silence={[]} now={NOW} />);
 
     expect(screen.getAllByRole("row").slice(1)).toHaveLength(20);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(replace).toHaveBeenCalledWith("/x?page=1", { scroll: false });
+
+    search = new URLSearchParams("page=1");
+    view.rerender(<EventTable events={events} silence={[]} now={NOW} />);
     expect(screen.getAllByRole("row").slice(1)).toHaveLength(5);
   });
 
   test("filters to open only and by kind", () => {
-    render(<EventTable events={[row({}), row({ id: 2, status: "done", kind: "investment" })]} silence={[]} now={NOW} />);
+    const events = [row({}), row({ id: 2, status: "done", kind: "investment" })];
+    const view = render(<EventTable events={events} silence={[]} now={NOW} />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "미확인만" }));
+    expect(replace).toHaveBeenCalledWith("/x?open=1", { scroll: false });
+
+    search = new URLSearchParams("open=1");
+    view.rerender(<EventTable events={events} silence={[]} now={NOW} />);
     expect(screen.getAllByRole("row").slice(1)).toHaveLength(1);
+
+    search = new URLSearchParams();
+    view.rerender(<EventTable events={events} silence={[]} now={NOW} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "수상" }));
+    expect(screen.getAllByRole("row").slice(1)).toHaveLength(1);
+  });
+
+  test("reads its state from the URL and writes changes back", () => {
+    search = new URLSearchParams("period=90");
+    render(<EventTable events={[row({ id: 7, occurredAt: "2026-07-01T00:00:00.000Z", title: "두 달 전 사건" })]} silence={[]} now={NOW} />);
+
+    expect(screen.getByRole("radio", { name: "90일" })).toBeChecked();
+    expect(screen.getByText("두 달 전 사건")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: "미확인만" }));
+    expect(replace).toHaveBeenCalledWith(expect.stringContaining("open=1"), { scroll: false });
   });
 
   test("mixes silence in as info rows", () => {
