@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
 import { Pager, paginate } from "@/components/ui/pager";
+import { DownloadLink } from "@/components/ui/download-link";
 import type { RunHistoryRow } from "@/lib/repositories/analysisRun";
 import { formatRunTime } from "@/lib/services/formatRunTime";
 
@@ -39,9 +40,9 @@ export function RunHistoryTable({ rows }: { rows: RunHistoryRow[] }) {
               <td className="py-1.5 pr-2 text-right font-mono tabular-nums">{row.usage ? row.usage.inputTokens + row.usage.outputTokens : "—"}</td>
               <td className="py-1.5">
                 {row.status === "completed" ? (
-                  <a href={`/api/reports/${row.id}`} className="border-[1.5px] border-hairline px-2 py-0.5 text-[11.5px] font-bold hover:bg-secondary">
+                  <DownloadLink href={`/api/reports/${row.id}`} className="border-[1.5px] border-hairline px-2 py-0.5 text-[11.5px] font-bold hover:bg-secondary">
                     엑셀
-                  </a>
+                  </DownloadLink>
                 ) : null}
               </td>
             </tr>

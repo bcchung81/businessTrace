@@ -27,7 +27,7 @@ describe("RunHistoryTable", () => {
     expect(screen.getByText("딥노이드")).toBeInTheDocument();
     expect(screen.getByText("20")).toBeInTheDocument();
     expect(screen.getByText("120")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "엑셀" })).toHaveAttribute("href", "/api/reports/7");
+    expect(screen.getByRole("button", { name: "엑셀" })).toBeInTheDocument();
   });
 
   it("pages twenty runs at a time", () => {
@@ -42,7 +42,7 @@ describe("RunHistoryTable", () => {
 
   it("shows no excel link for an incomplete run and explains an empty history", () => {
     render(<RunHistoryTable rows={[row({ id: 8, status: "running", verdict: null, usage: null, completedAt: null })]} />);
-    expect(screen.queryByRole("link", { name: "엑셀" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "엑셀" })).toBeNull();
 
     render(<RunHistoryTable rows={[]} />);
     expect(screen.getByText(/실행 이력이 없습니다/)).toBeInTheDocument();

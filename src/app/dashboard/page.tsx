@@ -17,6 +17,7 @@ import { buildRibbonGroups } from "@/lib/services/freshness";
 import { countReviewCompanies, fullSourceRefreshAt, summariseCells, summariseCollection } from "@/lib/repositories/pipelineRepo";
 import { buildPipelineFacts } from "@/lib/services/pipelineFacts";
 import { PipelineBand } from "@/components/dashboard/pipeline-band";
+import { DownloadLink } from "@/components/ui/download-link";
 import { buildCoMentions } from "@/lib/services/coMention";
 import { getDashboardSummary } from "@/lib/services/dashboardSummary";
 import type { EventRow } from "@/lib/repositories/eventRepository";
@@ -145,12 +146,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 월간 문서 ▾
               </summary>
               <div className="absolute left-0 right-0 top-full z-10 mt-1 flex flex-col overflow-hidden border border-band-foreground/40 bg-band">
-                <a href={`/api/reports/monthly?cohort=${year}&year=${thisMonth.year}&month=${thisMonth.month}`} className="px-3.5 py-2 text-[12px] hover:bg-band-foreground/10">
+                <DownloadLink href={`/api/reports/monthly?cohort=${year}&year=${thisMonth.year}&month=${thisMonth.month}`} className="text-left w-full px-3.5 py-2 text-[12px] hover:bg-band-foreground/10">
                   이번 달
-                </a>
-                <a href={`/api/reports/monthly?cohort=${year}&year=${lastMonth.year}&month=${lastMonth.month}`} className="px-3.5 py-2 text-[12px] hover:bg-band-foreground/10">
+                </DownloadLink>
+                <DownloadLink href={`/api/reports/monthly?cohort=${year}&year=${lastMonth.year}&month=${lastMonth.month}`} className="text-left w-full px-3.5 py-2 text-[12px] hover:bg-band-foreground/10">
                   지난 달
-                </a>
+                </DownloadLink>
               </div>
             </details>
             {pendingIds.length > 0 ? (
