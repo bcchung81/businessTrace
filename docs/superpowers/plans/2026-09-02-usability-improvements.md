@@ -2108,4 +2108,24 @@ git commit -m "fix(register): 등록 안내를 닫으면 URL 에서도 지운다
 - **T10** `DownloadLink` 래퍼는 `flex flex-col items-start` 다 — `inline-flex` 면 `w-full` 이 무효였다
 - **T12** 플랜의 두 번째 테스트 기대값이 틀렸다. `2025-12-31T15:00Z` 는 KST 2026-01-01 이라 올해 → `01-01`
 - **T13** 검증 패널 테스트는 `explain-ui.test.tsx` 에 있다(`verification-panel.test.tsx` 는 없다)
-- 리뷰 결과 이월(Minor): `.superpowers/sdd/…/progress.md` 의 `minor (deferred)` 항목 — 배치 레지스트리 DB 이관 시 버퍼 만료 추가, `page` 키 표 간 공유, `aria-modal` 포커스 트랩, `formatBusinessNo` 3벌 중복
+- **T15·최종 리뷰** 등록 안내 닫기는 `notice` 키만 지운다(`run`·`stage`·표 상태 보존). `DownloadLink` 는 앵커를 body 에 붙였다 떼고 blob URL 해제를 1초 늦춘다. `hasBatchEvents()` 는 스트림이 닫힌 지 `RECENT_BATCH_MS`(30분) 가 지나면 false 라 완료 배치가 영구 재생되지 않는다. 배지는 `aborting` 이면 "중단 요청됨" 이다
+
+### 이월된 Minor (리뷰에서 나왔고 고치지 않은 것)
+
+배포(Task 16) 전에 손댈 후보다. 전부 동작 결함이 아니라 다듬기다.
+
+- T1 `formatBusinessNo` 3벌 중복(company-table·edit-company-dialog·[id]/page) · `editCompanyAction` 이 company 를 두 번 읽고 aliases 를 별도 update 로 씀 · `CompanyTable` 의 error 상태가 행 공용
+- T2 시작 경쟁 시 409 대신 500 · `route.ts` `first.done` 분기 도달 불가 · `onMount` ref 가 첫 렌더 클로저 고정 · 이벤트 버퍼는 다음 `startBatch` 까지 남음(DB 이관 때 만료) · 재생 중 listener 예외 시 sink 미종료 · abort 200+JSON 실패 시 "실패 (200)"
+- T3 `not-found.tsx` JSDoc 없음 · `global-error.tsx` 없음(루트 layout 이 `auth()` 를 기다리므로 그 실패는 `error.tsx` 를 우회)
+- T4 `㈜`/`(주)` 접두를 검색에서 무시하지 않음 · 검색 상자 wrap 시 정렬 그룹 우측 이동
+- T5 재활성화·메시지 초기화 회귀 테스트 없음 · 마지막 확인 항목을 정리하면 블록이 사라져 "저장했습니다" 가 안 보임
+- T7 `page` 키를 표들이 공유(한 화면에 표 둘이면 접두사) · `EventTable` 이 `paginate`/`Pager` 를 안 씀 · `filter=review` 옛 북마크 리다이렉트 없음
+- T8 `listNeighbours` 미존재 id 테스트 없음 · 미사용 `displayOrder` select
+- T10 버튼화로 새 탭 열기 불가 · `filename=` 폴백 분기 도달 불가
+- T11 `SignOutForm`/`signOutAction` JSDoc 없음 · 루트 layout 이 `auth()` 로 전 경로 동적 · actions 의 "unauthorized" 문자열이 한국어 다이얼로그에 그대로 노출
+- T13 `aria-modal` 인데 포커스 트랩·inert 없음 · 표 셀 `max-w` 는 auto 레이아웃에서 권고값 · 클래스 문자열 단언은 줄바꿈 동작을 못 봄 · 오버레이 div 키보드 등가 없음(Esc 로 대체)
+- T14 `TAG_HINT` 7개 중 5개 미사용
+
+### 손검증 (미실시)
+
+빌드·전체 테스트·린트는 통과했으나 브라우저 손검증 5항목(상세 편집·제외/복귀 · 배치 중 이탈 후 복귀 · 없는 id 404 · 검색 후 상세 갔다 뒤로 · 월간 문서 "생성 중…")은 이 세션에서 실행하지 못했다. Firefox·Safari 의 blob 다운로드와 배치 재접속은 꼭 눌러 볼 것.
