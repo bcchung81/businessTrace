@@ -14,8 +14,9 @@ describe("kstDate", () => {
 test("kstDateShort drops the year only inside the current year", () => {
   const now = new Date("2026-09-02T00:00:00Z");
   expect(kstDateShort("2026-03-01T15:00:00Z", now)).toBe("03-02");
-  expect(kstDateShort("2025-12-31T15:00:00Z", now)).toBe("2026-01-01");
+  expect(kstDateShort("2025-12-31T15:00:00Z", now)).toBe("01-01");
   expect(kstDateShort("2025-06-01T00:00:00Z", now)).toBe("2025-06-01");
+  expect(kstDateShort("2026-12-31T15:00:00Z", now)).toBe("2027-01-01");
 });
 
 describe("kstMonthDay", () => {

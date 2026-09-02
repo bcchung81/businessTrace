@@ -33,11 +33,10 @@ export function kstMonthDay(iso: string): string {
 
 /**
  * 올해면 `MM-DD`, 다른 해면 `YYYY-MM-DD` — 코호트 화면에서 해가 넘어간 날짜가 올해 것으로 읽히지 않게.
- * "올해" 판정은 ISO 원본 연도로 한다 — KST 로 넘어간 연도로 판정하면 12/31 자정 근처 기사가 그 해 것으로 안 보인다.
  */
 export function kstDateShort(iso: string, now: Date = new Date()): string {
   const parts = kstParts(iso);
   if (!parts) return iso.slice(0, 10);
-  const sameYear = iso.slice(0, 4) === now.toISOString().slice(0, 4);
-  return sameYear ? `${parts.month}-${parts.day}` : `${parts.year}-${parts.month}-${parts.day}`;
+  const thisYear = kstParts(now.toISOString())?.year;
+  return parts.year === thisYear ? `${parts.month}-${parts.day}` : `${parts.year}-${parts.month}-${parts.day}`;
 }
