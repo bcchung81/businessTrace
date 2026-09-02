@@ -7,6 +7,7 @@ import {
   hasBatchEvents,
   publishBatchEvent,
   readBatch,
+  RECENT_BATCH_MS,
   requestAbort,
   startBatch,
   subscribeBatch,
@@ -82,6 +83,21 @@ describe("batchRegistry", () => {
 
     expect(() => closeBatchStream()).not.toThrow();
     expect(seen.at(-1)).toBeNull();
+  });
+
+  test("a finished batch stops replaying 30 minutes after the stream closes, and a new run resets it", () => {
+    startBatch({ stage: "full", total: 1 });
+    publishBatchEvent({ type: "batch_start", total: 1 });
+    finishBatch();
+    closeBatchStream();
+    expect(hasBatchEvents()).toBe(true);
+    expect(hasBatchEvents(new Date(Date.now() + RECENT_BATCH_MS + 1))).toBe(false);
+
+    startBatch({ stage: "full", total: 1 });
+    expect(hasBatchEvents()).toBe(false);
+    publishBatchEvent({ type: "batch_start", total: 1 });
+    closeBatchStream();
+    expect(hasBatchEvents(new Date(Date.now() + RECENT_BATCH_MS + 1))).toBe(false);
   });
 
   test("abort is a request flag on the running batch only", () => {

@@ -133,9 +133,7 @@ export function sortForTriage<T extends { verdict: Verdict; faithfulness: number
   });
 }
 
-/**
- * 미분석(pending) 판정을 받은 기업들의 companyId를 추출한다.
- */
+/** 대시보드 딥링크가 개수가 아니라 id 목록을 필요로 해서 둔다. */
 export function pendingCompanyIds(companies: Array<{ companyId: number; verdict: string }>): number[] {
   return companies.filter((entry) => entry.verdict === "pending").map((entry) => entry.companyId);
 }

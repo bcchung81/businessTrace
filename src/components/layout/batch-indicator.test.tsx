@@ -27,6 +27,14 @@ describe("BatchIndicator", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
+  test("shows the abort request instead of the running count while aborting", () => {
+    const fetchImpl = vi.fn().mockResolvedValue(Response.json({ batch: null }));
+    render(
+      <BatchIndicator initial={{ stage: "full", total: 4, done: 2, startedAt: "x", current: null, aborting: true }} fetchImpl={fetchImpl as unknown as typeof fetch} />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("중단 요청됨 · 2/4");
+  });
+
   test("renders nothing when idle but still polls", async () => {
     vi.useFakeTimers();
     const fetchImpl = vi.fn().mockResolvedValue(Response.json({ batch: null }));

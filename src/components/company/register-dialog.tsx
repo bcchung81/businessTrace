@@ -34,7 +34,10 @@ export function RegisterDialog({
 
   const onOpenChange = (next: boolean) => {
     setOpen(next);
-    if (!next && notice) router.replace(`/companies?year=${year}`, { scroll: false });
+    if (next || !notice) return;
+    const params = new URLSearchParams(window.location.search);
+    params.delete("notice");
+    router.replace(params.size ? `/companies?${params.toString()}` : "/companies", { scroll: false });
   };
 
   return (

@@ -30,8 +30,10 @@ export function DownloadLink({ href, children, className = "", fetchImpl = fetch
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = filenameOf(response.headers.get("Content-Disposition"), "download.xlsx");
+      document.body.appendChild(anchor);
       anchor.click();
-      URL.revokeObjectURL(url);
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (caught) {
       setError(`생성 실패 — ${caught instanceof Error ? caught.message : "알 수 없는 오류"}`);
     } finally {

@@ -3,9 +3,12 @@ export type BatchStatus = { stage: BatchStage; total: number; done: number; star
 
 type Listener = (event: unknown | null) => void;
 
+export const RECENT_BATCH_MS = 30 * 60_000;
+
 let active: BatchStatus | null = null;
 let events: unknown[] = [];
 let streamOpen = false;
+let closedAt: number | null = null;
 const listeners = new Set<Listener>();
 
 /**
@@ -17,6 +20,7 @@ export function startBatch(input: { stage: BatchStage; total: number; now?: Date
   active = { stage: input.stage, total: input.total, done: 0, startedAt: (input.now ?? new Date()).toISOString(), current: null, aborting: false };
   events = [];
   streamOpen = true;
+  closedAt = null;
   return active;
 }
 
@@ -59,6 +63,7 @@ export function publishBatchEvent(event: unknown): void {
  */
 export function closeBatchStream(): void {
   streamOpen = false;
+  closedAt = Date.now();
   for (const listener of [...listeners]) deliver(listener, null);
   listeners.clear();
 }
@@ -75,7 +80,13 @@ export function subscribeBatch(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
-export function hasBatchEvents(): boolean {
+/**
+ * 마감 패널을 다시 열지 판단한다.
+ * 스트림이 열려 있으면 버퍼 유무를 그대로 쓰고, 닫힌 지 30분이 지난 결과는 방문마다 재생되지 않도록 거짓을 돌려준다.
+ */
+export function hasBatchEvents(now: Date = new Date()): boolean {
+  if (streamOpen) return events.length > 0;
+  if (closedAt !== null && now.getTime() - closedAt > RECENT_BATCH_MS) return false;
   return events.length > 0;
 }
 

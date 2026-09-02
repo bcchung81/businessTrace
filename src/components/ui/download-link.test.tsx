@@ -32,8 +32,24 @@ describe("DownloadLink", () => {
     await waitFor(() => expect(click).toHaveBeenCalled());
     const anchor = click.mock.instances[0] as HTMLAnchorElement;
     expect(anchor.download).toBe("월간.xlsx");
-    expect(revokeObjectURL).toHaveBeenCalledWith("blob:1");
     await waitFor(() => expect(screen.getByRole("button")).toHaveTextContent("엑셀"));
+  });
+
+  test("appends the anchor before clicking and revokes the object URL after a delay so Firefox/Safari can finish the save", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl = vi.fn(async () => new Response(new Blob(["x"])));
+      render(<DownloadLink href="/x" fetchImpl={fetchImpl}>엑셀</DownloadLink>);
+      fireEvent.click(screen.getByRole("button", { name: "엑셀" }));
+      await vi.waitFor(() => expect(click).toHaveBeenCalled());
+      const anchor = click.mock.instances[0] as HTMLAnchorElement;
+      expect(document.body.contains(anchor)).toBe(false);
+      expect(revokeObjectURL).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(revokeObjectURL).toHaveBeenCalledWith("blob:1");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("shows the failure inline", async () => {

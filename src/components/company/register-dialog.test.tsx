@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { RegisterDialog } from "@/components/company/register-dialog";
 import type { CompanyModel } from "@/generated/prisma/models";
 
@@ -27,11 +27,22 @@ function company(over: Partial<CompanyModel> = {}): CompanyModel {
 }
 
 describe("RegisterDialog", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/companies");
+  });
+
   test("closing the dialog after a notice strips it from the URL", () => {
     render(<RegisterDialog year={2026} companies={[]} action={vi.fn()} notice="3건 등록" />);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
-    expect(replace).toHaveBeenCalledWith("/companies?year=2026", { scroll: false });
+    expect(replace).toHaveBeenCalledWith("/companies", { scroll: false });
+  });
+
+  test("closing the dialog keeps other live URL params but drops notice", () => {
+    window.history.replaceState(null, "", "/companies?year=2026&notice=3%EA%B1%B4&run=5,6&stage=full");
+    render(<RegisterDialog year={2026} companies={[]} action={vi.fn()} notice="3건 등록" />);
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(replace).toHaveBeenCalledWith("/companies?year=2026&run=5%2C6&stage=full", { scroll: false });
   });
 
   test("shows an exclude button for an active company on the manage tab", () => {
