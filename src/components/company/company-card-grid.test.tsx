@@ -23,6 +23,17 @@ describe("CompanyCardGrid paging", () => {
   });
 });
 
+describe("CompanyCardGrid search", () => {
+  test("filters rows by the search box and resets the page", () => {
+    const cards = Array.from({ length: 25 }, (_, i) => card(i + 1, i === 24 ? "옥타코" : `기업${i + 1}`, false));
+    render(<CompanyCardGrid cards={cards} />);
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    fireEvent.change(screen.getByRole("searchbox", { name: "기업명 검색" }), { target: { value: "옥타" } });
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.queryByText("2 / 2")).not.toBeInTheDocument();
+  });
+});
+
 describe("CompanyCardGrid review filter", () => {
   test("offers 확인 필요만 and can start with it on", () => {
     render(<CompanyCardGrid cards={[card(1, "㈜가", true), card(2, "㈜나", false)]} initialFilter={{ reviewOnly: true }} />);

@@ -1,6 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, test } from "vitest";
 import type { EventRow } from "@/lib/repositories/eventRepository";
-import { buildCompanyCards, filterCards, sortCards } from "@/lib/services/companyCards";
+import { buildCompanyCards, filterCards, matchesQuery, sortCards, type CompanyCardData } from "@/lib/services/companyCards";
+
+const card = (id: number, name: string, needsReview: boolean): CompanyCardData => ({
+  everHadEvents: false,
+  id, name, industry: null, businessNo: "1", headcount: { latest: null, delta12m: null }, latestArticle: null,
+  events30d: { alert: 0, notice: 0, positive: 0, info: 0 }, open: 0, worstSeverity: null, trust: null, needsReview,
+});
 
 const COMPANIES = [
   { id: 1, name: "딥노이드", industry: "의료AI", businessNo: "1" },
@@ -57,4 +63,18 @@ describe("sortCards / filterCards", () => {
     const flagged = cards.map((c) => ({ ...c, needsReview: c.name === "딥노이드" }));
     expect(filterCards(flagged, { reviewOnly: true }).map((c) => c.name)).toEqual(["딥노이드"]);
   });
+});
+
+test("matchesQuery ignores spaces and case", () => {
+  expect(matchesQuery("㈜ 크립토 랩", "크립토랩")).toBe(true);
+  expect(matchesQuery("Netlocks", "netlocks")).toBe(true);
+  expect(matchesQuery("넷록스", "옥타코")).toBe(false);
+  expect(matchesQuery("넷록스", "  ")).toBe(true);
+});
+
+test("filterCards narrows by query together with the flags", () => {
+  const cards = [card(1, "크립토랩", false), card(2, "넷록스", true)];
+  expect(filterCards(cards, { query: "넷" }).map((c) => c.id)).toEqual([2]);
+  expect(filterCards(cards, { query: "넷", reviewOnly: true }).map((c) => c.id)).toEqual([2]);
+  expect(filterCards(cards, { query: "크립", reviewOnly: true })).toEqual([]);
 });

@@ -23,6 +23,15 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: { cards: CompanyC
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
+        <input
+          type="search"
+          aria-label="기업명 검색"
+          placeholder="기업명"
+          value={filter.query ?? ""}
+          onChange={(event) => { setFilter((prev) => ({ ...prev, query: event.target.value })); setPage(0); }}
+          className="h-7 w-40 border-[1.5px] border-hairline bg-background px-2 text-[12px] focus-visible:border-ink focus-visible:outline-none"
+        />
+
         <div role="group" aria-label="정렬" className="flex gap-1.5">
           {SORTS.map((option) => (
             <Button

@@ -6,6 +6,7 @@ import { Pager, paginate } from "@/components/ui/pager";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
 import { Segmented } from "@/components/ui/segmented";
 import { METRIC_KEYS, METRIC_LABEL, type BenchmarkRow } from "@/lib/services/benchmarking";
+import { matchesQuery } from "@/lib/services/companyCards";
 import type { Verdict } from "@/lib/services/verdictRollup";
 
 export type RankingRow = BenchmarkRow & { verdict: Verdict; businessNo: string | null };
@@ -39,14 +40,25 @@ function score(value: number | null, digits = 2) {
 export function RankingTable({ rows, industries }: { rows: RankingRow[]; industries: string[] }) {
   const [sort, setSort] = useState<Sort>("rank");
   const [industry, setIndustry] = useState("");
+  const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
 
-  const filtered = rows.filter((row) => industry === "" || row.industry === industry).sort(compare(sort));
+  const filtered = rows
+    .filter((row) => matchesQuery(row.name, query) && (industry === "" || row.industry === industry))
+    .sort(compare(sort));
   const { slice: visible, pages, current } = paginate(filtered, page);
 
   return (
     <div className="flex flex-col">
       <div className="flex flex-wrap items-center gap-3 border-b border-hairline py-2 text-[11.5px]">
+        <input
+          type="search"
+          aria-label="기업명 검색"
+          placeholder="기업명"
+          value={query}
+          onChange={(event) => { setQuery(event.target.value); setPage(0); }}
+          className="h-7 w-40 border-[1.5px] border-hairline bg-background px-2 text-[12px] focus-visible:border-ink focus-visible:outline-none"
+        />
         <Segmented label="정렬" value={sort} options={SORTS} onChange={(value) => { setSort(value); setPage(0); }} />
         <label className="ml-auto flex items-center gap-2 text-muted-foreground">
           산업

@@ -11,7 +11,19 @@ export type CompanyCardData = {
   everHadEvents: boolean;
 };
 export type CardSort = "triage" | "name" | "news";
-export type CardFilter = { noticeOnly?: boolean; positiveOnly?: boolean; missingBusinessNo?: boolean; reviewOnly?: boolean };
+export type CardFilter = { noticeOnly?: boolean; positiveOnly?: boolean; missingBusinessNo?: boolean; reviewOnly?: boolean; query?: string };
+
+function fold(text: string) {
+  return text.replace(/\s+/g, "").toLowerCase();
+}
+
+/**
+ * 띄어쓰기·대소문자를 무시하고 이름에 질의가 들어 있는지 본다. 빈 질의는 전부 통과다.
+ */
+export function matchesQuery(name: string, query: string): boolean {
+  const needle = fold(query);
+  return needle.length === 0 || fold(name).includes(needle);
+}
 
 function headcount(series: CompanySeries | undefined) {
   const measured = (series?.points ?? []).filter((p) => p.subscribers !== null);
@@ -66,6 +78,7 @@ export function sortCards(cards: CompanyCardData[], sort: CardSort): CompanyCard
 
 export function filterCards(cards: CompanyCardData[], filter: CardFilter): CompanyCardData[] {
   return cards.filter((c) =>
+    matchesQuery(c.name, filter.query ?? "") &&
     (!filter.noticeOnly || c.events30d.alert + c.events30d.notice > 0) &&
     (!filter.positiveOnly || c.events30d.positive > 0) &&
     (!filter.missingBusinessNo || !c.businessNo) &&

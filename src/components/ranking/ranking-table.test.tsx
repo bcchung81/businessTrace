@@ -3,6 +3,14 @@ import { describe, expect, test } from "vitest";
 import { RankingTable, type RankingRow } from "@/components/ranking/ranking-table";
 import { loadRubrics, rankCompanies } from "@/lib/services/benchmarking";
 
+function row(overrides: Partial<RankingRow> & { companyId: number; name: string }): RankingRow {
+  return {
+    industry: null, rubricId: "default", rubricName: "기본", metrics: [], riskPenalty: 0, total: null, rank: null,
+    verdict: "pending", businessNo: "1234567890",
+    ...overrides,
+  };
+}
+
 function rows(): RankingRow[] {
   const ranked = rankCompanies(
     [
@@ -78,5 +86,12 @@ describe("RankingTable", () => {
     render(<RankingTable rows={rows()} industries={[]} />);
     expect(within(screen.getByRole("row", { name: /㈜나/ })).getAllByRole("cell")[9]).toHaveTextContent("-0.20");
     expect(within(screen.getByRole("row", { name: /㈜가/ })).getAllByRole("cell")[9]).toHaveTextContent("0");
+  });
+
+  test("filters rows by the search box", () => {
+    render(<RankingTable rows={[row({ companyId: 1, name: "옥타코" }), row({ companyId: 2, name: "넷록스" })]} industries={[]} />);
+    fireEvent.change(screen.getByRole("searchbox", { name: "기업명 검색" }), { target: { value: "넷" } });
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.getByText("넷록스")).toBeInTheDocument();
   });
 });
