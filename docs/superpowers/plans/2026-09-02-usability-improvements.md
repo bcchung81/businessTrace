@@ -1545,7 +1545,7 @@ export function CompanyCardGrid({ cards, initialFilter = {} }: …) {
   …
 ```
 
-각 핸들러는 `setUrl({ review: checked ? "1" : "", page: "0" })` 꼴로, `Pager` 의 `onPage={(p) => setUrl({ page: String(p) })}`. `useState` 세 개와 `useMemo` 의존성은 제거한다. `initialFilter` prop 은 `/companies?filter=review` 링크 호환을 위해 남긴다.
+각 핸들러는 `setUrl({ review: checked ? "1" : "", page: "0" })` 꼴로, `Pager` 의 `onPage={(p) => setUrl({ page: String(p) })}`. `useState` 세 개와 `useMemo` 의존성은 제거한다. ~~`initialFilter` prop 은 `/companies?filter=review` 링크 호환을 위해 남긴다.~~ **(실행 판정으로 폐기 — OR 결합이면 체크를 풀 수 없다. `initialFilter` 를 없애고 모든 링크를 `review=1` 로 통일했다. 아래 각주 T7 참조.)**
 
 `ranking-table.tsx`: `DEFAULTS = { sort: "rank", industry: "", q: "", page: "0" }`. `event-table.tsx`: `DEFAULTS = { period: "30", open: "", page: "0" }` — `hiddenKinds` 는 그대로 `useState` 로 둔다(집합이라 URL 에 넣을 가치가 낮다).
 
