@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { COMPANY_COLUMNS, CompanyRow } from "@/components/company/company-row";
+import { COLUMN_HINT, COMPANY_COLUMNS, CompanyRow } from "@/components/company/company-row";
 import { Button } from "@/components/ui/button";
 import { Pager, paginate } from "@/components/ui/pager";
 import { useUrlState } from "@/lib/hooks/useUrlState";
@@ -116,7 +116,12 @@ export function CompanyCardGrid({ cards }: { cards: CompanyCardData[] }) {
             <thead>
               <tr className="border-b-2 border-ink text-[11px] font-bold tracking-[0.06em]">
                 {COMPANY_COLUMNS.map((column, index) => (
-                  <th key={column} scope="col" className={`whitespace-nowrap px-2 py-2 ${index >= 4 && index !== 7 ? "text-right" : "text-left"}`}>
+                  <th
+                    key={column}
+                    scope="col"
+                    title={COLUMN_HINT[column]}
+                    className={`whitespace-nowrap px-2 py-2 ${index >= 4 && index !== 7 ? "text-right" : "text-left"}`}
+                  >
                     {column}
                   </th>
                 ))}

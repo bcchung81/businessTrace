@@ -111,6 +111,14 @@ describe("CompanyCardGrid search draft", () => {
   });
 });
 
+describe("CompanyCardGrid column hints", () => {
+  test("explains the terse column names", () => {
+    render(<CompanyCardGrid cards={[card(1, "가", false)]} />);
+    expect(screen.getByRole("columnheader", { name: "미확인" })).toHaveAttribute("title", "확인하지 않은 경보·주의 사건 수");
+    expect(screen.getByRole("columnheader", { name: "신뢰" })).toHaveAttribute("title", "최신 분석의 검증 판정");
+  });
+});
+
 describe("CompanyCardGrid url state", () => {
   test("falls back to 긴급도순 when the URL asks for an unknown sort", () => {
     goto("sort=garbage");

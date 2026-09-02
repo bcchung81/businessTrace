@@ -7,6 +7,13 @@ import { SeverityIcon } from "@/components/dashboard/severity-ui";
 import type { CompanyCardData } from "@/lib/services/companyCards";
 
 export const COMPANY_COLUMNS = ["심각도", "기업", "신뢰", "업종", "가입자", "수상·투자·긍정", "주의", "최근 보도", "미확인"] as const;
+export const COLUMN_HINT: Partial<Record<(typeof COMPANY_COLUMNS)[number], string>> = {
+  "신뢰": "최신 분석의 검증 판정",
+  "가입자": "국민연금 가입자 수 · 12개월 증감",
+  "수상·투자·긍정": "지난 30일 긍정 사건 수",
+  "주의": "지난 30일 주의·경보 사건 수",
+  "미확인": "확인하지 않은 경보·주의 사건 수",
+};
 
 function deltaLabel(delta: number | null) {
   if (delta === null) return null;

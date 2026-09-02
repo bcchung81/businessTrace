@@ -108,6 +108,13 @@ describe("SectionHead", () => {
   });
 });
 
+describe("SectionHead tag hint", () => {
+  test("explains what the tag means on hover", () => {
+    render(<SectionHead title="x" tag="실측" />);
+    expect(screen.getByText("실측")).toHaveAttribute("title", "원천·기사에서 그대로 읽은 값");
+  });
+});
+
 describe("SectionHead index", () => {
   test("prints the section number before the heading", () => {
     render(<SectionHead index="04" title="기업별 근거 매트릭스" />);

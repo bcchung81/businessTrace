@@ -92,21 +92,24 @@ const SHORT_NAME: Record<SourceKey, string> = {
 export function EvidenceStrip({ snapshots }: { snapshots: StoredSnapshot[] }) {
   const bySource = new Map(snapshots.map((snapshot) => [snapshot.source, snapshot]));
   return (
-    <ul aria-label="원천 대조 요약" className="grid grid-cols-8 gap-1.5">
-      {(Object.keys(SHORT_NAME) as SourceKey[]).map((source) => {
-        const snapshot = bySource.get(source);
-        const status: SourceStatus = snapshot?.status ?? "pending";
-        return (
-          <li
-            key={source}
-            title={snapshot ? `${SOURCE_LABEL[source].name} · ${snapshot.summary} · ${day(snapshot.fetchedAt)}` : `${SOURCE_LABEL[source].name} · 미조회`}
-            className={`flex flex-col gap-0.5 rounded-none border-[1.5px] px-2 py-1.5 text-[11px] ${STATUS_CLASS[status]}`}
-          >
-            <span className="truncate font-semibold text-foreground">{SHORT_NAME[source]}</span>
-            <span className="font-bold">{STATUS_LABEL[status]}</span>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="flex flex-col gap-2">
+      <ul aria-label="원천 대조 요약" className="grid grid-cols-8 gap-1.5">
+        {(Object.keys(SHORT_NAME) as SourceKey[]).map((source) => {
+          const snapshot = bySource.get(source);
+          const status: SourceStatus = snapshot?.status ?? "pending";
+          return (
+            <li
+              key={source}
+              title={snapshot ? `${SOURCE_LABEL[source].name} · ${snapshot.summary} · ${day(snapshot.fetchedAt)}` : `${SOURCE_LABEL[source].name} · 미조회`}
+              className={`flex flex-col gap-0.5 rounded-none border-[1.5px] px-2 py-1.5 text-[11px] ${STATUS_CLASS[status]}`}
+            >
+              <span className="truncate font-semibold text-foreground">{SHORT_NAME[source]}</span>
+              <span className="font-bold">{STATUS_LABEL[status]}</span>
+            </li>
+          );
+        })}
+      </ul>
+      <StateLegend />
+    </div>
   );
 }

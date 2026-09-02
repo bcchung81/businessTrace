@@ -102,4 +102,12 @@ describe("EvidenceStrip", () => {
     expect(items[1]).toHaveTextContent("결측");
     expect(items[1]).toHaveAttribute("title", expect.stringContaining("재무제표"));
   });
+
+  test("carries the blank-state legend so the strip's own textures can be told apart", () => {
+    render(<EvidenceStrip snapshots={[]} />);
+
+    expect(screen.getByText("결측")).toBeInTheDocument();
+    expect(screen.getByText(/원천에 이 기업이 없다/)).toBeInTheDocument();
+    expect(screen.getByText(/잴 활동이 없다/)).toBeInTheDocument();
+  });
 });
