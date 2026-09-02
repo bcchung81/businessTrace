@@ -56,11 +56,12 @@ describe("EventTable", () => {
     const long = "부정 보도 — 한국첨단소재 유증 흥행에도 씁쓸한 뒷맛, 소액공모 틈새 노렸나 하는 아주 긴 제목";
     render(<EventTable events={[row({ title: long, evidence: [{ label: long, link: "https://n/1" }] })]} silence={[]} now={NOW} />);
 
-    const titleCell = screen.getByText(long, { selector: "td" });
+    const links = screen.getAllByRole("link", { name: long });
+    const titleCell = links.find((link) => link.getAttribute("href")?.startsWith("/companies/"))!.closest("td")!;
     expect(titleCell.className).toContain("truncate");
     expect(titleCell).toHaveAttribute("title", long);
 
-    const evidenceCell = screen.getByRole("link", { name: long }).closest("td")!;
+    const evidenceCell = links.find((link) => link.getAttribute("href") === "https://n/1")!.closest("td")!;
     expect(evidenceCell.className).toContain("truncate");
   });
 
@@ -128,5 +129,11 @@ describe("EventTable", () => {
     render(<EventTable events={[]} silence={[]} lastEventAt="2026-07-14T00:00:00.000Z" />);
 
     expect(screen.getByText(/지난 30일 사건 없음 · 마지막 사건 07-14/)).toBeInTheDocument();
+  });
+
+  test("links the event title to that event on the company page", () => {
+    render(<EventTable events={[row({ id: 7, title: "투자 유치" })]} silence={[]} now={NOW} />);
+
+    expect(screen.getByRole("link", { name: "투자 유치" })).toHaveAttribute("href", "/companies/1#event-7");
   });
 });

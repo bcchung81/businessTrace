@@ -59,4 +59,9 @@ describe("EventTimeline", () => {
     render(<EventTimeline events={[]} />);
     expect(screen.getByText(/기록된 사건이 없습니다/)).toBeInTheDocument();
   });
+
+  test("anchors each row so a dashboard link can land on the specific event", () => {
+    const { container } = render(<EventTimeline events={ROWS} />);
+    expect(container.querySelector("#event-1")).not.toBeNull();
+  });
 });

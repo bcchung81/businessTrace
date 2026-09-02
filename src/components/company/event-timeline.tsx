@@ -33,7 +33,11 @@ export function EventTimeline({ events }: { events: EventRow[] }) {
         </thead>
         <tbody>
           {sorted.map((event) => (
-            <tr key={event.id} className="border-b border-hairline align-middle last:border-0">
+            <tr
+              key={event.id}
+              id={`event-${event.id}`}
+              className="border-b border-hairline align-middle scroll-mt-24 target:bg-accent last:border-0"
+            >
               <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">{kstDate(event.occurredAt)}</td>
               <td className="whitespace-nowrap px-2 py-1.5">
                 <SeverityMark severity={event.severity} />

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { listEvents } from "@/lib/repositories/eventRepository";
+import { listNeighbours } from "@/lib/repositories/companyRepository";
 import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { parseId } from "@/lib/services/routeParams";
@@ -43,6 +44,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
   const explanation = await buildExplanation(company.id);
   const review = await buildReviewItems(company.id);
   const facts = buildCompanyFacts({ businessNo: company.businessNo, snapshots });
+  const neighbours = await listNeighbours(company.id);
 
   return (
     <div className="flex flex-col gap-8">
@@ -58,6 +60,23 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
           <FactsTable facts={facts} businessNo={businessNo} industry={company.industry} />
         </div>
         <div className="flex items-center gap-3">
+          <nav aria-label="기업 이동" className="flex items-center gap-2 text-[12px]">
+            {neighbours.prev ? (
+              <Link href={`/companies/${neighbours.prev.id}`} className="underline-offset-2 hover:underline">
+                ← {neighbours.prev.name}
+              </Link>
+            ) : (
+              <span className="text-muted-foreground/45">← 처음</span>
+            )}
+            <span className="text-hairline">|</span>
+            {neighbours.next ? (
+              <Link href={`/companies/${neighbours.next.id}`} className="underline-offset-2 hover:underline">
+                {neighbours.next.name} →
+              </Link>
+            ) : (
+              <span className="text-muted-foreground/45">마지막 →</span>
+            )}
+          </nav>
           <Link
             href={`/companies?year=${company.year}`}
             className="text-[12px] text-muted-foreground underline-offset-2 hover:underline"
@@ -153,7 +172,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         ) : null}
       </Panel>
 
-      <Panel index="02" title="사건 이력">
+      <Panel index="02" title="사건 이력" id="events" className="scroll-mt-20">
         <EventTimeline events={events} />
       </Panel>
     </div>

@@ -149,7 +149,11 @@ export function EventTable({
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{KIND_LABEL[row.event.kind]}</td>
-                      <td className="max-w-[280px] truncate whitespace-nowrap px-2 py-1.5" title={row.event.title}>{row.event.title}</td>
+                      <td className="max-w-[280px] truncate whitespace-nowrap px-2 py-1.5" title={row.event.title}>
+                        <Link href={`/companies/${row.event.companyId}#event-${row.event.id}`} className="hover:underline">
+                          {row.event.title}
+                        </Link>
+                      </td>
                       <td className="max-w-[220px] truncate whitespace-nowrap px-2 py-1.5" title={row.event.evidence.map((item) => item.label).join(" · ")}>
                         {row.event.evidence.length === 0 ? (
                           <span className="text-muted-foreground/45">—</span>

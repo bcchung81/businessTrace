@@ -8,6 +8,7 @@ import {
   listYears,
   updateCompany,
   deactivateCompany,
+  listNeighbours,
 } from "@/lib/repositories/companyRepository";
 
 describe("createCompany", () => {
@@ -154,5 +155,18 @@ describe("deactivateCompany", () => {
     const stored = await prisma.company.findUniqueOrThrow({ where: { id: company.id } });
     expect(stored.isActive).toBe(false);
     expect(await prisma.analysisRun.count()).toBe(1);
+  });
+});
+
+describe("listNeighbours", () => {
+  beforeEach(resetDatabase);
+  it("walks the active companies of the same year in display order", async () => {
+    const a = await prisma.company.create({ data: { name: "가", year: 2026, displayOrder: 0 } });
+    const b = await prisma.company.create({ data: { name: "나", year: 2026, displayOrder: 1, isActive: false } });
+    const c = await prisma.company.create({ data: { name: "다", year: 2026, displayOrder: 2 } });
+    await prisma.company.create({ data: { name: "라", year: 2025, displayOrder: 3 } });
+    expect(await listNeighbours(a.id)).toEqual({ prev: null, next: { id: c.id, name: "다" } });
+    expect(await listNeighbours(c.id)).toEqual({ prev: { id: a.id, name: "가" }, next: null });
+    expect(await listNeighbours(b.id)).toEqual({ prev: { id: a.id, name: "가" }, next: { id: c.id, name: "다" } });
   });
 });

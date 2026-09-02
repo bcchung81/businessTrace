@@ -131,3 +131,21 @@ export async function updateCompany(
 export async function deactivateCompany(id: number) {
   return updateCompany(id, { isActive: false });
 }
+
+/**
+ * 상세 화면의 이전·다음 — 같은 연도의 활성 기업을 등록 순서로 본 이웃이다. 제외된 기업에서 열어도 활성 이웃을 준다.
+ */
+export async function listNeighbours(companyId: number) {
+  const current = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { year: true, displayOrder: true, id: true },
+  });
+  if (!current) return { prev: null, next: null };
+  const rows = await prisma.company.findMany({
+    where: { year: current.year, OR: [{ isActive: true }, { id: companyId }] },
+    orderBy: [{ displayOrder: "asc" }, { id: "asc" }],
+    select: { id: true, name: true },
+  });
+  const index = rows.findIndex((row) => row.id === companyId);
+  return { prev: rows[index - 1] ?? null, next: rows[index + 1] ?? null };
+}
