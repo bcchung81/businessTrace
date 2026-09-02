@@ -7,7 +7,15 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { BatchStatus } from "@/lib/services/batchRegistry";
 import { Wordmark } from "@/components/layout/wordmark";
 
-export function AppShell({ children, batch = null }: { children: ReactNode; batch?: BatchStatus | null }) {
+export function AppShell({
+  children,
+  batch = null,
+  account,
+}: {
+  children: ReactNode;
+  batch?: BatchStatus | null;
+  account?: ReactNode;
+}) {
   return (
     <div className="flex min-h-svh flex-col overflow-x-clip bg-background text-foreground">
       <header className="sticky top-0 z-10 bg-band text-band-foreground">
@@ -18,6 +26,7 @@ export function AppShell({ children, batch = null }: { children: ReactNode; batc
           </Link>
           <BatchIndicator initial={batch} />
           <ThemeToggle />
+          {account}
         </div>
       </header>
 

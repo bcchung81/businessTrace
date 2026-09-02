@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Gothic_A1 } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
+import { SignOutForm } from "@/components/layout/sign-out-form";
+import { auth } from "@/auth";
+import { signOutAction } from "@/app/actions";
 import { readBatch } from "@/lib/services/batchRegistry";
 import "./globals.css";
 
@@ -26,7 +29,8 @@ export const metadata: Metadata = {
 const THEME_SCRIPT =
   "(function(){try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}})();";
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const session = await auth();
   return (
     <html
       lang="ko"
@@ -41,7 +45,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full">
-        <AppShell batch={readBatch()}>{children}</AppShell>
+        <AppShell batch={readBatch()} account={session?.user ? <SignOutForm action={signOutAction} /> : undefined}>
+          {children}
+        </AppShell>
       </body>
     </html>
   );

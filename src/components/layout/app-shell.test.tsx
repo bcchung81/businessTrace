@@ -106,4 +106,10 @@ describe("AppShell", () => {
 
     expect(within(screen.getByRole("banner")).getByRole("button", { name: "화면 테마 전환" })).toBeInTheDocument();
   });
+
+  test("renders the account slot in the header", () => {
+    render(<AppShell account={<button>로그아웃</button>}>본문</AppShell>);
+
+    expect(within(screen.getByRole("banner")).getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
+  });
 });
