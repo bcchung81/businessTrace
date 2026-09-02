@@ -35,7 +35,8 @@
 
 ## 3. 그 다음 (로드맵 순)
 
-- 배포(Task 16): SQLite→PostgreSQL, `batchRegistry` 를 DB 로, 스케줄러 없음(결정).
+- 배포(Task 16): SQLite→PostgreSQL, `batchRegistry` 를 DB 로 — 옮길 때 `subscribeBatch`/`publishBatchEvent`/`closeBatchStream`/`requestAbort` 인터페이스를 유지하고 이벤트 버퍼에 만료를 둔다(지금은 다음 startBatch 까지 남는다), 스케줄러 없음(결정).
+- 사용자 편의성 플랜 이월 Minor: `docs/superpowers/plans/2026-09-02-usability-improvements.md` 끝의 각주 참조.
 - 사이드카·딥리서치(3·6·15), RAGAS(15b).
 - 디자인 잔여: 홈 모바일·다크 시안, 컴포넌트 시트, 지도·지역 그리드 거취.
 

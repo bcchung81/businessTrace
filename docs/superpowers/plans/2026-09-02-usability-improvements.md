@@ -2096,3 +2096,16 @@ git commit -m "fix(register): 등록 안내를 닫으면 URL 에서도 지운다
 - 스펙 대조: H1→T1 · H2→T2 · H3→T3 · H4→T4 · H5→T5 · M1→T6 · M2→T7 · M3→T8 · M4→T9 · M5→T2(resume) · M6→T10 · L1→T11 · L2→T12 · L3→T13 · L4→T14 · L5→T15. 누락 없음
 - 타입 일관성: `BatchStatus.aborting` 은 T2 에서 정의하고 `app-shell.test.tsx` 픽스처를 같은 태스크에서 고친다. `ActionResult` 는 `[id]/actions.ts` 의 것을 T1 이 import 한다. `matchesQuery` 는 T4 에서 정의하고 랭킹 표가 같은 태스크에서 쓴다. `useUrlState` 는 T7 안에서 정의·사용된다
 - 순서 의존: T7 은 T4 의 검색 상자를 URL 로 옮기므로 T4 뒤에 한다. T9 는 T2 의 `resume`·`open` 과 무관하게 동작한다. 나머지는 독립이다
+
+## 실행 판정 각주 (2026-09-02~03 실행 시)
+
+플랜 본문과 실제 코드가 다른 곳이다. 코드가 원천이고, 아래는 왜 달라졌는지다.
+
+- **T1** `currentUserId` 를 `src/lib/services/currentUserId.ts` 로 추출해 두 actions 파일이 공유한다. 편집 다이얼로그는 제어 `open` 으로 열릴 때마다 폼·확인 상태를 초기화한다. 제외/복귀 실패 메시지를 표 아래에 보인다
+- **T2** `BatchRunner.resume` 은 `"running" | "finished"` 다 — `finished` 재생은 `router.refresh()` 를 부르지 않는다. 중단은 "중단 요청됨" 으로 즉시 표시되고 실패하면 되돌린다. `publishBatchEvent` 는 구독자 예외를 격리한다. 배지는 `<Link><span role="status">` 다
+- **T7** `useUrlState` 는 `router.replace` 가 아니라 `window.history.replaceState` 로 쓴다(동적 페이지에서 키 입력마다 RSC 재요청을 막는다). `initialFilter` prop 과 `filter=review` 링크는 없고 `review=1` 이 유일한 원천이다. 검색 상자는 로컬 초안을 쓰고 URL 이 바뀌면 렌더 중 상태 조정으로 재동기화한다
+- **T9** `pendingCompanyIds` 헬퍼를 `verdictRollup.ts` 에 두고 TDD 했다
+- **T10** `DownloadLink` 래퍼는 `flex flex-col items-start` 다 — `inline-flex` 면 `w-full` 이 무효였다
+- **T12** 플랜의 두 번째 테스트 기대값이 틀렸다. `2025-12-31T15:00Z` 는 KST 2026-01-01 이라 올해 → `01-01`
+- **T13** 검증 패널 테스트는 `explain-ui.test.tsx` 에 있다(`verification-panel.test.tsx` 는 없다)
+- 리뷰 결과 이월(Minor): `.superpowers/sdd/…/progress.md` 의 `minor (deferred)` 항목 — 배치 레지스트리 DB 이관 시 버퍼 만료 추가, `page` 키 표 간 공유, `aria-modal` 포커스 트랩, `formatBusinessNo` 3벌 중복
