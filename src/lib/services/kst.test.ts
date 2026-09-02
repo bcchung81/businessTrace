@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { kstDate, kstMonthDay } from "@/lib/services/kst";
+import { describe, expect, it, test } from "vitest";
+import { kstDate, kstDateShort, kstMonthDay } from "@/lib/services/kst";
 
 describe("kstDate", () => {
   it("rolls a UTC midnight crossing into the next KST day", () => {
@@ -9,6 +9,13 @@ describe("kstDate", () => {
   it("keeps the same day when KST doesn't cross midnight", () => {
     expect(kstDate("2026-08-26T09:00:00.000Z")).toBe("2026-08-26");
   });
+});
+
+test("kstDateShort drops the year only inside the current year", () => {
+  const now = new Date("2026-09-02T00:00:00Z");
+  expect(kstDateShort("2026-03-01T15:00:00Z", now)).toBe("03-02");
+  expect(kstDateShort("2025-12-31T15:00:00Z", now)).toBe("2026-01-01");
+  expect(kstDateShort("2025-06-01T00:00:00Z", now)).toBe("2025-06-01");
 });
 
 describe("kstMonthDay", () => {

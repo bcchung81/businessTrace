@@ -8,7 +8,7 @@ import { SeverityMark, trustLabel } from "@/components/dashboard/severity-ui";
 import { useUrlState } from "@/lib/hooks/useUrlState";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { KIND_LABEL, compareSeverity, type EventKind, type Severity } from "@/lib/services/eventRules";
-import { kstMonthDay } from "@/lib/services/kst";
+import { kstDateShort } from "@/lib/services/kst";
 
 const DAY_MS = 86_400_000;
 const PERIODS = [30, 90] as const;
@@ -80,7 +80,7 @@ export function EventTable({
   }
 
   const emptyMessage = lastEventAt
-    ? `지난 ${period}일 사건 없음 · 마지막 사건 ${kstMonthDay(lastEventAt)}`
+    ? `지난 ${period}일 사건 없음 · 마지막 사건 ${kstDateShort(lastEventAt, now)}`
     : `지난 ${period}일 사건 없음`;
 
   return (
@@ -136,7 +136,7 @@ export function EventTable({
                 {pageRows.map((row) =>
                   row.type === "event" ? (
                     <tr key={`event-${row.event.id}`} className="border-b border-hairline align-middle last:border-0">
-                      <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">{kstMonthDay(row.event.occurredAt)}</td>
+                      <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">{kstDateShort(row.event.occurredAt, now)}</td>
                       <td className="px-2 py-1.5">
                         <Link href={`/companies/${row.event.companyId}`} className="font-semibold hover:underline">
                           {row.event.companyName}
@@ -172,7 +172,7 @@ export function EventTable({
                     </tr>
                   ) : (
                     <tr key={`silence-${row.companyId}`} className="border-b border-hairline align-middle text-muted-foreground last:border-0">
-                      <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums">{row.latest ? kstMonthDay(row.latest) : "—"}</td>
+                      <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums">{row.latest ? kstDateShort(row.latest, now) : "—"}</td>
                       <td className="px-2 py-1.5">
                         <Link href={`/companies/${row.companyId}`} className="font-semibold text-foreground hover:underline">
                           {row.companyName}
@@ -183,7 +183,7 @@ export function EventTable({
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5">{KIND_LABEL.silence}</td>
                       <td className="max-w-[280px] truncate whitespace-nowrap px-2 py-1.5" colSpan={2}>
-                        {`무보도 — 최근 보도 ${row.latest ? kstMonthDay(row.latest) : "없음"}`}
+                        {`무보도 — 최근 보도 ${row.latest ? kstDateShort(row.latest, now) : "없음"}`}
                       </td>
                     </tr>
                   ),
