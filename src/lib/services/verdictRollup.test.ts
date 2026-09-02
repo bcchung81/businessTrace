@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CompanyPipelineRow } from "@/lib/repositories/companyPipeline";
 import {
+  pendingCompanyIds,
   rollupVerdicts,
   sortForTriage,
   type VerificationRow,
@@ -184,5 +185,38 @@ describe("sortForTriage", () => {
     ]);
 
     expect(sorted.map((row) => row.name)).toEqual(["마", "라", "다", "가", "나"]);
+  });
+});
+
+describe("pendingCompanyIds", () => {
+  it("returns an empty array when no companies have pending verdict", () => {
+    const companies = [
+      { companyId: 1, verdict: "verified" as const },
+      { companyId: 2, verdict: "review" as const },
+    ];
+
+    expect(pendingCompanyIds(companies)).toEqual([]);
+  });
+
+  it("returns companyIds with pending verdict", () => {
+    const companies = [
+      { companyId: 1, verdict: "verified" as const },
+      { companyId: 2, verdict: "pending" as const },
+      { companyId: 3, verdict: "review" as const },
+      { companyId: 4, verdict: "pending" as const },
+    ];
+
+    expect(pendingCompanyIds(companies)).toEqual([2, 4]);
+  });
+
+  it("preserves order of pending companies", () => {
+    const companies = [
+      { companyId: 5, verdict: "pending" as const },
+      { companyId: 1, verdict: "verified" as const },
+      { companyId: 3, verdict: "pending" as const },
+      { companyId: 2, verdict: "pending" as const },
+    ];
+
+    expect(pendingCompanyIds(companies)).toEqual([5, 3, 2]);
   });
 });

@@ -132,3 +132,10 @@ export function sortForTriage<T extends { verdict: Verdict; faithfulness: number
     return left.name.localeCompare(right.name, "ko");
   });
 }
+
+/**
+ * 미분석(pending) 판정을 받은 기업들의 companyId를 추출한다.
+ */
+export function pendingCompanyIds(companies: Array<{ companyId: number; verdict: string }>): number[] {
+  return companies.filter((entry) => entry.verdict === "pending").map((entry) => entry.companyId);
+}

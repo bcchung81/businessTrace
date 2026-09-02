@@ -23,7 +23,7 @@ import type { EventRow } from "@/lib/repositories/eventRepository";
 import { formatRunTime } from "@/lib/services/formatRunTime";
 import { KST_OFFSET_MS } from "@/lib/services/kst";
 import { buildNewsCoverage, isStale } from "@/lib/services/newsCoverage";
-import { rollupVerdicts } from "@/lib/services/verdictRollup";
+import { pendingCompanyIds, rollupVerdicts } from "@/lib/services/verdictRollup";
 import { CompanyChips } from "@/components/dashboard/company-chips";
 import { EventTable } from "@/components/dashboard/event-table";
 import { Panel } from "@/components/dashboard/panel";
@@ -122,6 +122,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     needsReview: review.needsReview,
     year,
   });
+  const pendingIds = pendingCompanyIds(verdicts.companies);
 
   return (
     <div className="flex flex-col gap-12">
@@ -152,12 +153,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 </a>
               </div>
             </details>
-            {verdicts.counts.pending > 0 ? (
+            {pendingIds.length > 0 ? (
               <Link
-                href={`/companies?year=${year}`}
+                href={`/companies?year=${year}&run=${pendingIds.join(",")}&stage=full#batch`}
                 className="flex items-center justify-center border border-primary bg-primary px-3.5 py-2.5 text-[13px] font-bold text-primary-foreground hover:bg-primary/90"
               >
-                미분석 {verdicts.counts.pending}개사 보기
+                미분석 {pendingIds.length}개사 실행
               </Link>
             ) : null}
           </>
