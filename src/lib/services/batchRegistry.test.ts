@@ -61,6 +61,29 @@ describe("batchRegistry", () => {
     expect(hasBatchEvents()).toBe(false);
   });
 
+  test("a listener that throws is dropped without taking the others or the buffer down", () => {
+    startBatch({ stage: "full", total: 1 });
+    const seen: unknown[] = [];
+    let thrown = 0;
+    subscribeBatch(() => {
+      thrown += 1;
+      throw new Error("구독자가 죽었다");
+    });
+    subscribeBatch((event) => seen.push(event));
+
+    expect(() => publishBatchEvent({ type: "batch_start", total: 1 })).not.toThrow();
+    expect(thrown).toBe(1);
+    expect(seen).toEqual([{ type: "batch_start", total: 1 }]);
+
+    publishBatchEvent({ type: "batch_done", done: 1 });
+    expect(thrown).toBe(1);
+    expect(seen).toHaveLength(2);
+    expect(hasBatchEvents()).toBe(true);
+
+    expect(() => closeBatchStream()).not.toThrow();
+    expect(seen.at(-1)).toBeNull();
+  });
+
   test("abort is a request flag on the running batch only", () => {
     expect(requestAbort()).toBe(false);
     startBatch({ stage: "full", total: 1 });

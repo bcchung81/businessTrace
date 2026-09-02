@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { BatchRunner, type BatchCandidate } from "@/components/analysis/batch-runner";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const CANDIDATES: BatchCandidate[] = [
   { id: 1, name: "㈜가", verified: false, hasWarning: true, businessNo: "1" },
@@ -41,6 +42,8 @@ function api(events: unknown[] | (() => Response)) {
 }
 
 describe("BatchRunner", () => {
+  beforeEach(() => refresh.mockClear());
+
   test("quick picks select the right companies", () => {
     render(<BatchRunner candidates={CANDIDATES} />);
     fireEvent.click(screen.getByRole("button", { name: "미분석만" }));
@@ -102,7 +105,7 @@ describe("BatchRunner", () => {
       { type: "batch_start", total: 1, stage: "full" },
       { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
     ]);
-    render(<BatchRunner candidates={CANDIDATES} resume fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    render(<BatchRunner candidates={CANDIDATES} resume="running" fetchImpl={fetchImpl as unknown as typeof fetch} />);
     await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
     expect(fetchImpl).not.toHaveBeenCalledWith("/api/analyze/batch", expect.objectContaining({ method: "POST" }));
   });
@@ -114,9 +117,23 @@ describe("BatchRunner", () => {
       { type: "company_done", companyId: 1, status: "verified" },
       { type: "batch_done", done: 1, total: 2, aborted: true },
     ]);
-    render(<BatchRunner candidates={CANDIDATES} resume fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    render(<BatchRunner candidates={CANDIDATES} resume="running" fetchImpl={fetchImpl as unknown as typeof fetch} />);
     await waitFor(() => expect(screen.getByText("중단됨")).toBeInTheDocument());
     expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  test("replaying a finished batch does not refresh the page", async () => {
+    const fetchImpl = api([
+      { type: "batch_start", total: 1, stage: "full" },
+      { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
+      { type: "company_done", companyId: 1, status: "verified", articles: 3 },
+      { type: "batch_done", done: 1, total: 1, aborted: false },
+    ]);
+    render(<BatchRunner candidates={CANDIDATES} resume="finished" fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    await waitFor(() => expect(screen.getByRole("row", { name: /㈜가/ })).toHaveTextContent("검증 통과"));
+    expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   test("shows 중단 alone while streaming and asks the server to stop on click", async () => {
@@ -176,10 +193,10 @@ describe("BatchRunner", () => {
       if (streams.length === 1) await opened;
       return stream.response;
     });
-    const runner = (resume: boolean) => <BatchRunner candidates={CANDIDATES} resume={resume} fetchImpl={fetchImpl as unknown as typeof fetch} />;
-    const { rerender } = render(runner(true));
-    rerender(runner(false));
-    rerender(runner(true));
+    const runner = (resume?: "running" | "finished") => <BatchRunner candidates={CANDIDATES} resume={resume} fetchImpl={fetchImpl as unknown as typeof fetch} />;
+    const { rerender } = render(runner("running"));
+    rerender(runner(undefined));
+    rerender(runner("running"));
     await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
 
     open();
@@ -187,6 +204,52 @@ describe("BatchRunner", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "실행" })).not.toBeInTheDocument();
+  });
+
+  test("a rejected start request hands the 실행 button back with the reason", async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new Error("네트워크가 끊겼습니다");
+    });
+    render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    fireEvent.click(screen.getByRole("button", { name: "실행" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("네트워크가 끊겼습니다"));
+    expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
+  });
+
+  test("a refused 중단 rolls the button back and says so", async () => {
+    const stream = openStream();
+    const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/analyze/batch" && init?.method === "POST") return Response.json({ batch: { stage: "full", total: 1 } }, { status: 202 });
+      if (url === "/api/analyze/batch/abort") return Response.json({ message: "unauthorized" }, { status: 401 });
+      return stream.response;
+    });
+    render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    fireEvent.click(screen.getByRole("button", { name: "실행" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "중단" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("중단 요청 실패 (401)"));
+    expect(screen.getByRole("button", { name: "중단" })).toBeEnabled();
+  });
+
+  test("a failed events subscription surfaces a message and hands the 실행 button back", async () => {
+    const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/analyze/batch" && init?.method === "POST") return Response.json({ batch: { stage: "full", total: 1 } }, { status: 202 });
+      return Response.json({ message: "unauthorized" }, { status: 401 });
+    });
+    render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    fireEvent.click(screen.getByRole("button", { name: "실행" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("진행 상태를 읽지 못했습니다 (401)"));
+    expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
+  });
+
+  test("a batch-level error lands in the log and releases the 실행 button", async () => {
+    const fetchImpl = api([
+      { type: "batch_start", total: 1, stage: "full" },
+      { type: "error", message: "배치 실패" },
+    ]);
+    render(<BatchRunner candidates={CANDIDATES} resume="running" fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    await waitFor(() => expect(screen.getByRole("log")).toHaveTextContent("배치 실패"));
+    expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
   });
 
   test("surfaces a 409 as a message instead of a stepper", async () => {

@@ -40,10 +40,12 @@ export function BatchIndicator({
 
   if (!batch) return null;
   return (
-    <Link href="/companies#batch" role="status" className="ml-auto flex items-center gap-2 border border-primary bg-primary/15 px-2.5 py-1 text-[11.5px] font-bold text-band-foreground">
-      <span aria-hidden className="h-2 w-2 animate-pulse bg-primary" />
-      {batch.total}개사 분석 중 · {batch.done}/{batch.total}
-      {batch.current ? <span className="font-medium text-band-foreground/70">{batch.current}</span> : null}
+    <Link href="/companies#batch" className="ml-auto">
+      <span role="status" className="flex items-center gap-2 border border-primary bg-primary/15 px-2.5 py-1 text-[11.5px] font-bold text-band-foreground">
+        <span aria-hidden className="h-2 w-2 animate-pulse bg-primary" />
+        {batch.total}개사 분석 중 · {batch.done}/{batch.total}
+        {batch.current ? <span className="font-medium text-band-foreground/70">{batch.current}</span> : null}
+      </span>
     </Link>
   );
 }

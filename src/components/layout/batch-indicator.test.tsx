@@ -15,7 +15,7 @@ describe("BatchIndicator", () => {
       <BatchIndicator initial={{ stage: "full", total: 4, done: 0, startedAt: "x", current: null, aborting: false }} fetchImpl={fetchImpl as unknown as typeof fetch} intervalMs={1000} />,
     );
     expect(screen.getByRole("status")).toHaveTextContent("4개사 분석 중 · 0/4");
-    expect(screen.getByRole("status")).toHaveAttribute("href", "/companies#batch");
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/companies#batch");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
@@ -24,6 +24,7 @@ describe("BatchIndicator", () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
   test("renders nothing when idle but still polls", async () => {

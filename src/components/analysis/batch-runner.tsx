@@ -22,13 +22,13 @@ export function BatchRunner({
   candidates,
   preselected = [],
   initialStage = "full",
-  resume = false,
+  resume,
   fetchImpl = fetch,
 }: {
   candidates: BatchCandidate[];
   preselected?: number[];
   initialStage?: BatchStage;
-  resume?: boolean;
+  resume?: "running" | "finished";
   fetchImpl?: typeof fetch;
 }) {
   const [selected, setSelected] = useState<Set<number>>(() => new Set(preselected));
@@ -55,7 +55,7 @@ export function BatchRunner({
       return next;
     });
 
-  async function subscribe() {
+  async function subscribe(refreshWhenDone: boolean) {
     running.current?.abort();
     const controller = new AbortController();
     running.current = controller;
@@ -76,7 +76,7 @@ export function BatchRunner({
         for (const event of parser.push(value)) current = reduceBatch(current, event);
         setState(current);
       }
-      if (current.phase === "done") router.refresh();
+      if (current.phase === "done" && refreshWhenDone) router.refresh();
     } catch (caught) {
       if (controller.signal.aborted) return;
       setError(caught instanceof Error ? caught.message : "알 수 없는 오류");
@@ -93,38 +93,57 @@ export function BatchRunner({
     setError(null);
     setState(INITIAL_BATCH);
     setBusy(true);
-    const response = await fetchImpl("/api/analyze/batch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        companyIds: [...selected],
-        stage,
-        limit,
-        force,
-        naver,
-        google,
-        ...(startDate ? { startDate } : {}),
-        ...(endDate ? { endDate } : {}),
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetchImpl("/api/analyze/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyIds: [...selected],
+          stage,
+          limit,
+          force,
+          naver,
+          google,
+          ...(startDate ? { startDate } : {}),
+          ...(endDate ? { endDate } : {}),
+        }),
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "실행 요청 실패");
+      setBusy(false);
+      return;
+    }
     if (response.status !== 202) {
       const body = (await response.json().catch(() => ({}))) as { message?: string };
       setError(body.message ?? `실행 요청 실패 (${response.status})`);
       setBusy(false);
       return;
     }
-    await subscribe();
+    await subscribe(true);
   }
 
+  /**
+   * 서버에 중단을 요청한다. 요청이 서지 않으면 표시를 되돌린다 — 멈춘 줄 알고 창을 닫으면 배치는 계속 돈다.
+   */
   async function abort() {
     setAborting(true);
-    await fetchImpl("/api/analyze/batch/abort", { method: "POST" });
+    try {
+      const response = await fetchImpl("/api/analyze/batch/abort", { method: "POST" });
+      const body = response.ok ? ((await response.json().catch(() => ({}))) as { aborting?: boolean }) : {};
+      if (body.aborting) return;
+      setAborting(false);
+      setError(`중단 요청 실패 (${response.status})`);
+    } catch (caught) {
+      setAborting(false);
+      setError(caught instanceof Error ? caught.message : "중단 요청 실패");
+    }
   }
 
   const onMount = useRef(subscribe);
 
   useEffect(() => {
-    if (resume) void onMount.current();
+    if (resume) void onMount.current(resume === "running");
     return () => running.current?.abort();
   }, [resume]);
 

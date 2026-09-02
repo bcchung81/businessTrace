@@ -34,11 +34,24 @@ export function readBatch(): BatchStatus | null {
 }
 
 /**
+ * 리스너 하나가 던져도 나머지와 버퍼는 그대로 둔다 — 끊긴 화면 하나가 배치를 죽이면 안 된다.
+ */
+function deliver(listener: Listener, event: unknown | null): boolean {
+  try {
+    listener(event);
+    return true;
+  } catch {
+    listeners.delete(listener);
+    return false;
+  }
+}
+
+/**
  * 이벤트를 버퍼에 쌓고 구독자에게 바로 넘긴다. 버퍼는 늦게 붙은 화면이 처음부터 다시 그리는 데 쓴다.
  */
 export function publishBatchEvent(event: unknown): void {
   events.push(event);
-  for (const listener of listeners) listener(event);
+  for (const listener of [...listeners]) deliver(listener, event);
 }
 
 /**
@@ -46,14 +59,16 @@ export function publishBatchEvent(event: unknown): void {
  */
 export function closeBatchStream(): void {
   streamOpen = false;
-  for (const listener of listeners) listener(null);
+  for (const listener of [...listeners]) deliver(listener, null);
   listeners.clear();
 }
 
 export function subscribeBatch(listener: Listener): () => void {
-  for (const event of events) listener(event);
+  for (const event of events) {
+    if (!deliver(listener, event)) return () => {};
+  }
   if (!streamOpen) {
-    listener(null);
+    deliver(listener, null);
     return () => {};
   }
   listeners.add(listener);
