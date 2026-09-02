@@ -62,6 +62,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
     businessNo: card.businessNo,
   }));
   const batch = readBatch();
+  const resume = batch !== null || hasBatchEvents();
   const runHref = preselected.length > 0 ? `/companies?year=${year}&run=${preselected.join(",")}#batch` : undefined;
 
   async function register(formData: FormData) {
@@ -124,12 +125,12 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
 
       <Panel id="batch" index="01" title="일괄 분석 실행" tag="실측" className="scroll-mt-20" empty="등록된 기업이 없습니다.">
         {candidates.length === 0 ? null : (
-          <details open={preselected.length > 0 || batch !== null}>
+          <details open={preselected.length > 0 || resume}>
             <summary className="cursor-pointer select-none px-3.5 py-2.5 text-[12px] font-semibold text-muted-foreground">
               대상 선택 · 실행 펼치기
             </summary>
             <div className="border-t border-hairline p-3.5">
-              <BatchRunner key={`${preselected.join(",")}-${initialStage}`} candidates={candidates} preselected={preselected} initialStage={initialStage} resume={batch !== null || hasBatchEvents()} />
+              <BatchRunner key={`${preselected.join(",")}-${initialStage}`} candidates={candidates} preselected={preselected} initialStage={initialStage} resume={resume} />
             </div>
           </details>
         )}

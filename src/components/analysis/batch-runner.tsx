@@ -15,7 +15,8 @@ const LIMITS = [10, 20, 50, 100];
 
 /**
  * 여러 기업을 골라 한 번에 돌리고 4단 스테퍼·기업별 진행·로그를 실시간으로 보인다.
- * 실행 중에는 primary 버튼이 "중단" 하나뿐이다. 화면을 떠나도 서버는 완주하고, 다시 열면 이어서 본다.
+ * 실행 중에는 primary 버튼이 "중단" 하나뿐이고, 누르면 서버가 남은 기업을 닫을 때까지 "중단 요청됨" 으로 남는다.
+ * 화면을 떠나도 서버는 완주하고, 다시 열면 이어서 본다.
  */
 export function BatchRunner({
   candidates,
@@ -39,6 +40,7 @@ export function BatchRunner({
   const [naver, setNaver] = useState(true);
   const [google, setGoogle] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [aborting, setAborting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<BatchState>(INITIAL_BATCH);
   const running = useRef<AbortController | null>(null);
@@ -82,6 +84,7 @@ export function BatchRunner({
       if (running.current === controller) {
         running.current = null;
         setBusy(false);
+        setAborting(false);
       }
     }
   }
@@ -89,6 +92,7 @@ export function BatchRunner({
   async function run() {
     setError(null);
     setState(INITIAL_BATCH);
+    setBusy(true);
     const response = await fetchImpl("/api/analyze/batch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -106,12 +110,14 @@ export function BatchRunner({
     if (response.status !== 202) {
       const body = (await response.json().catch(() => ({}))) as { message?: string };
       setError(body.message ?? `실행 요청 실패 (${response.status})`);
+      setBusy(false);
       return;
     }
     await subscribe();
   }
 
   async function abort() {
+    setAborting(true);
     await fetchImpl("/api/analyze/batch/abort", { method: "POST" });
   }
 
@@ -200,7 +206,7 @@ export function BatchRunner({
 
       <div className="flex items-center gap-3 border-t border-hairline pt-4">
         {busy ? (
-          <Button type="button" variant="signal" onClick={abort}>중단</Button>
+          <Button type="button" variant="signal" disabled={aborting} onClick={abort}>{aborting ? "중단 요청됨" : "중단"}</Button>
         ) : (
           <Button type="button" variant="signal" disabled={selected.size === 0} onClick={run}>실행</Button>
         )}

@@ -128,31 +128,64 @@ describe("BatchRunner", () => {
     expect(screen.queryByRole("button", { name: "실행" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "중단" }));
     await waitFor(() => expect(fetchImpl).toHaveBeenCalledWith("/api/analyze/batch/abort", expect.objectContaining({ method: "POST" })));
+    expect(screen.getByRole("button", { name: "중단 요청됨" })).toBeDisabled();
     stream.close();
     await waitFor(() => expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument());
   });
 
-  test("a subscription that was replaced does not clear the busy flag of the one that replaced it", async () => {
-    const streams = [openStream(), openStream()];
-    let release: () => void = () => {};
+  test("blocks a second 실행 while the start request is still in flight", async () => {
+    const stream = openStream();
+    let accept: () => void = () => {};
     const accepted = new Promise<void>((resolve) => {
-      release = resolve;
+      accept = resolve;
     });
     const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
       if (url === "/api/analyze/batch" && init?.method === "POST") {
         await accepted;
         return Response.json({ batch: { stage: "full", total: 1 } }, { status: 202 });
       }
-      return streams.shift()!.response;
+      return stream.response;
     });
     render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
 
     fireEvent.click(screen.getByRole("button", { name: "실행" }));
-    fireEvent.click(screen.getByRole("button", { name: "실행" }));
-    release();
+    expect(screen.queryByRole("button", { name: "실행" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
 
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(4));
-    await waitFor(() => expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument());
+    accept();
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
+  });
+
+  test("a failed start hands the 실행 button back", async () => {
+    const fetchImpl = vi.fn(async () => Response.json({ message: "실행할 기업이 없습니다." }, { status: 400 }));
+    render(<BatchRunner candidates={CANDIDATES} preselected={[1]} fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    fireEvent.click(screen.getByRole("button", { name: "실행" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("실행할 기업이 없습니다."));
+    expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
+  });
+
+  test("a subscription that was replaced does not clear the busy flag of the one that replaced it", async () => {
+    const streams = [openStream(), openStream()];
+    let open: () => void = () => {};
+    const opened = new Promise<void>((resolve) => {
+      open = resolve;
+    });
+    const fetchImpl = vi.fn(async () => {
+      const stream = streams.shift()!;
+      if (streams.length === 1) await opened;
+      return stream.response;
+    });
+    const runner = (resume: boolean) => <BatchRunner candidates={CANDIDATES} resume={resume} fetchImpl={fetchImpl as unknown as typeof fetch} />;
+    const { rerender } = render(runner(true));
+    rerender(runner(false));
+    rerender(runner(true));
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
+
+    open();
+    await waitFor(() => expect(streams).toHaveLength(0));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(screen.getByRole("button", { name: "중단" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "실행" })).not.toBeInTheDocument();
   });
 
