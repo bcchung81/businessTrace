@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CompanyBulkForm } from "@/components/layout/company-bulk-form";
 import { CompanyTable } from "@/components/layout/company-table";
+import { setCompanyActiveAction } from "@/app/companies/actions";
 
 type Tab = "register" | "manage";
 const TAB_LABEL: Record<Tab, string> = { register: "일괄 등록", manage: "등록된 기업" };
@@ -57,7 +58,7 @@ export function RegisterDialog({
           <CompanyBulkForm year={year} action={action} notice={notice} runHref={runHref} />
         ) : (
           <div className="max-h-[60vh] overflow-y-auto">
-            <CompanyTable companies={companies} />
+            <CompanyTable companies={companies} onSetActive={setCompanyActiveAction} />
           </div>
         )}
       </DialogContent>

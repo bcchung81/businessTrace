@@ -1,7 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, it, expect, test, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CompanyTable } from "@/components/layout/company-table";
 import type { CompanyModel } from "@/generated/prisma/models";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 function company(patch: Partial<CompanyModel> = {}): CompanyModel {
   return {
@@ -79,5 +81,14 @@ describe("CompanyTable", () => {
       "href",
       "/companies/42",
     );
+  });
+
+  test("offers 제외 for active rows and 복귀 for excluded ones", async () => {
+    const setActive = vi.fn(async () => ({ ok: true as const }));
+    render(<CompanyTable companies={[company({ id: 1, name: "㈜가", isActive: true }), company({ id: 2, name: "㈜나", isActive: false })]} onSetActive={setActive} />);
+    fireEvent.click(screen.getByRole("button", { name: "㈜가 제외" }));
+    await waitFor(() => expect(setActive).toHaveBeenCalledWith({ companyId: 1, isActive: false }));
+    fireEvent.click(screen.getByRole("button", { name: "㈜나 복귀" }));
+    await waitFor(() => expect(setActive).toHaveBeenCalledWith({ companyId: 2, isActive: true }));
   });
 });

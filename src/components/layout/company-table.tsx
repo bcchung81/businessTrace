@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Pager, paginate } from "@/components/ui/pager";
 import type { CompanyModel } from "@/generated/prisma/models";
@@ -10,7 +11,14 @@ function formatBusinessNo(businessNo: string | null) {
   return `${businessNo.slice(0, 3)}-${businessNo.slice(3, 5)}-${businessNo.slice(5)}`;
 }
 
-export function CompanyTable({ companies }: { companies: CompanyModel[] }) {
+export function CompanyTable({
+  companies,
+  onSetActive,
+}: {
+  companies: CompanyModel[];
+  onSetActive?: (input: { companyId: number; isActive: boolean }) => Promise<{ ok: boolean; message?: string }>;
+}) {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   if (companies.length === 0) {
     return (
@@ -73,11 +81,17 @@ export function CompanyTable({ companies }: { companies: CompanyModel[] }) {
                   {company.industry ?? "미분류"}
                 </td>
                 <td className="px-4 py-2.5">
-                  {company.isActive ? (
-                    <span className="text-foreground">분석 대상</span>
-                  ) : (
-                    <span className="text-muted-foreground">제외</span>
-                  )}
+                  <span className={company.isActive ? "text-foreground" : "text-muted-foreground"}>{company.isActive ? "분석 대상" : "제외"}</span>
+                  {onSetActive ? (
+                    <button
+                      type="button"
+                      aria-label={`${company.name} ${company.isActive ? "제외" : "복귀"}`}
+                      onClick={async () => { const result = await onSetActive({ companyId: company.id, isActive: !company.isActive }); if (result.ok) router.refresh(); }}
+                      className="ml-2 border-[1.5px] border-hairline px-1.5 text-[11px] font-bold text-muted-foreground hover:text-foreground"
+                    >
+                      {company.isActive ? "제외" : "복귀"}
+                    </button>
+                  ) : null}
                 </td>
               </tr>
             ))}

@@ -9,6 +9,9 @@ import { buildExplanation } from "@/lib/repositories/explainInputs";
 import { buildReviewItems } from "@/lib/repositories/reviewItems";
 import { ReviewBlock } from "@/components/company/review-block";
 import { confirmEventsAction, decideDartAction, decideFscAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction } from "@/app/companies/[id]/actions";
+import { EditCompanyDialog } from "@/components/company/edit-company-dialog";
+import { editCompanyAction, setCompanyActiveAction } from "@/app/companies/actions";
+import { parseAliases } from "@/lib/services/collectForCompany";
 import { buildDashboard } from "@/lib/services/dashboardSummary";
 import { ContributionBars } from "@/components/company/contribution-bars";
 import { OpinionCitations } from "@/components/company/opinion-citations";
@@ -61,6 +64,10 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
           >
             목록으로
           </Link>
+          <EditCompanyDialog
+            company={{ id: company.id, year: company.year, name: company.name, industry: company.industry, businessNo: company.businessNo, aliases: parseAliases(company.aliases), isActive: company.isActive }}
+            actions={{ edit: editCompanyAction, setActive: setCompanyActiveAction }}
+          />
           <RefreshSources companyId={company.id} />
         </div>
       </header>
