@@ -30,6 +30,7 @@ function splitAliases(raw: string) {
  */
 export function EditCompanyDialog({ company, actions }: { company: EditableCompany; actions: Actions }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState(company.name);
   const [industry, setIndustry] = useState(company.industry ?? "");
   const [businessNo, setBusinessNo] = useState(formatBusinessNo(company.businessNo));
@@ -37,6 +38,18 @@ export function EditCompanyDialog({ company, actions }: { company: EditableCompa
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const onOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (next) {
+      setName(company.name);
+      setIndustry(company.industry ?? "");
+      setBusinessNo(formatBusinessNo(company.businessNo));
+      setAliases(company.aliases.join(", "));
+      setConfirming(false);
+      setMessage(null);
+    }
+  };
 
   const run = (work: () => Promise<ActionResult>) => {
     setMessage(null);
@@ -53,7 +66,7 @@ export function EditCompanyDialog({ company, actions }: { company: EditableCompa
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button variant="signal-outline" size="sm">기업 편집</Button>
       </DialogTrigger>

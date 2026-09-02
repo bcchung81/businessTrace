@@ -20,6 +20,7 @@ export function CompanyTable({
 }) {
   const router = useRouter();
   const [page, setPage] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   if (companies.length === 0) {
     return (
       <div className="border border-dashed border-hairline bg-background p-8 text-center">
@@ -86,7 +87,12 @@ export function CompanyTable({
                     <button
                       type="button"
                       aria-label={`${company.name} ${company.isActive ? "제외" : "복귀"}`}
-                      onClick={async () => { const result = await onSetActive({ companyId: company.id, isActive: !company.isActive }); if (result.ok) router.refresh(); }}
+                      onClick={async () => {
+                        setError(null);
+                        const result = await onSetActive({ companyId: company.id, isActive: !company.isActive });
+                        if (result.ok) router.refresh();
+                        else setError(result.message ?? null);
+                      }}
                       className="ml-2 border-[1.5px] border-hairline px-1.5 text-[11px] font-bold text-muted-foreground hover:text-foreground"
                     >
                       {company.isActive ? "제외" : "복귀"}
@@ -99,6 +105,8 @@ export function CompanyTable({
         </table>
       </div>
       <Pager current={current} pages={pages} onPage={setPage} />
+
+      {error ? <p role="alert" className="text-[12px] font-medium text-risk">{error}</p> : null}
 
       {unverifiable > 0 ? (
         <p className="text-[12px] leading-relaxed text-muted-foreground">

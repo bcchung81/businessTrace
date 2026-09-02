@@ -51,4 +51,14 @@ describe("EditCompanyDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "분석 대상으로 복귀" }));
     await waitFor(() => expect(setActive).toHaveBeenCalledWith({ companyId: 3, isActive: true }));
   });
+
+  test("closing resets the armed exclude confirmation", async () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: "분석 대상에서 제외" }));
+    expect(screen.getByRole("button", { name: "정말 제외" })).toBeInTheDocument();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    fireEvent.click(screen.getByRole("button", { name: "기업 편집" }));
+    expect(screen.getByRole("button", { name: "분석 대상에서 제외" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "정말 제외" })).not.toBeInTheDocument();
+  });
 });

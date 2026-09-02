@@ -1,17 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import type { ActionResult } from "@/app/companies/[id]/actions";
 import { updateCompany } from "@/lib/repositories/companyRepository";
+import { currentUserId } from "@/lib/services/currentUserId";
 import { refreshSourcesFor } from "@/lib/services/refreshSources";
-
-async function currentUserId(): Promise<number | null> {
-  const session = await auth();
-  const id = Number(session?.user?.id);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
 
 function revalidate(companyId: number) {
   revalidatePath("/companies");

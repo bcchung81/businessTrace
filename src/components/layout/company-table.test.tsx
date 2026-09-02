@@ -3,7 +3,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CompanyTable } from "@/components/layout/company-table";
 import type { CompanyModel } from "@/generated/prisma/models";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 function company(patch: Partial<CompanyModel> = {}): CompanyModel {
   return {
@@ -90,5 +91,14 @@ describe("CompanyTable", () => {
     await waitFor(() => expect(setActive).toHaveBeenCalledWith({ companyId: 1, isActive: false }));
     fireEvent.click(screen.getByRole("button", { name: "㈜나 복귀" }));
     await waitFor(() => expect(setActive).toHaveBeenCalledWith({ companyId: 2, isActive: true }));
+  });
+
+  test("shows the action's error and does not refresh", async () => {
+    refresh.mockClear();
+    const setActive = vi.fn(async () => ({ ok: false as const, message: "기업을 찾을 수 없습니다." }));
+    render(<CompanyTable companies={[company({ id: 1, name: "㈜가" })]} onSetActive={setActive} />);
+    fireEvent.click(screen.getByRole("button", { name: "㈜가 제외" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("기업을 찾을 수 없습니다."));
+    expect(refresh).not.toHaveBeenCalled();
   });
 });
