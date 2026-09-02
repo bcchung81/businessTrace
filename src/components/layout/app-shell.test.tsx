@@ -3,7 +3,8 @@ import { describe, expect, test, vi } from "vitest";
 import { AppShell } from "@/components/layout/app-shell";
 
 const pathname = vi.fn(() => "/companies/28");
-vi.mock("next/navigation", () => ({ usePathname: () => pathname() }));
+const search = vi.fn(() => new URLSearchParams("year=2025"));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname(), useSearchParams: () => search() }));
 
 describe("AppShell", () => {
   test("shows the product name in the header", () => {
@@ -35,12 +36,25 @@ describe("AppShell", () => {
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
 
     expect(within(nav).getAllByRole("link")).toHaveLength(5);
-    expect(within(nav).getByRole("link", { name: /동향/ })).toHaveAttribute("href", "/dashboard");
-    expect(within(nav).getByRole("link", { name: /기업/ })).toHaveAttribute("href", "/companies");
-    expect(within(nav).getByRole("link", { name: /랭킹/ })).toHaveAttribute("href", "/ranking");
-    expect(within(nav).getByRole("link", { name: /이력/ })).toHaveAttribute("href", "/history");
-    expect(within(nav).getByRole("link", { name: /리포트/ })).toHaveAttribute("href", "/reports");
+    expect(within(nav).getByRole("link", { name: /동향/ })).toHaveAttribute("href", "/dashboard?year=2025");
+    expect(within(nav).getByRole("link", { name: /기업/ })).toHaveAttribute("href", "/companies?year=2025");
+    expect(within(nav).getByRole("link", { name: /랭킹/ })).toHaveAttribute("href", "/ranking?year=2025");
+    expect(within(nav).getByRole("link", { name: /이력/ })).toHaveAttribute("href", "/history?year=2025");
+    expect(within(nav).getByRole("link", { name: /리포트/ })).toHaveAttribute("href", "/reports?year=2025");
     expect(within(nav).getByRole("link", { name: /동향/ })).toHaveClass("lg:[writing-mode:vertical-rl]");
+  });
+
+  test("carries the year in the URL into every tab", () => {
+    render(<AppShell>본문</AppShell>);
+    const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
+    expect(within(nav).getByRole("link", { name: /동향/ })).toHaveAttribute("href", "/dashboard?year=2025");
+    expect(within(nav).getByRole("link", { name: /리포트/ })).toHaveAttribute("href", "/reports?year=2025");
+  });
+
+  test("links plainly when the URL has no year", () => {
+    search.mockReturnValueOnce(new URLSearchParams());
+    render(<AppShell>본문</AppShell>);
+    expect(within(screen.getByRole("navigation", { name: "주요 메뉴" })).getByRole("link", { name: /동향/ })).toHaveAttribute("href", "/dashboard");
   });
 
   test("numbers the tabs like a dossier index and hangs them in the margin outside the content column", () => {
