@@ -27,7 +27,7 @@ type Runner = (work: () => Promise<ActionResult>, after?: () => void) => void;
 function Item({ icon, title, badge, why, children, actions }: { icon: "alert" | "notice" | "info"; title: string; badge?: string; why: string; children: React.ReactNode; actions: React.ReactNode }) {
   const tone = icon === "alert" ? "text-risk" : icon === "notice" ? "text-review" : "text-muted-foreground";
   return (
-    <div className="grid gap-4 border-b border-hairline py-3.5 last:border-0 md:grid-cols-[200px_minmax(0,1fr)_180px]">
+    <div className="grid gap-4 border-b border-hairline py-3.5 last:border-0 @2xl:grid-cols-[200px_minmax(0,1fr)_180px]">
       <div className="flex flex-col gap-1">
         <span className={`flex items-center gap-1.5 text-[13px] font-extrabold ${tone}`}>
           <SeverityIcon severity={icon} />
@@ -37,7 +37,7 @@ function Item({ icon, title, badge, why, children, actions }: { icon: "alert" | 
         <span className="text-[11.5px] text-muted-foreground">{why}</span>
       </div>
       <div className="min-w-0">{children}</div>
-      <div className="flex flex-col items-start gap-1.5 md:items-end">{actions}</div>
+      <div className="flex flex-col items-start gap-1.5 @2xl:items-end">{actions}</div>
     </div>
   );
 }
@@ -220,7 +220,7 @@ export function ReviewItems({ companyId, year, summary, actions, onSettled }: { 
   if (summary.items.length === 0) return null;
 
   return (
-    <fieldset disabled={pending} className="flex flex-col border-0 p-0">
+    <fieldset disabled={pending} className="@container flex min-w-0 flex-col border-0 p-0">
       {error ? <p role="alert" className="border-l-2 border-risk bg-risk-surface px-3 py-2 text-[12px] font-medium text-risk">{error}</p> : null}
       {saved ? <p role="status" className="border-l-2 border-primary bg-accent px-3 py-2 text-[12px] font-medium text-accent-foreground">{saved}</p> : null}
       {summary.items.map((item, index) => {

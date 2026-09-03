@@ -34,6 +34,12 @@ const OPEN_EVENTS: ReviewSummary = {
   lastDecidedAt: null,
 };
 const NOTHING_LEFT: ReviewSummary = { items: [], lastDecidedAt: null };
+const ONE_LEFT: ReviewSummary = {
+  items: [{ kind: "open_events", events: [{ id: 22, occurredAt: "2026-08-26T00:00:00.000Z", severity: "notice", kind: "headcount_down", title: "인원 감소", evidence: [] }] }],
+  lastDecidedAt: null,
+};
+
+type Load = (companyId: number) => Promise<{ ok: true; summary: ReviewSummary | null } | { ok: false; message: string }>;
 
 type Bulk = (companyIds: number[], opened: number[]) => Promise<{ ok: true; done: number } | { ok: false; message: string }>;
 
@@ -53,8 +59,8 @@ function mockActions(): ReviewActions {
 
 const TEXT = "확인 필요 3개사";
 
-function setup(options: { kind?: TodoKind; bulk?: Bulk; summaries?: Record<number, ReviewSummary> } = {}) {
-  const load = vi.fn(async (companyId: number) => ({ ok: true as const, summary: options.summaries?.[companyId] ?? OPEN_EVENTS }));
+function setup(options: { kind?: TodoKind; bulk?: Bulk; summaries?: Record<number, ReviewSummary>; load?: Load } = {}) {
+  const load = vi.fn<Load>(options.load ?? (async (companyId: number) => ({ ok: true as const, summary: options.summaries?.[companyId] ?? OPEN_EVENTS })));
   const bulk = vi.fn<Bulk>(options.bulk ?? (async () => ({ ok: true as const, done: 2 })));
   render(<TodoDialog text={TEXT} kind={options.kind ?? "review"} rows={ROWS} year={2026} load={load} bulk={bulk} actions={mockActions()} />);
   fireEvent.click(screen.getByRole("button", { name: TEXT }));
@@ -108,6 +114,33 @@ describe("TodoDialog", () => {
     expect(screen.getByRole("button", { name: "㈜나 열기" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "선택 1건 사건 확인" })).toBeInTheDocument();
     expect(refresh).toHaveBeenCalled();
+  });
+
+  test("refreshes the open panel with whatever the batch left behind", async () => {
+    let calls = 0;
+    const load: Load = async (companyId: number) => ({ ok: true as const, summary: companyId === 5 ? (calls++ === 0 ? OPEN_EVENTS : ONE_LEFT) : NOTHING_LEFT });
+    setup({ load });
+    fireEvent.click(screen.getByRole("button", { name: "㈜가 열기" }));
+    expect(await screen.findByRole("checkbox", { name: "폐업" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1건 사건 확인" }));
+
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: "인원 감소" })).toBeInTheDocument());
+    expect(screen.queryByRole("checkbox", { name: "폐업" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "㈜가 열기" })).toBeInTheDocument();
+  });
+
+  test("a company whose evidence never loaded is not recorded as read", async () => {
+    const load: Load = async (companyId: number) => (companyId === 5 ? { ok: false as const, message: "불러오지 못했습니다" } : { ok: true as const, summary: NOTHING_LEFT });
+    const { bulk } = setup({ kind: "verification", load });
+    fireEvent.click(screen.getByRole("button", { name: "㈜가 열기" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("불러오지 못했습니다"));
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1건 검토 완료" }));
+
+    await waitFor(() => expect(bulk).toHaveBeenCalledWith([5], []));
   });
 
   test("tells the action which companies had their evidence opened", async () => {

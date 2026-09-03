@@ -77,7 +77,6 @@ export function TodoDialog({
    */
   async function openCompany(companyId: number, settled = false) {
     setSelected(companyId);
-    setOpened((prev) => new Set(prev).add(companyId));
     setLoading(true);
     setLoadError(null);
     if (!settled) setSummary(null);
@@ -89,6 +88,7 @@ export function TodoDialog({
         return;
       }
       setSummary(result.summary);
+      setOpened((prev) => new Set(prev).add(companyId));
       if (settled && (result.summary?.items.length ?? 0) === 0) setHandled((prev) => new Set(prev).add(companyId));
     } catch (caught) {
       setLoadError(caught instanceof Error ? caught.message : "확인 필요 항목을 불러오지 못했습니다");
@@ -112,20 +112,20 @@ export function TodoDialog({
   }
 
   /**
-   * 일괄 처리 뒤 확인 필요 항목이 비워진 기업만 골라낸다 — 다른 항목이 남은 기업은 목록에 둔다.
+   * 일괄 처리한 기업을 다시 읽는다 — 비워진 기업은 목록에서 빼고, 남은 기업은 열린 패널을 갱신하는 데 쓴다.
    */
-  async function drained(companyIds: number[]) {
-    const checkedRows = await Promise.all(
+  async function reread(companyIds: number[]) {
+    const rows = await Promise.all(
       companyIds.map(async (companyId) => {
         try {
           const result = await load(companyId);
-          return result.ok && (result.summary?.items.length ?? 0) === 0 ? companyId : null;
+          return result.ok ? { companyId, summary: result.summary } : null;
         } catch {
           return null;
         }
       }),
     );
-    return checkedRows.filter((companyId): companyId is number => companyId !== null);
+    return rows.filter((row): row is { companyId: number; summary: ReviewSummary | null } => row !== null);
   }
 
   async function runBulk() {
@@ -139,12 +139,14 @@ export function TodoDialog({
         setError(result.message);
         return;
       }
-      const emptied = await drained(companyIds);
+      const reloaded = await reread(companyIds);
+      const emptied = reloaded.filter((row) => (row.summary?.items.length ?? 0) === 0).map((row) => row.companyId);
       setHandled((prev) => new Set([...prev, ...emptied]));
       setChecked((prev) => new Set([...prev].filter((companyId) => !emptied.includes(companyId))));
-      if (selected !== null && emptied.includes(selected)) {
-        setSelected(null);
-        setSummary(null);
+      if (selected !== null && companyIds.includes(selected)) {
+        const fresh = reloaded.find((row) => row.companyId === selected && !emptied.includes(selected));
+        setSelected(fresh ? selected : null);
+        setSummary(fresh ? fresh.summary : null);
       }
       setNotice(`${result.done}건 처리했습니다`);
       router.refresh();

@@ -30,6 +30,17 @@ describe("ReviewBlock", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  test("folds to the width of its own column, not the screen — the popup panel is far narrower than the detail page", () => {
+    const { container } = render(
+      <ReviewBlock companyId={1} year={2026} summary={summary([{ kind: "no_business_no", npsPrefix: null }])} actions={mockActions()} />,
+    );
+    const fieldset = container.querySelector("fieldset")!;
+    expect(fieldset).toHaveClass("@container", "min-w-0");
+    const item = fieldset.firstElementChild as HTMLElement;
+    expect(item.className).toContain("@2xl:grid-cols-");
+    expect(item.className).not.toContain("md:");
+  });
+
   test("nps conflict preselects the registry-matching candidate and confirms it", async () => {
     const actions = mockActions();
     render(

@@ -66,6 +66,7 @@ export type OpenEventItem = { id: number; companyId: number; companyName: string
 
 /**
  * 사람이 정할 것이 남은 기업 수와 그 내역 — 확인 필요 블록과 같은 조건이되 가볍게 센다.
+ * 동명 충돌 사건은 경보·주의로 세지 않는다 — 일괄 확인이 건드리지 않는 것을 처리할 수 있다고 보이면 안 된다.
  * 목록은 등록 순서고 기업마다 걸린 이유를 함께 낸다 — 리본이 이 목록을 펼쳐 고르게 한다.
  */
 export async function countReviewCompanies(year: number) {
@@ -78,7 +79,7 @@ export async function countReviewCompanies(year: number) {
       businessNo: true,
       sourceSnapshots: { where: { status: "conflict" }, select: { source: true } },
       sourceDecisions: { select: { source: true } },
-      events: { where: { severity: { in: ["alert", "notice"] }, status: "open" }, select: { id: true, title: true, severity: true, occurredAt: true } },
+      events: { where: { severity: { in: ["alert", "notice"] }, status: "open", kind: { not: "source_conflict" } }, select: { id: true, title: true, severity: true, occurredAt: true } },
       analysisRuns: {
         where: { status: { not: "collected" } },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],

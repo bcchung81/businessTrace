@@ -69,6 +69,19 @@ describe("buildExplanation", () => {
     expect(explanation.sentences[0].snippets[0].link).toBe("https://n.example/1");
     expect(explanation.layers).toMatchObject({ status: "needs_review", faithfulness: 0.5, cited: 1, total: 1, counterEvidence: ["보도자료 의존"] });
     expect(explanation.layers?.claims).toHaveLength(2);
+    expect(explanation.layers).toMatchObject({ reviewedAt: null, reviewNote: null });
+  });
+
+  test("carries the review record out as an ISO string so the panel can date it", async () => {
+    const { company, run } = await seed();
+    await prisma.verificationResult.update({
+      where: { analysisRunId: run.id },
+      data: { reviewedAt: new Date("2026-09-02T04:00:00.000Z"), reviewNote: "일괄 검토 완료 · 근거 미열람" },
+    });
+
+    const explanation = (await buildExplanation(company.id))!;
+
+    expect(explanation.layers).toMatchObject({ reviewedAt: "2026-09-02T04:00:00.000Z", reviewNote: "일괄 검토 완료 · 근거 미열람" });
   });
 
   test("returns an empty explanation for a company never analysed and null for a missing one", async () => {

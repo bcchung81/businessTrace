@@ -84,6 +84,18 @@ describe("pipelineRepo", () => {
     expect(review.openEvents).toEqual([]);
   });
 
+  test("countReviewCompanies leaves namesake-conflict events out of the unconfirmed tally", async () => {
+    const c = await prisma.company.create({ data: { name: "㈜사", year: YEAR, businessNo: "6" } });
+    await prisma.sourceSnapshot.create({ data: { companyId: c.id, source: "nps", status: "conflict", payload: "{}" } });
+    await prisma.event.create({ data: { companyId: c.id, kind: "source_conflict", severity: "alert", status: "open", occurredAt: new Date("2026-08-01"), title: "동명 충돌", evidenceJson: "[]", evidenceKey: "sc1" } });
+
+    const review = await countReviewCompanies(YEAR);
+
+    expect(review.items).toEqual([{ id: c.id, name: "㈜사", reasons: ["동명 충돌 1"], failed: [] }]);
+    expect(review.openAlertNotice).toBe(0);
+    expect(review.openEvents).toEqual([]);
+  });
+
   test("countReviewCompanies names the gates an unreviewed verdict fell on", async () => {
     const user = await prisma.user.create({ data: { email: "q4@example.com", passwordHash: "x" } });
     const c = await prisma.company.create({ data: { name: "㈜바", year: YEAR, businessNo: "5" } });
