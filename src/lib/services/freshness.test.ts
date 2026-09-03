@@ -28,6 +28,8 @@ describe("buildRibbonGroups", () => {
     reviewCompanies: 12,
     openAlertNotice: 16,
     needsReview: 7,
+    firstReviewId: 5,
+    firstNeedsReviewId: 9,
     year: 2025,
   };
 
@@ -47,16 +49,17 @@ describe("buildRibbonGroups", () => {
     const [, todo] = buildRibbonGroups(base);
     expect(todo.label).toBe("할 일");
     expect(todo.items).toEqual([
-      { text: "확인 필요 12개사", href: "/companies?year=2025&review=1" },
-      { text: "미확인 경보·주의 16", href: "/dashboard?year=2025#events" },
-      { text: "검토 필요 7", href: "/ranking?year=2025" },
+      { text: "확인 필요 12개사", href: "/companies/5?queue=review" },
+      { text: "미확인 경보·주의 16", href: "/dashboard?year=2025&open=1#events" },
+      { text: "검토 필요 7", href: "/companies/9?queue=verification" },
     ]);
   });
 
   it("keeps zero counts visible and dashes out dates that never happened", () => {
-    const [dates, todo] = buildRibbonGroups({ ...base, latestNewsAt: null, fullSourceRefreshAt: null, reviewCompanies: 0, openAlertNotice: 0, needsReview: 0 });
+    const [dates, todo] = buildRibbonGroups({ ...base, latestNewsAt: null, fullSourceRefreshAt: null, reviewCompanies: 0, openAlertNotice: 0, needsReview: 0, firstReviewId: null, firstNeedsReviewId: null });
     expect(dates.items[0].text).toBe("뉴스 —");
     expect(dates.items[1].text).toBe("원천 —");
     expect(todo.items.map((i) => i.text)).toEqual(["확인 필요 0개사", "미확인 경보·주의 0", "검토 필요 0"]);
+    expect(todo.items.every((i) => i.href === undefined)).toBe(true);
   });
 });

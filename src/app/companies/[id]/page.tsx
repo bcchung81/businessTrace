@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { listEvents } from "@/lib/repositories/eventRepository";
 import { listNeighbours } from "@/lib/repositories/companyRepository";
+import { countReviewCompanies } from "@/lib/repositories/pipelineRepo";
 import { listPensionSeries } from "@/lib/repositories/pensionSnapshot";
 import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { parseId } from "@/lib/services/routeParams";
@@ -24,13 +25,27 @@ import { buildCompanyFacts } from "@/lib/services/companyFacts";
 import { RefreshSources } from "@/components/company/refresh-sources";
 import { HeadcountInline } from "@/components/dashboard/headcount-trend";
 import { Panel } from "@/components/dashboard/panel";
+import { NeighbourNav, type Queue } from "@/components/company/neighbour-nav";
 
 function formatBusinessNo(businessNo: string | null) {
   if (!businessNo) return null;
   return `${businessNo.slice(0, 3)}-${businessNo.slice(3, 5)}-${businessNo.slice(5)}`;
 }
 
-export default async function CompanyDetailPage({ params }: PageProps<"/companies/[id]">) {
+function parseQueue(value: string | string[] | undefined): Queue | null {
+  return value === "review" || value === "verification" ? value : null;
+}
+
+/**
+ * 큐를 따라 열었으면 그 큐의 id 목록을 준다 — 이전·다음이 할 일 안에서만 움직이도록.
+ */
+async function queueIds(queue: Queue | null, year: number) {
+  if (!queue) return undefined;
+  const review = await countReviewCompanies(year);
+  return queue === "review" ? review.ids : review.needsReviewIds;
+}
+
+export default async function CompanyDetailPage({ params, searchParams }: PageProps<"/companies/[id]">) {
   const companyId = parseId((await params).id);
   if (companyId === null) notFound();
   const company = await prisma.company.findUnique({ where: { id: companyId } });
@@ -44,7 +59,8 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
   const explanation = await buildExplanation(company.id);
   const review = await buildReviewItems(company.id);
   const facts = buildCompanyFacts({ businessNo: company.businessNo, snapshots });
-  const neighbours = await listNeighbours(company.id);
+  const queue = parseQueue((await searchParams).queue);
+  const neighbours = await listNeighbours(company.id, await queueIds(queue, company.year));
 
   return (
     <div className="flex flex-col gap-8">
@@ -60,23 +76,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
           <FactsTable facts={facts} businessNo={businessNo} industry={company.industry} />
         </div>
         <div className="flex items-center gap-3">
-          <nav aria-label="기업 이동" className="flex items-center gap-2 text-[12px]">
-            {neighbours.prev ? (
-              <Link href={`/companies/${neighbours.prev.id}`} className="underline-offset-2 hover:underline">
-                ← {neighbours.prev.name}
-              </Link>
-            ) : (
-              <span className="text-muted-foreground/45">← 처음</span>
-            )}
-            <span className="text-hairline">|</span>
-            {neighbours.next ? (
-              <Link href={`/companies/${neighbours.next.id}`} className="underline-offset-2 hover:underline">
-                {neighbours.next.name} →
-              </Link>
-            ) : (
-              <span className="text-muted-foreground/45">마지막 →</span>
-            )}
-          </nav>
+          <NeighbourNav prev={neighbours.prev} next={neighbours.next} position={neighbours.position} total={neighbours.total} queue={queue} />
           <Link
             href={`/companies?year=${company.year}`}
             className="text-[12px] text-muted-foreground underline-offset-2 hover:underline"

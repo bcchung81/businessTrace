@@ -46,6 +46,21 @@ describe("pipelineRepo", () => {
     const review = await countReviewCompanies(YEAR);
     expect(review).toMatchObject({ companies: 3, openAlertNotice: 1, needsReview: 0 });
     expect(review.ids.sort()).toEqual([noBizno.id, conflict.id, openAlert.id].sort());
+    expect(review.needsReviewIds).toEqual([]);
+  });
+
+  test("countReviewCompanies orders the ids by registration and names the unreviewed ones", async () => {
+    const user = await prisma.user.create({ data: { email: "q3@example.com", passwordHash: "x" } });
+    const late = await prisma.company.create({ data: { name: "㈜늦게", year: YEAR, displayOrder: 9 } });
+    const early = await prisma.company.create({ data: { name: "㈜먼저", year: YEAR, displayOrder: 1 } });
+    const unreviewed = await prisma.company.create({ data: { name: "㈜검토", year: YEAR, displayOrder: 5, businessNo: "9" } });
+    const run = await prisma.analysisRun.create({ data: { companyId: unreviewed.id, userId: user.id, model: "m", status: "completed", newsJson: "[]" } });
+    await prisma.verificationResult.create({ data: { analysisRunId: run.id, status: "needs_review", unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" } });
+
+    const review = await countReviewCompanies(YEAR);
+
+    expect(review.ids).toEqual([early.id, unreviewed.id, late.id]);
+    expect(review.needsReviewIds).toEqual([unreviewed.id]);
   });
 
   test("countReviewCompanies still sees an unreviewed verdict behind a later news-only run", async () => {
@@ -65,5 +80,6 @@ describe("pipelineRepo", () => {
 
     expect(review.needsReview).toBe(1);
     expect(review.ids).toContain(c.id);
+    expect(review.needsReviewIds).toEqual([c.id]);
   });
 });

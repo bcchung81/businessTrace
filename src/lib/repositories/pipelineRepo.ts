@@ -62,10 +62,12 @@ export async function fullSourceRefreshAt(year: number): Promise<string | null> 
 
 /**
  * 사람이 정할 것이 남은 기업 수와 그 내역 — 확인 필요 블록과 같은 조건이되 가볍게 센다.
+ * id 목록은 등록 순서다 — 리본이 첫 기업으로 보내고 상세가 그 순서로 이전·다음을 걷는다.
  */
 export async function countReviewCompanies(year: number) {
   const companies = await prisma.company.findMany({
     where: { year, isActive: true },
+    orderBy: [{ displayOrder: "asc" }, { id: "asc" }],
     select: {
       id: true,
       businessNo: true,
@@ -76,8 +78,8 @@ export async function countReviewCompanies(year: number) {
     },
   });
   const ids: number[] = [];
+  const needsReviewIds: number[] = [];
   let openAlertNotice = 0;
-  let needsReview = 0;
   for (const company of companies) {
     const decided = new Set(company.sourceDecisions.map((d) => d.source));
     const conflicts = company.sourceSnapshots.filter((s) => !decided.has(s.source)).length;
@@ -85,8 +87,8 @@ export async function countReviewCompanies(year: number) {
     const unreviewed = verification !== null && verification !== undefined && verification.status !== "verified" && !verification.reviewedAt;
     const noNews = company.analysisRuns[0]?.status === "no_news";
     openAlertNotice += company.events.length;
-    if (unreviewed) needsReview += 1;
+    if (unreviewed) needsReviewIds.push(company.id);
     if (!company.businessNo || conflicts > 0 || unreviewed || company.events.length > 0 || noNews) ids.push(company.id);
   }
-  return { companies: ids.length, ids, openAlertNotice, needsReview };
+  return { companies: ids.length, ids, openAlertNotice, needsReview: needsReviewIds.length, needsReviewIds };
 }

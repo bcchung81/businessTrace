@@ -165,8 +165,26 @@ describe("listNeighbours", () => {
     const b = await prisma.company.create({ data: { name: "나", year: 2026, displayOrder: 1, isActive: false } });
     const c = await prisma.company.create({ data: { name: "다", year: 2026, displayOrder: 2 } });
     await prisma.company.create({ data: { name: "라", year: 2025, displayOrder: 3 } });
-    expect(await listNeighbours(a.id)).toEqual({ prev: null, next: { id: c.id, name: "다" } });
-    expect(await listNeighbours(c.id)).toEqual({ prev: { id: a.id, name: "가" }, next: null });
-    expect(await listNeighbours(b.id)).toEqual({ prev: { id: a.id, name: "가" }, next: { id: c.id, name: "다" } });
+    expect(await listNeighbours(a.id)).toEqual({ prev: null, next: { id: c.id, name: "다" }, position: 1, total: 2 });
+    expect(await listNeighbours(c.id)).toEqual({ prev: { id: a.id, name: "가" }, next: null, position: 2, total: 2 });
+    expect(await listNeighbours(b.id)).toEqual({ prev: { id: a.id, name: "가" }, next: { id: c.id, name: "다" }, position: 2, total: 3 });
+  });
+
+  it("walks only the given queue when one is passed, in the queue's own order", async () => {
+    const a = await prisma.company.create({ data: { name: "가", year: 2026, displayOrder: 0 } });
+    await prisma.company.create({ data: { name: "나", year: 2026, displayOrder: 1 } });
+    const c = await prisma.company.create({ data: { name: "다", year: 2026, displayOrder: 2 } });
+    await prisma.company.create({ data: { name: "라", year: 2026, displayOrder: 3 } });
+
+    expect(await listNeighbours(c.id, [a.id, c.id])).toEqual({ prev: { id: a.id, name: "가" }, next: null, position: 2, total: 2 });
+    expect(await listNeighbours(a.id, [a.id, c.id])).toEqual({ prev: null, next: { id: c.id, name: "다" }, position: 1, total: 2 });
+  });
+
+  it("gives no neighbours and no position for a company outside the queue", async () => {
+    const a = await prisma.company.create({ data: { name: "가", year: 2026, displayOrder: 0 } });
+    const b = await prisma.company.create({ data: { name: "나", year: 2026, displayOrder: 1 } });
+    const c = await prisma.company.create({ data: { name: "다", year: 2026, displayOrder: 2 } });
+
+    expect(await listNeighbours(b.id, [a.id, c.id])).toEqual({ prev: null, next: null, position: null, total: 2 });
   });
 });

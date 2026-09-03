@@ -133,19 +133,30 @@ export async function deactivateCompany(id: number) {
 }
 
 /**
- * 상세 화면의 이전·다음 — 같은 연도의 활성 기업을 등록 순서로 본 이웃이다. 제외된 기업에서 열어도 활성 이웃을 준다.
+ * 주어진 id 목록을 그 순서 그대로 이름과 함께 낸다 — 큐의 순서는 호출자가 정한 것이지 DB 순서가 아니다.
  */
-export async function listNeighbours(companyId: number) {
+async function queueRows(ids: number[]) {
+  const rows = await prisma.company.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } });
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return ids.flatMap((id) => byId.get(id) ?? []);
+}
+
+/**
+ * 상세 화면의 이전·다음 — 같은 연도의 활성 기업을 등록 순서로 본 이웃이다. 제외된 기업에서 열어도 활성 이웃을 준다.
+ * within 을 주면 그 id 목록 안에서만 걷는다 — 할 일 큐를 하나씩 처리하는 경로다. 목록 밖 기업은 position 이 null 이다.
+ */
+export async function listNeighbours(companyId: number, within?: number[]) {
   const current = await prisma.company.findUnique({
     where: { id: companyId },
     select: { year: true, displayOrder: true, id: true },
   });
-  if (!current) return { prev: null, next: null };
-  const rows = await prisma.company.findMany({
+  if (!current) return { prev: null, next: null, position: null, total: 0 };
+  const rows = within ? await queueRows(within) : await prisma.company.findMany({
     where: { year: current.year, OR: [{ isActive: true }, { id: companyId }] },
     orderBy: [{ displayOrder: "asc" }, { id: "asc" }],
     select: { id: true, name: true },
   });
   const index = rows.findIndex((row) => row.id === companyId);
-  return { prev: rows[index - 1] ?? null, next: rows[index + 1] ?? null };
+  if (index === -1) return { prev: null, next: null, position: null, total: rows.length };
+  return { prev: rows[index - 1] ?? null, next: rows[index + 1] ?? null, position: index + 1, total: rows.length };
 }

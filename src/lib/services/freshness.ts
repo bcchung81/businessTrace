@@ -29,6 +29,8 @@ export type RibbonInput = {
   reviewCompanies: number;
   openAlertNotice: number;
   needsReview: number;
+  firstReviewId: number | null;
+  firstNeedsReviewId: number | null;
   year: number;
 };
 
@@ -74,6 +76,7 @@ function dated(label: string, iso: string | null, now: Date): RibbonItem {
 
 /**
  * 리본 두 묶음 — 이 화면의 숫자가 언제 것인지(기준일 3) 와 운영자가 지금 할 일(할 일 3).
+ * 할 일은 조치할 수 있는 자리로 보낸다 — 큐의 첫 기업 상세, 또는 미확인만 켠 사건 표.
  * 파이프라인 수치는 밴드가 보여주므로 여기 두지 않는다. 0 도 남긴다(§2-K).
  */
 export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
@@ -89,9 +92,9 @@ export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
     {
       label: "할 일",
       items: [
-        { text: `확인 필요 ${input.reviewCompanies}개사`, href: `/companies?year=${input.year}&review=1` },
-        { text: `미확인 경보·주의 ${input.openAlertNotice}`, href: `/dashboard?year=${input.year}#events` },
-        { text: `검토 필요 ${input.needsReview}`, href: `/ranking?year=${input.year}` },
+        { text: `확인 필요 ${input.reviewCompanies}개사`, href: input.firstReviewId === null ? undefined : `/companies/${input.firstReviewId}?queue=review` },
+        { text: `미확인 경보·주의 ${input.openAlertNotice}`, href: input.openAlertNotice > 0 ? `/dashboard?year=${input.year}&open=1#events` : undefined },
+        { text: `검토 필요 ${input.needsReview}`, href: input.firstNeedsReviewId === null ? undefined : `/companies/${input.firstNeedsReviewId}?queue=verification` },
       ],
     },
   ];
