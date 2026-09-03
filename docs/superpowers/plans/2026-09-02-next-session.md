@@ -48,3 +48,4 @@
 - 제출 보관함은 파일 자체를 `data/submissions/`(gitignore)에 두고 DB 에는 파일명·해시·크기·메모만.
 - prisma migrate 후에는 반드시 `npx prisma generate` + `npm run db:migrate:test` + **dev 서버 재시작**(클라이언트 싱글턴 캐시).
 - 뉴스 중복 제거는 언론사 내에서만 — 매체 수 자체가 신호라는 판단.
+- 대시보드 사건 표에서 경보·주의를 바로 확인한다(2026-09-03, 사용자 결정 — 이전 '상세에서만' 결정 번복).

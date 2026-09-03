@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { confirmEventsAction } from "@/app/companies/[id]/actions";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import { SeverityMark, trustLabel } from "@/components/dashboard/severity-ui";
 import { useUrlState } from "@/lib/hooks/useUrlState";
@@ -15,6 +18,8 @@ const PERIODS = [30, 90] as const;
 const DEFAULTS = { period: "30", open: "", page: "0" };
 
 type Silence = { companyId: number; companyName: string; latest: string | null };
+type ConfirmInput = { companyId: number; eventIds: number[]; action: "acknowledge" };
+type Confirm = (input: ConfirmInput) => Promise<{ ok: true } | { ok: false; message: string }>;
 type DisplayRow = { type: "event"; event: EventRow } | ({ type: "silence" } & Silence);
 
 function severityOf(row: DisplayRow): Severity {
@@ -28,7 +33,7 @@ function dateOf(row: DisplayRow): string {
 /**
  * 90일치 사건을 받아 기본 30일로 자르고 종류·미확인 여부로 거른다 — 기간·미확인·페이지는 URL 에 남는다.
  * 무보도 기업은 기간과 무관하게 정보 행으로 늘 섞는다 — 조용함도 살펴야 할 상태다.
- * 확인·조치는 기업 상세의 타임라인에서만 한다 — 이 표는 훑어보는 화면이다.
+ * 경보·주의는 여기서 바로 확인한다 — 훑다가 찾은 것을 다른 화면까지 들고 가지 않는다.
  */
 export function EventTable({
   events,
@@ -36,15 +41,22 @@ export function EventTable({
   pageSize = 20,
   lastEventAt = null,
   now = new Date(),
+  onConfirm = confirmEventsAction,
 }: {
   events: EventRow[];
   silence: Silence[];
   pageSize?: number;
   lastEventAt?: string | null;
   now?: Date;
+  onConfirm?: Confirm;
 }) {
+  const router = useRouter();
   const [url, setUrl] = useUrlState(DEFAULTS);
   const [hiddenKinds, setHiddenKinds] = useState<Set<EventKind>>(new Set());
+  const [pending, setPending] = useState<Set<number>>(new Set());
+  const [acknowledged, setAcknowledged] = useState<Set<number>>(new Set());
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const period: (typeof PERIODS)[number] = url.period === "90" ? 90 : 30;
   const openOnly = url.open === "1";
@@ -56,8 +68,9 @@ export function EventTable({
   const availableKinds: EventKind[] = [];
   for (const event of periodFiltered) if (!availableKinds.includes(event.kind)) availableKinds.push(event.kind);
 
+  const statusOf = (event: EventRow) => (acknowledged.has(event.id) ? "acknowledged" : event.status);
   const kindFiltered = periodFiltered.filter((event) => !hiddenKinds.has(event.kind));
-  const finalEvents = openOnly ? kindFiltered.filter((event) => event.status === "open") : kindFiltered;
+  const finalEvents = openOnly ? kindFiltered.filter((event) => statusOf(event) === "open") : kindFiltered;
 
   const combined: DisplayRow[] = [
     ...finalEvents.map((event): DisplayRow => ({ type: "event", event })),
@@ -68,6 +81,26 @@ export function EventTable({
   const pages = Math.max(1, Math.ceil(combined.length / pageSize));
   const current = Math.min(page, pages - 1);
   const pageRows = combined.slice(current * pageSize, current * pageSize + pageSize);
+
+  function withoutId(ids: Set<number>, id: number) {
+    const next = new Set(ids);
+    next.delete(id);
+    return next;
+  }
+
+  async function confirm(event: EventRow) {
+    setPending((prev) => new Set(prev).add(event.id));
+    const result = await onConfirm({ companyId: event.companyId, eventIds: [event.id], action: "acknowledge" });
+    setPending((prev) => withoutId(prev, event.id));
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+    setError(null);
+    setAcknowledged((prev) => new Set(prev).add(event.id));
+    setNotice("확인했습니다");
+    router.refresh();
+  }
 
   function toggleKind(kind: EventKind) {
     setHiddenKinds((prev) => {
@@ -105,14 +138,18 @@ export function EventTable({
           </fieldset>
         ) : null}
 
-        <label className="ml-auto flex items-center gap-1 font-semibold">
-          <input
-            type="checkbox"
-            checked={openOnly}
-            onChange={(event) => setUrl({ open: event.target.checked ? "1" : "", page: "0" })}
-          />
-          미확인만
-        </label>
+        <div className="ml-auto flex items-center gap-3">
+          {error ? <span role="alert" className="font-medium text-risk">{error}</span> : null}
+          {notice && !error ? <span role="status" className="text-muted-foreground">{notice}</span> : null}
+          <label className="flex items-center gap-1 font-semibold">
+            <input
+              type="checkbox"
+              checked={openOnly}
+              onChange={(event) => setUrl({ open: event.target.checked ? "1" : "", page: "0" })}
+            />
+            미확인만
+          </label>
+        </div>
       </div>
 
       {combined.length === 0 ? (
@@ -130,6 +167,7 @@ export function EventTable({
                   <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">종류</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">사건</th>
                   <th scope="col" className="px-2 py-2 text-left font-semibold">근거</th>
+                  <th scope="col" className="whitespace-nowrap px-2 py-2 text-left font-semibold">조치</th>
                 </tr>
               </thead>
               <tbody>
@@ -169,6 +207,15 @@ export function EventTable({
                           )
                         )}
                       </td>
+                      <td className="whitespace-nowrap px-2 py-1.5">
+                        {(row.event.severity === "alert" || row.event.severity === "notice") && statusOf(row.event) === "open" ? (
+                          <Button variant="signal-outline" size="sm" aria-label={`${row.event.title} 확인`} disabled={pending.has(row.event.id)} onClick={() => confirm(row.event)}>
+                            확인
+                          </Button>
+                        ) : acknowledged.has(row.event.id) ? (
+                          <span className="text-[11px] text-muted-foreground">확인됨</span>
+                        ) : null}
+                      </td>
                     </tr>
                   ) : (
                     <tr key={`silence-${row.companyId}`} className="border-b border-hairline align-middle text-muted-foreground last:border-0">
@@ -185,6 +232,7 @@ export function EventTable({
                       <td className="max-w-[280px] truncate whitespace-nowrap px-2 py-1.5" colSpan={2}>
                         {`무보도 — 최근 보도 ${row.latest ? kstDateShort(row.latest, now) : "없음"}`}
                       </td>
+                      <td className="px-2 py-1.5" />
                     </tr>
                   ),
                 )}

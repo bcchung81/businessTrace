@@ -1,8 +1,11 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi, type MockInstance } from "vitest";
 
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
+
 let search = new URLSearchParams();
-vi.mock("next/navigation", () => ({ usePathname: () => "/x", useSearchParams: () => search }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/x", useSearchParams: () => search, useRouter: () => ({ refresh }) }));
+vi.mock("@/app/companies/[id]/actions", () => ({ confirmEventsAction: vi.fn() }));
 
 import { EventTable } from "@/components/dashboard/event-table";
 import type { EventRow } from "@/lib/repositories/eventRepository";
@@ -17,6 +20,7 @@ function goto(query: string) {
 
 beforeEach(() => {
   replace = vi.spyOn(window.history, "replaceState");
+  refresh.mockClear();
   goto("");
 });
 
@@ -44,12 +48,66 @@ describe("EventTable", () => {
     expect(within(rows[0]).getAllByRole("cell")[0]).toHaveClass("whitespace-nowrap");
   });
 
-  test("has no action column — review happens on the company page", () => {
-    render(<EventTable events={[row({})]} silence={[]} now={NOW} />);
+  test("offers 확인 on open alerts and notices only — never on positives, settled rows or silence", () => {
+    render(
+      <EventTable
+        events={[
+          row({ id: 1, severity: "alert", status: "open", title: "폐업 위험" }),
+          row({ id: 2, severity: "positive", status: "open", title: "수상" }),
+          row({ id: 3, severity: "notice", status: "acknowledged", title: "부정 보도" }),
+        ]}
+        silence={[{ companyId: 9, companyName: "조용한회사", latest: null }]}
+        now={NOW}
+      />,
+    );
 
-    expect(screen.queryByRole("columnheader", { name: "조치" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "확인" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "딥노이드" })).toHaveAttribute("href", "/companies/1");
+    expect(screen.getByRole("columnheader", { name: "조치" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "폐업 위험 확인" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "수상 확인" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "부정 보도 확인" })).not.toBeInTheDocument();
+    expect(within(screen.getByRole("row", { name: /조용한회사/ })).queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "딥노이드" })[0]).toHaveAttribute("href", "/companies/1");
+  });
+
+  test("confirms one open alert from the table, says so and refreshes the page", async () => {
+    const onConfirm = vi.fn(async () => ({ ok: true as const }));
+    render(<EventTable events={[row({ id: 5, severity: "alert", status: "open", title: "폐업 위험" })]} silence={[]} now={NOW} onConfirm={onConfirm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "폐업 위험 확인" }));
+
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledWith({ companyId: 1, eventIds: [5], action: "acknowledge" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("확인했습니다");
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
+  test("drops the confirmed row while 미확인만 is on and marks it 확인됨 while it is off", async () => {
+    const onConfirm = vi.fn(async () => ({ ok: true as const }));
+    const events = [row({ id: 5, severity: "alert", status: "open", title: "폐업 위험" })];
+    goto("open=1");
+    const view = render(<EventTable events={events} silence={[]} now={NOW} onConfirm={onConfirm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "폐업 위험 확인" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "폐업 위험 확인" })).not.toBeInTheDocument());
+    expect(screen.getByRole("status")).toHaveTextContent("확인했습니다");
+
+    goto("");
+    view.unmount();
+    render(<EventTable events={events} silence={[]} now={NOW} onConfirm={onConfirm} />);
+    fireEvent.click(screen.getByRole("button", { name: "폐업 위험 확인" }));
+
+    expect(await screen.findByText("확인됨")).toBeInTheDocument();
+    expect(screen.getByRole("row", { name: /폐업 위험/ })).toBeInTheDocument();
+  });
+
+  test("keeps the row and says why when the confirm is refused", async () => {
+    const onConfirm = vi.fn(async () => ({ ok: false as const, message: "unauthorized" }));
+    render(<EventTable events={[row({ id: 5, severity: "alert", status: "open", title: "폐업 위험" })]} silence={[]} now={NOW} onConfirm={onConfirm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "폐업 위험 확인" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("unauthorized");
+    expect(screen.getByRole("button", { name: "폐업 위험 확인" })).toBeInTheDocument();
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   test("wraps long event titles instead of truncating, but keeps evidence on one line with the full text on hover", () => {
