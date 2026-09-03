@@ -87,6 +87,28 @@ function menu(choices: RibbonChoice[]) {
 }
 
 /**
+ * 미확인 사건을 기업 단위로 묶는다 — 같은 기업이 사건 수만큼 반복되면 고를 목록이 아니라 로그가 된다.
+ * 첫 사건(최신)의 제목을 대표로 쓰고 건수를 앞에 적는다.
+ */
+function groupOpenEvents(events: OpenEventItem[]): Array<{ href: string; label: string; note: string }> {
+  const byCompany = new Map<number, { label: string; count: number; alerts: number; title: string; severity: OpenEventItem["severity"] }>();
+  for (const event of events) {
+    const entry = byCompany.get(event.companyId);
+    if (entry) {
+      entry.count += 1;
+      if (event.severity === "alert") entry.alerts += 1;
+    } else {
+      byCompany.set(event.companyId, { label: event.companyName, count: 1, alerts: event.severity === "alert" ? 1 : 0, title: event.title, severity: event.severity });
+    }
+  }
+  return [...byCompany.entries()].map(([companyId, entry]) => ({
+    href: `/companies/${companyId}?queue=review`,
+    label: entry.label,
+    note: entry.count === 1 ? `${entry.severity === "alert" ? "경보" : "주의"} · ${entry.title}` : `${entry.count}건(경보 ${entry.alerts}) · ${entry.title}`,
+  }));
+}
+
+/**
  * 리본 두 묶음 — 이 화면의 숫자가 언제 것인지(기준일 3) 와 운영자가 지금 할 일(할 일 3).
  * 할 일은 처리할 목록을 그 자리에서 펼치고, 고른 기업의 상세로 큐를 달고 보낸다.
  * 파이프라인 수치는 밴드가 보여주므로 여기 두지 않는다. 0 도 남긴다(§2-K).
@@ -110,7 +132,7 @@ export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
         },
         {
           text: `미확인 경보·주의 ${input.openAlertNotice}`,
-          menu: menu(input.openEvents.map((event) => ({ href: `/companies/${event.companyId}?queue=review`, label: event.companyName, note: `${event.severity === "alert" ? "경보" : "주의"} · ${event.title}` }))),
+          menu: menu(groupOpenEvents(input.openEvents)),
         },
         {
           text: `검토 필요 ${input.needsReview}`,

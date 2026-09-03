@@ -87,7 +87,7 @@ export function RibbonMenu({ text, choices }: { text: string; choices: RibbonCho
         >
           {choices.map((choice, index) => (
             <Link
-              key={choice.href}
+              key={`${choice.href}#${index}`}
               id={optionId(index)}
               role="option"
               aria-selected={index === highlight}

@@ -77,4 +77,19 @@ describe("buildRibbonGroups", () => {
     expect(todo.items.map((i) => i.text)).toEqual(["확인 필요 0개사", "미확인 경보·주의 0", "검토 필요 0"]);
     expect(todo.items.every((i) => i.href === undefined && i.menu === undefined)).toBe(true);
   });
+
+  it("groups open events by company so one company is one choice, with the count and the latest title", () => {
+    const [, todo] = buildRibbonGroups({
+      ...base,
+      openEvents: [
+        { id: 21, companyId: 9, companyName: "㈜마", title: "최신 경보", severity: "alert" as const },
+        { id: 20, companyId: 9, companyName: "㈜마", title: "이전 주의", severity: "notice" as const },
+        { id: 19, companyId: 7, companyName: "㈜다", title: "폐업 위험", severity: "alert" as const },
+      ],
+    });
+    expect(todo.items[1].menu).toEqual([
+      { href: "/companies/9?queue=review", label: "㈜마", note: "2건(경보 1) · 최신 경보" },
+      { href: "/companies/7?queue=review", label: "㈜다", note: "경보 · 폐업 위험" },
+    ]);
+  });
 });
