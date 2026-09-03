@@ -95,6 +95,21 @@ describe("dashboard todo actions", () => {
     expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: settled.id } })).reviewNote).toBeNull();
   });
 
+  test("ties on the creation time are broken by the larger id, as the detail screen does", async () => {
+    const user = await seedUser();
+    const company = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
+    const first = await seedRun(company.id, user.id, "2026-08-20T00:00:00.000Z", { status: "needs_review" });
+    const second = await seedRun(company.id, user.id, "2026-08-20T00:00:00.000Z", { status: "needs_review" });
+    expect(second.id).toBeGreaterThan(first.id);
+
+    expect(await markVerificationsReviewedAction([company.id])).toEqual({ ok: true, done: 1 });
+
+    expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: second.id } })).reviewNote).toBe("일괄 검토 완료");
+    expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: first.id } })).reviewedAt).toBeNull();
+    const summary = await loadReviewItemsAction(company.id);
+    expect(summary.ok && summary.summary?.items.some((item) => item.kind === "verification")).toBe(false);
+  });
+
   test("an empty selection settles nothing", async () => {
     expect(await confirmCompanyEventsAction([])).toEqual({ ok: true, done: 0 });
     expect(await markVerificationsReviewedAction([])).toEqual({ ok: true, done: 0 });

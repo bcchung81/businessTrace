@@ -137,6 +137,22 @@ describe("buildReviewItems", () => {
     expect(summary.items.map((i) => i.kind)).toContain("verification");
   });
 
+  test("two runs made in the same millisecond are settled by the larger id — the later one wins", async () => {
+    const user = await prisma.user.create({ data: { email: "d@example.com", passwordHash: "x" } });
+    const c = await company();
+    const at = new Date("2026-08-20T00:00:00.000Z");
+    const earlier = await prisma.analysisRun.create({ data: { companyId: c.id, userId: user.id, model: "m", status: "completed", newsJson: "[]", createdAt: at } });
+    const later = await prisma.analysisRun.create({ data: { companyId: c.id, userId: user.id, model: "m", status: "completed", newsJson: "[]", createdAt: at } });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: earlier.id, status: "needs_review", unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" },
+    });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: later.id, status: "verified", unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" },
+    });
+
+    expect((await buildReviewItems(c.id))!.items.map((i) => i.kind)).not.toContain("verification");
+  });
+
   test("flags a missing business number with the NPS prefix pre-filled, and returns nothing to review when clean", async () => {
     const c = await company({ businessNo: null });
     await prisma.sourceSnapshot.create({ data: { companyId: c.id, source: "nps", status: "found", summary: "가입자 8명", payload: JSON.stringify({ businessNoPrefix: "625870" }) } });

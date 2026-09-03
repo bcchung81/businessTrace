@@ -61,6 +61,7 @@ describe("TodoDialog", () => {
   test("opens the list in place instead of navigating away", () => {
     setup();
     expect(screen.getByRole("dialog", { name: "확인 필요 3개사" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "처리할 기업" })).toBeInTheDocument();
     for (const row of ROWS) {
       expect(screen.getByRole("button", { name: `${row.name} 열기` })).toBeInTheDocument();
       expect(screen.getByText(row.note)).toBeInTheDocument();
@@ -74,6 +75,8 @@ describe("TodoDialog", () => {
     await waitFor(() => expect(load).toHaveBeenCalledWith(5));
     expect(await screen.findByRole("checkbox", { name: "폐업" })).toBeInTheDocument();
     expect(screen.getByText("미확인 사건")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "㈜가 열기" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("button", { name: "㈜나 열기" })).not.toHaveAttribute("aria-current");
   });
 
   test("settles the checked companies at once and drops them from the list", async () => {

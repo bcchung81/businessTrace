@@ -141,7 +141,7 @@ export function TodoDialog({
           <DialogTitle>{text}</DialogTitle>
         </DialogHeader>
         <div className="grid max-h-[60vh] gap-4 md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-          <ul role="listbox" aria-label="처리할 기업" className="min-h-0 overflow-y-auto border-[1.5px] border-hairline">
+          <ul role="list" aria-label="처리할 기업" className="min-h-0 overflow-y-auto border-[1.5px] border-hairline">
             {visible.map((row) => (
               <li key={row.companyId} className={`flex items-start gap-2.5 border-b border-hairline px-2.5 py-2 last:border-0 ${selected === row.companyId ? "bg-secondary" : ""}`}>
                 {row.selectable ? (
