@@ -12,7 +12,7 @@ const facts = buildPipelineFacts({
 
 describe("PipelineBand", () => {
   test("draws four nodes joined by plain links — no captions on the connectors", () => {
-    render(<PipelineBand year={2025} facts={facts} summary={<p>요약</p>} aside={<a href="/companies">미분석 2개사 보기</a>} search={<div data-testid="search" />} />);
+    render(<PipelineBand year={2025} facts={facts} summary={<p>요약</p>} aside={<a href="/companies">미분석 2개사 보기</a>} />);
     expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
     const list = screen.getByRole("list", { name: "분석 파이프라인" });
     const nodes = within(list).getAllByRole("listitem");
@@ -25,7 +25,7 @@ describe("PipelineBand", () => {
   });
 
   test("shows one support line per node, not two", () => {
-    render(<PipelineBand year={2025} facts={facts} summary={<p>요약</p>} aside={<a href="/companies">미분석 2개사 보기</a>} search={<div data-testid="search" />} />);
+    render(<PipelineBand year={2025} facts={facts} summary={<p>요약</p>} aside={<a href="/companies">미분석 2개사 보기</a>} />);
     const nodes = within(screen.getByRole("list", { name: "분석 파이프라인" })).getAllByRole("listitem");
 
     expect(within(nodes[0]).getByText(/보도 30일 초과/)).toBeInTheDocument();
@@ -34,17 +34,16 @@ describe("PipelineBand", () => {
     expect(within(nodes[3]).queryByText(/결측/)).not.toBeInTheDocument();
   });
 
-  test("keeps the search slot, the summary and the aside — drops the outputs row", () => {
-    render(<PipelineBand year={2025} facts={facts} summary={<p>요약</p>} aside={<a href="/companies">미분석 2개사 보기</a>} search={<div data-testid="search" />} />);
+  test("keeps the summary and the aside — drops the outputs row", () => {
+    render(<PipelineBand year={2025} facts={facts} summary={<p>요약</p>} aside={<a href="/companies">미분석 2개사 보기</a>} />);
     expect(screen.queryByText(/사건 18건/)).not.toBeInTheDocument();
     expect(screen.queryByText("산출")).not.toBeInTheDocument();
-    expect(screen.getByTestId("search")).toBeInTheDocument();
     expect(screen.getByText("요약")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "미분석 2개사 보기" })).toBeInTheDocument();
   });
 
   test("names the cohort without saying the word pipeline — the diagram says it", () => {
-    render(<PipelineBand year={2025} facts={facts} summary={<p>요약</p>} aside={null} search={<div data-testid="search" />} />);
+    render(<PipelineBand year={2025} facts={facts} summary={<p>요약</p>} aside={null} />);
 
     expect(screen.getByText("2025년 우수기업 · 지난 30일")).toBeInTheDocument();
   });

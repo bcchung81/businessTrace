@@ -10,10 +10,12 @@ import { Wordmark } from "@/components/layout/wordmark";
 export function AppShell({
   children,
   batch = null,
+  tools,
   account,
 }: {
   children: ReactNode;
   batch?: BatchStatus | null;
+  tools?: ReactNode;
   account?: ReactNode;
 }) {
   return (
@@ -25,8 +27,11 @@ export function AppShell({
             <span className="hidden text-[11px] text-band-foreground/65 sm:inline">우수기업 선정 근거 관리</span>
           </Link>
           <BatchIndicator initial={batch} />
-          <ThemeToggle />
-          {account}
+          <div className="ml-auto flex items-center gap-2">
+            {tools}
+            <ThemeToggle />
+            {account}
+          </div>
         </div>
       </header>
 

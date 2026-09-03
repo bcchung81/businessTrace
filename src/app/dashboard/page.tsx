@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { listCompanies, listYears } from "@/lib/repositories/companyRepository";
 import { listSelections } from "@/lib/repositories/selectionRecord";
 import { periodEndYm, periodLabel } from "@/lib/services/periods";
@@ -18,14 +17,12 @@ import { countReviewCompanies, fullSourceRefreshAt, summariseCells, summariseCol
 import { buildPipelineFacts } from "@/lib/services/pipelineFacts";
 import { PipelineBand } from "@/components/dashboard/pipeline-band";
 import { CompanySearch } from "@/components/dashboard/company-search";
-import { DownloadLink } from "@/components/ui/download-link";
 import { buildCoMentions } from "@/lib/services/coMention";
 import { getDashboardSummary } from "@/lib/services/dashboardSummary";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import { formatRunTime } from "@/lib/services/formatRunTime";
-import { KST_OFFSET_MS } from "@/lib/services/kst";
 import { buildNewsCoverage, isStale } from "@/lib/services/newsCoverage";
-import { pendingCompanyIds, rollupVerdicts } from "@/lib/services/verdictRollup";
+import { rollupVerdicts } from "@/lib/services/verdictRollup";
 import { CompanyChips } from "@/components/dashboard/company-chips";
 import { EventTable } from "@/components/dashboard/event-table";
 import { Panel } from "@/components/dashboard/panel";
@@ -62,10 +59,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * DAY_MS);
   const since90 = new Date(now.getTime() - 90 * DAY_MS);
-  const kstNow = new Date(now.getTime() + KST_OFFSET_MS);
-  const thisMonth = { year: kstNow.getUTCFullYear(), month: kstNow.getUTCMonth() + 1 };
-  const lastMonthDate = new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth() - 1, 1));
-  const lastMonth = { year: lastMonthDate.getUTCFullYear(), month: lastMonthDate.getUTCMonth() + 1 };
 
   const companies = await listCompanies({ year });
   const registry = companies.map((company) => ({ id: company.id, name: company.name, businessNo: company.businessNo ?? null }));
@@ -124,7 +117,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     needsReview: review.needsReview,
     year,
   });
-  const pendingIds = pendingCompanyIds(verdicts.companies);
 
   return (
     <div className="flex flex-col gap-12">
@@ -140,32 +132,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <b className="font-black text-band-foreground">{eventSummary.open}</b>
           </p>
         }
-        aside={
-          <>
-            <details className="group relative">
-              <summary className="flex cursor-pointer select-none items-center justify-center border border-band-foreground/40 px-3.5 py-2.5 text-[13px] font-bold">
-                월간 문서 ▾
-              </summary>
-              <div className="absolute left-0 right-0 top-full z-10 mt-1 flex flex-col overflow-hidden border border-band-foreground/40 bg-band">
-                <DownloadLink href={`/api/reports/monthly?cohort=${year}&year=${thisMonth.year}&month=${thisMonth.month}`} className="text-left w-full px-3.5 py-2 text-[12px] hover:bg-band-foreground/10">
-                  이번 달
-                </DownloadLink>
-                <DownloadLink href={`/api/reports/monthly?cohort=${year}&year=${lastMonth.year}&month=${lastMonth.month}`} className="text-left w-full px-3.5 py-2 text-[12px] hover:bg-band-foreground/10">
-                  지난 달
-                </DownloadLink>
-              </div>
-            </details>
-            {pendingIds.length > 0 ? (
-              <Link
-                href={`/companies?year=${year}&run=${pendingIds.join(",")}&stage=full#batch`}
-                className="flex items-center justify-center border border-primary bg-primary px-3.5 py-2.5 text-[13px] font-bold text-primary-foreground hover:bg-primary/90"
-              >
-                미분석 {pendingIds.length}개사 실행
-              </Link>
-            ) : null}
-          </>
-        }
-        search={<CompanySearch year={year} companies={registry} />}
+        aside={<CompanySearch year={year} companies={registry} />}
       />
 
       <Ribbon groups={ribbon} className="-mt-12" />

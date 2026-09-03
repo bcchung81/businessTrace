@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Gothic_A1 } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
+import { HeaderTools } from "@/components/layout/header-tools";
 import { SignOutForm } from "@/components/layout/sign-out-form";
 import { auth } from "@/auth";
 import { signOutAction } from "@/app/actions";
 import { readBatch } from "@/lib/services/batchRegistry";
+import { loadHeaderTools } from "@/lib/services/headerTools";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +33,7 @@ const THEME_SCRIPT =
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const session = await auth();
+  const tools = session?.user ? await loadHeaderTools() : null;
   return (
     <html
       lang="ko"
@@ -45,7 +48,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full">
-        <AppShell batch={readBatch()} account={session?.user ? <SignOutForm action={signOutAction} /> : undefined}>
+        <AppShell
+          batch={readBatch()}
+          tools={tools ? <HeaderTools tools={tools} /> : undefined}
+          account={session?.user ? <SignOutForm action={signOutAction} /> : undefined}
+        >
           {children}
         </AppShell>
       </body>

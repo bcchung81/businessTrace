@@ -11,13 +11,11 @@ export function PipelineBand({
   facts,
   summary,
   aside,
-  search,
 }: {
   year: number;
   facts: PipelineFacts;
   summary: ReactNode;
   aside: ReactNode;
-  search: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-5 bg-band px-6 pb-6 pt-7 text-band-foreground">
@@ -26,7 +24,7 @@ export function PipelineBand({
           <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">{year}년 우수기업 · 지난 30일</span>
           {summary}
         </div>
-        <div className="flex gap-2">{aside}</div>
+        <div className="flex flex-wrap items-center gap-2">{aside}</div>
       </div>
 
       <ol aria-label="분석 파이프라인" className="flex items-stretch">
@@ -50,8 +48,6 @@ export function PipelineBand({
           </li>
         ))}
       </ol>
-
-      <div className="flex justify-end">{search}</div>
     </div>
   );
 }
