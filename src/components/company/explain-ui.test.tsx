@@ -85,6 +85,8 @@ describe("VerificationPanel", () => {
       { claim: "120억 유치", supported: true, evidence: "기사 1" },
       { claim: "흑자 전환", supported: false, evidence: "" },
     ],
+    reviewedAt: null,
+    reviewNote: null,
   };
 
   test("is a badge until clicked, then a side panel with the four layers and thresholds", () => {
@@ -103,6 +105,21 @@ describe("VerificationPanel", () => {
     expect(within(panel).getByText(/흑자 전환/)).toBeInTheDocument();
     fireEvent.click(within(panel).getByRole("button", { name: "닫기" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  test("carries the review record beside the badge — a bulk tick must not be invisible", () => {
+    render(<VerificationPanel layers={{ ...layers, reviewedAt: "2026-09-02T04:00:00.000Z", reviewNote: "일괄 검토 완료 · 근거 미열람" }} />);
+    expect(screen.getByText("검토 2026-09-02 · 일괄 검토 완료 · 근거 미열람")).toBeInTheDocument();
+  });
+
+  test("drops the note but keeps the date when the reviewer left none", () => {
+    render(<VerificationPanel layers={{ ...layers, reviewedAt: "2026-09-02T04:00:00.000Z", reviewNote: null }} />);
+    expect(screen.getByText("검토 2026-09-02")).toBeInTheDocument();
+  });
+
+  test("says nothing about a review that never happened", () => {
+    render(<VerificationPanel layers={layers} />);
+    expect(screen.queryByText(/^검토 2026/)).not.toBeInTheDocument();
   });
 
   test("names the failed gate so the reader knows why it is 검토 필요", () => {

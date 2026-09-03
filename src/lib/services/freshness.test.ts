@@ -29,10 +29,10 @@ describe("buildRibbonGroups", () => {
     openAlertNotice: 16,
     needsReview: 7,
     reviewItems: [
-      { id: 5, name: "㈜가", reasons: ["사업자번호 미확보", "동명 충돌 1"] },
-      { id: 9, name: "㈜나", reasons: ["검토 필요"] },
+      { id: 5, name: "㈜가", reasons: ["사업자번호 미확보", "동명 충돌 1"], failed: [] },
+      { id: 9, name: "㈜나", reasons: ["검토 필요"], failed: ["근거 충실도", "출처 인용"] },
     ],
-    needsReviewItems: [{ id: 9, name: "㈜나", reasons: ["검토 필요"] }],
+    needsReviewItems: [{ id: 9, name: "㈜나", reasons: ["검토 필요"], failed: ["근거 충실도", "출처 인용"] }],
     openEvents: [{ id: 11, companyId: 7, companyName: "㈜다", title: "폐업 위험", severity: "alert" as const }],
     year: 2025,
   };
@@ -64,12 +64,17 @@ describe("buildRibbonGroups", () => {
         },
       },
       { text: "미확인 경보·주의 16", todo: { kind: "events", rows: [{ companyId: 7, name: "㈜다", note: "경보 · 폐업 위험", selectable: true }] } },
-      { text: "검토 필요 7", todo: { kind: "verification", rows: [{ companyId: 9, name: "㈜나", note: "검증 검토", selectable: true }] } },
+      { text: "검토 필요 7", todo: { kind: "verification", rows: [{ companyId: 9, name: "㈜나", note: "근거 충실도 · 출처 인용", selectable: true }] } },
     ]);
   });
 
+  it("falls back to a plain label when no gate can be named", () => {
+    const [, todo] = buildRibbonGroups({ ...base, needsReviewItems: [{ id: 9, name: "㈜나", reasons: ["검토 필요"], failed: [] }] });
+    expect(todo.items[2].todo?.rows).toEqual([{ companyId: 9, name: "㈜나", note: "검증 검토", selectable: true }]);
+  });
+
   it("only offers a bulk tick to the review rows that carry unconfirmed events", () => {
-    const [, todo] = buildRibbonGroups({ ...base, reviewItems: [{ id: 5, name: "㈜가", reasons: ["미확인 경보·주의 2"] }] });
+    const [, todo] = buildRibbonGroups({ ...base, reviewItems: [{ id: 5, name: "㈜가", reasons: ["미확인 경보·주의 2"], failed: [] }] });
     expect(todo.items[0].todo?.rows).toEqual([{ companyId: 5, name: "㈜가", note: "미확인 경보·주의 2", selectable: true }]);
   });
 

@@ -33,6 +33,9 @@ const OPEN_EVENTS: ReviewSummary = {
   items: [{ kind: "open_events", events: [{ id: 21, occurredAt: "2026-08-27T00:00:00.000Z", severity: "alert", kind: "closure", title: "폐업", evidence: [] }] }],
   lastDecidedAt: null,
 };
+const NOTHING_LEFT: ReviewSummary = { items: [], lastDecidedAt: null };
+
+type Bulk = (companyIds: number[], opened: number[]) => Promise<{ ok: true; done: number } | { ok: false; message: string }>;
 
 function mockActions(): ReviewActions {
   const ok = async () => ({ ok: true as const });
@@ -48,25 +51,36 @@ function mockActions(): ReviewActions {
   };
 }
 
-function setup(options: { kind?: TodoKind; bulk?: (ids: number[]) => Promise<{ ok: true; done: number } | { ok: false; message: string }>; summary?: ReviewSummary } = {}) {
-  const load = vi.fn(async () => ({ ok: true as const, summary: options.summary ?? OPEN_EVENTS }));
-  const bulk = vi.fn(options.bulk ?? (async () => ({ ok: true as const, done: 2 })));
-  const text = "확인 필요 3개사";
-  render(<TodoDialog text={text} kind={options.kind ?? "review"} rows={ROWS} year={2026} load={load} bulk={bulk} actions={mockActions()} />);
-  fireEvent.click(screen.getByRole("button", { name: text }));
+const TEXT = "확인 필요 3개사";
+
+function setup(options: { kind?: TodoKind; bulk?: Bulk; summaries?: Record<number, ReviewSummary> } = {}) {
+  const load = vi.fn(async (companyId: number) => ({ ok: true as const, summary: options.summaries?.[companyId] ?? OPEN_EVENTS }));
+  const bulk = vi.fn<Bulk>(options.bulk ?? (async () => ({ ok: true as const, done: 2 })));
+  render(<TodoDialog text={TEXT} kind={options.kind ?? "review"} rows={ROWS} year={2026} load={load} bulk={bulk} actions={mockActions()} />);
+  fireEvent.click(screen.getByRole("button", { name: TEXT }));
   return { load, bulk };
 }
 
 describe("TodoDialog", () => {
   test("opens the list in place instead of navigating away", () => {
     setup();
-    expect(screen.getByRole("dialog", { name: "확인 필요 3개사" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: TEXT })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "처리할 기업" })).toBeInTheDocument();
     for (const row of ROWS) {
       expect(screen.getByRole("button", { name: `${row.name} 열기` })).toBeInTheDocument();
       expect(screen.getByText(row.note)).toBeInTheDocument();
     }
     expect(screen.getByText(/왼쪽에서 기업을 고르면/)).toBeInTheDocument();
+  });
+
+  test("every row keeps a way out to the full screen, carrying the queue it belongs to", () => {
+    setup();
+    expect(screen.getByRole("link", { name: "㈜가 상세" })).toHaveAttribute("href", "/companies/5?queue=review");
+  });
+
+  test("the verification queue points its rows at the verification queue", () => {
+    setup({ kind: "verification" });
+    expect(screen.getByRole("link", { name: "㈜나 상세" })).toHaveAttribute("href", "/companies/9?queue=verification");
   });
 
   test("picking a company loads its review items into the right pane", async () => {
@@ -79,18 +93,57 @@ describe("TodoDialog", () => {
     expect(screen.getByRole("button", { name: "㈜나 열기" })).not.toHaveAttribute("aria-current");
   });
 
-  test("settles the checked companies at once and drops them from the list", async () => {
-    const { bulk } = setup();
+  test("settles the checked companies at once and drops only the ones with nothing left", async () => {
+    const { bulk, load } = setup({ summaries: { 5: NOTHING_LEFT, 11: OPEN_EVENTS } });
     fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "㈜다 선택" }));
     fireEvent.click(screen.getByRole("button", { name: "선택 2건 사건 확인" }));
 
-    await waitFor(() => expect(bulk).toHaveBeenCalledWith([5, 11]));
+    await waitFor(() => expect(bulk).toHaveBeenCalledWith([5, 11], []));
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("2건 처리했습니다"));
+    expect(load).toHaveBeenCalledWith(5);
+    expect(load).toHaveBeenCalledWith(11);
     expect(screen.queryByRole("button", { name: "㈜가 열기" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "㈜다 열기" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "㈜다 열기" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "㈜나 열기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "선택 1건 사건 확인" })).toBeInTheDocument();
     expect(refresh).toHaveBeenCalled();
+  });
+
+  test("tells the action which companies had their evidence opened", async () => {
+    const { bulk, load } = setup({ kind: "verification", summaries: { 5: NOTHING_LEFT, 11: NOTHING_LEFT } });
+    fireEvent.click(screen.getByRole("button", { name: "㈜가 열기" }));
+    await waitFor(() => expect(load).toHaveBeenCalledWith(5));
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜다 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 2건 검토 완료" }));
+
+    await waitFor(() => expect(bulk).toHaveBeenCalledWith([5, 11], [5]));
+  });
+
+  test("closing the dialog forgets what was settled and what was checked", async () => {
+    setup({ summaries: { 5: NOTHING_LEFT } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1건 사건 확인" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "㈜가 열기" })).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+    fireEvent.click(screen.getByRole("button", { name: TEXT }));
+
+    expect(screen.getByRole("button", { name: "㈜가 열기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "선택 0건 사건 확인" })).toBeDisabled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  test("locks the checkboxes while the batch runs", async () => {
+    let settle!: (result: { ok: true; done: number }) => void;
+    setup({ bulk: () => new Promise((resolve) => { settle = resolve; }) });
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1건 사건 확인" }));
+
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: "㈜가 선택" })).toBeDisabled());
+    settle({ ok: true, done: 1 });
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: "㈜다 선택" })).toBeEnabled());
   });
 
   test("a refused batch is announced and keeps every row", async () => {

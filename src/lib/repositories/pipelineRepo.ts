@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { KST_OFFSET_MS } from "@/lib/services/kst";
+import { failedGates } from "@/lib/services/verificationScores";
 
 function jsonLength(json: string) {
   try {
@@ -60,7 +61,7 @@ export async function fullSourceRefreshAt(year: number): Promise<string | null> 
   return full ? full[1].latest.toISOString() : null;
 }
 
-export type ReviewListItem = { id: number; name: string; reasons: string[] };
+export type ReviewListItem = { id: number; name: string; reasons: string[]; failed: string[] };
 export type OpenEventItem = { id: number; companyId: number; companyName: string; title: string; severity: "alert" | "notice" };
 
 /**
@@ -78,7 +79,12 @@ export async function countReviewCompanies(year: number) {
       sourceSnapshots: { where: { status: "conflict" }, select: { source: true } },
       sourceDecisions: { select: { source: true } },
       events: { where: { severity: { in: ["alert", "notice"] }, status: "open" }, select: { id: true, title: true, severity: true, occurredAt: true } },
-      analysisRuns: { where: { status: { not: "collected" } }, orderBy: { createdAt: "desc" }, take: 1, select: { status: true, verification: { select: { status: true, reviewedAt: true } } } },
+      analysisRuns: {
+        where: { status: { not: "collected" } },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: 1,
+        select: { status: true, verification: { select: { status: true, reviewedAt: true, faithfulness: true, sourceCoverage: true, evidenceMatch: true } } },
+      },
     },
   });
   const ids: number[] = [];
@@ -102,7 +108,8 @@ export async function countReviewCompanies(year: number) {
     if (unreviewed) needsReviewIds.push(company.id);
     if (reasons.length > 0) {
       ids.push(company.id);
-      items.push({ id: company.id, name: company.name, reasons });
+      const failed = unreviewed && verification ? failedGates({ sourceCoverage: verification.sourceCoverage ?? 0, faithfulness: verification.faithfulness, evidenceMatch: verification.evidenceMatch ?? 0 }) : [];
+      items.push({ id: company.id, name: company.name, reasons, failed });
     }
     for (const event of company.events) {
       dated.push({

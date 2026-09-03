@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { confirmEventsAction, decideDartAction, decideFscAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction } from "@/app/companies/[id]/actions";
@@ -23,7 +24,11 @@ const DETAIL_ACTIONS: ReviewActions = {
   saveBusinessNo: saveBusinessNoAction,
 };
 
-const BULK_BY_KIND: Record<TodoKind, (companyIds: number[]) => Promise<BulkResult>> = {
+type Bulk = (companyIds: number[], opened: number[]) => Promise<BulkResult>;
+
+const QUEUE_BY_KIND: Record<TodoKind, "review" | "verification"> = { review: "review", events: "review", verification: "verification" };
+
+const BULK_BY_KIND: Record<TodoKind, Bulk> = {
   review: confirmCompanyEventsAction,
   events: confirmCompanyEventsAction,
   verification: markVerificationsReviewedAction,
@@ -47,12 +52,13 @@ export function TodoDialog({
   rows: TodoRow[];
   year: number;
   load?: (companyId: number) => Promise<LoadReviewResult>;
-  bulk?: (companyIds: number[]) => Promise<BulkResult>;
+  bulk?: Bulk;
   actions?: ReviewActions;
 }) {
   const router = useRouter();
   const [handled, setHandled] = useState<Set<number>>(new Set());
   const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [opened, setOpened] = useState<Set<number>>(new Set());
   const [selected, setSelected] = useState<number | null>(null);
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
   const [loading, setLoading] = useState(false);
@@ -64,12 +70,14 @@ export function TodoDialog({
   const visible = rows.filter((row) => !handled.has(row.companyId));
   const selectable = visible.filter((row) => row.selectable);
   const bulkLabel = kind === "verification" ? "검토 완료" : "사건 확인";
+  const queue = QUEUE_BY_KIND[kind];
 
   /**
    * 한 기업의 확인 필요 항목을 오른쪽에 연다. 정리 직후 다시 불렀는데 남은 항목이 없으면 그 행을 목록에서 뺀다.
    */
   async function openCompany(companyId: number, settled = false) {
     setSelected(companyId);
+    setOpened((prev) => new Set(prev).add(companyId));
     setLoading(true);
     setLoadError(null);
     if (!settled) setSummary(null);
@@ -103,20 +111,38 @@ export function TodoDialog({
     setChecked((prev) => (selectable.every((row) => prev.has(row.companyId)) ? new Set() : new Set(selectable.map((row) => row.companyId))));
   }
 
+  /**
+   * 일괄 처리 뒤 확인 필요 항목이 비워진 기업만 골라낸다 — 다른 항목이 남은 기업은 목록에 둔다.
+   */
+  async function drained(companyIds: number[]) {
+    const checkedRows = await Promise.all(
+      companyIds.map(async (companyId) => {
+        try {
+          const result = await load(companyId);
+          return result.ok && (result.summary?.items.length ?? 0) === 0 ? companyId : null;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    return checkedRows.filter((companyId): companyId is number => companyId !== null);
+  }
+
   async function runBulk() {
     const companyIds = visible.filter((row) => checked.has(row.companyId)).map((row) => row.companyId);
     setRunning(true);
     setError(null);
     setNotice(null);
     try {
-      const result = await bulk(companyIds);
+      const result = await bulk(companyIds, companyIds.filter((companyId) => opened.has(companyId)));
       if (!result.ok) {
         setError(result.message);
         return;
       }
-      setHandled((prev) => new Set([...prev, ...companyIds]));
-      setChecked(new Set());
-      if (selected !== null && companyIds.includes(selected)) {
+      const emptied = await drained(companyIds);
+      setHandled((prev) => new Set([...prev, ...emptied]));
+      setChecked((prev) => new Set([...prev].filter((companyId) => !emptied.includes(companyId))));
+      if (selected !== null && emptied.includes(selected)) {
         setSelected(null);
         setSummary(null);
       }
@@ -129,8 +155,22 @@ export function TodoDialog({
     }
   }
 
+  /**
+   * 닫으면 정리한 흔적을 버린다 — 다시 열 때는 서버가 새로 준 목록이 보여야 한다.
+   */
+  function forget() {
+    setHandled(new Set());
+    setChecked(new Set());
+    setOpened(new Set());
+    setSelected(null);
+    setSummary(null);
+    setLoadError(null);
+    setNotice(null);
+    setError(null);
+  }
+
   return (
-    <Dialog>
+    <Dialog onOpenChange={(next) => { if (!next) forget(); }}>
       <DialogTrigger asChild>
         <button type="button" className="underline decoration-primary-foreground/60 underline-offset-4 hover:decoration-primary-foreground">
           {text}
@@ -146,7 +186,7 @@ export function TodoDialog({
               <li key={row.companyId} className={`flex items-start gap-2.5 border-b border-hairline px-2.5 py-2 last:border-0 ${selected === row.companyId ? "bg-secondary" : ""}`}>
                 {row.selectable ? (
                   <label className="flex pt-0.5">
-                    <input type="checkbox" aria-label={`${row.name} 선택`} checked={checked.has(row.companyId)} onChange={() => toggle(row.companyId)} />
+                    <input type="checkbox" aria-label={`${row.name} 선택`} disabled={running} checked={checked.has(row.companyId)} onChange={() => toggle(row.companyId)} />
                   </label>
                 ) : (
                   <span className="w-[13px] shrink-0" />
@@ -161,6 +201,13 @@ export function TodoDialog({
                   <span className="text-[12.5px] font-bold">{row.name}</span>
                   <span className="text-[11px] text-muted-foreground">{row.note}</span>
                 </button>
+                <Link
+                  href={`/companies/${row.companyId}?queue=${queue}`}
+                  aria-label={`${row.name} 상세`}
+                  className="shrink-0 pt-0.5 text-[11px] underline decoration-dotted underline-offset-2"
+                >
+                  상세 →
+                </Link>
               </li>
             ))}
           </ul>

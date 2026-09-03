@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
+import { kstDate } from "@/lib/services/kst";
 import { EVIDENCE_MATCH_THRESHOLD, FAITHFULNESS_THRESHOLD, SOURCE_COVERAGE_THRESHOLD, failedGates } from "@/lib/services/verificationScores";
 
 export type VerificationLayers = {
@@ -14,6 +15,8 @@ export type VerificationLayers = {
   cited: number;
   total: number;
   claims: Array<{ claim: string; supported: boolean; evidence: string }>;
+  reviewedAt: string | null;
+  reviewNote: string | null;
 };
 
 function score(value: number | null, threshold: number) {
@@ -22,7 +25,7 @@ function score(value: number | null, threshold: number) {
 
 /**
  * 판정 배지 하나로 시작해, 누르면 4층 검증 근거를 사이드 패널로 편다.
- * 탈락한 게이트를 이름으로 적는다 — "검토 필요" 만으로는 무엇을 봐야 하는지 모른다.
+ * 탈락한 게이트를 이름으로 적고, 검토 기록이 있으면 배지 아래 한 줄로 남긴다 — 일괄 기록이 보이지 않으면 추적할 수 없다.
  */
 export function VerificationPanel({ layers }: { layers: VerificationLayers | null }) {
   const [open, setOpen] = useState(false);
@@ -50,17 +53,22 @@ export function VerificationPanel({ layers }: { layers: VerificationLayers | nul
 
   return (
     <>
-      <button
-        ref={trigger}
-        type="button"
-        aria-label="검증 근거 열기"
-        id="verification"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 border-[1.5px] border-ink px-2 py-1 text-[11px] font-bold hover:bg-secondary"
-      >
-        <VerdictPill verdict={layers.status === "verified" ? "verified" : "review"} />
-        검증 근거
-      </button>
+      <div className="flex flex-col items-start gap-1 md:items-end">
+        <button
+          ref={trigger}
+          type="button"
+          aria-label="검증 근거 열기"
+          id="verification"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-2 border-[1.5px] border-ink px-2 py-1 text-[11px] font-bold hover:bg-secondary"
+        >
+          <VerdictPill verdict={layers.status === "verified" ? "verified" : "review"} />
+          검증 근거
+        </button>
+        {layers.reviewedAt ? (
+          <span className="text-[11px] text-muted-foreground">{`검토 ${kstDate(layers.reviewedAt)}${layers.reviewNote ? ` · ${layers.reviewNote}` : ""}`}</span>
+        ) : null}
+      </div>
       {open ? (
         <>
           <div data-testid="verification-overlay" onClick={close} className="fixed inset-0 z-20 bg-ink/30" />

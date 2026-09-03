@@ -24,7 +24,7 @@ export type RibbonTodo = { kind: TodoKind; rows: TodoRow[] };
 export type RibbonItem = { text: string; href?: string; stale?: boolean; todo?: RibbonTodo };
 export type RibbonGroup = { label: string; items: RibbonItem[] };
 
-export type ReviewListItem = { id: number; name: string; reasons: string[] };
+export type ReviewListItem = { id: number; name: string; reasons: string[]; failed: string[] };
 export type OpenEventItem = { id: number; companyId: number; companyName: string; title: string; severity: "alert" | "notice" };
 
 export type RibbonInput = {
@@ -142,7 +142,7 @@ export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
         },
         {
           text: `검토 필요 ${input.needsReview}`,
-          todo: todo("verification", input.needsReviewItems.map((item) => ({ companyId: item.id, name: item.name, note: "검증 검토", selectable: true }))),
+          todo: todo("verification", input.needsReviewItems.map((item) => ({ companyId: item.id, name: item.name, note: item.failed.length > 0 ? item.failed.join(" · ") : "검증 검토", selectable: true }))),
         },
       ],
     },

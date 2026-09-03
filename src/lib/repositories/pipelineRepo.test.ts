@@ -59,8 +59,8 @@ describe("pipelineRepo", () => {
     const review = await countReviewCompanies(YEAR);
 
     expect(review.items).toEqual([
-      { id: a.id, name: "㈜가", reasons: ["사업자번호 미확보", "동명 충돌 1", "미확인 경보·주의 1"] },
-      { id: b.id, name: "㈜나", reasons: ["미확인 경보·주의 1"] },
+      { id: a.id, name: "㈜가", reasons: ["사업자번호 미확보", "동명 충돌 1", "미확인 경보·주의 1"], failed: [] },
+      { id: b.id, name: "㈜나", reasons: ["미확인 경보·주의 1"], failed: [] },
     ]);
     expect(review.openEvents).toEqual([
       { id: newer.id, companyId: b.id, companyName: "㈜나", title: "부정 보도", severity: "notice" },
@@ -82,6 +82,19 @@ describe("pipelineRepo", () => {
     expect(review.needsReviewIds).toEqual([unreviewed.id]);
     expect(review.items.map((item) => item.reasons)).toEqual([["사업자번호 미확보"], ["검토 필요"], ["사업자번호 미확보"]]);
     expect(review.openEvents).toEqual([]);
+  });
+
+  test("countReviewCompanies names the gates an unreviewed verdict fell on", async () => {
+    const user = await prisma.user.create({ data: { email: "q4@example.com", passwordHash: "x" } });
+    const c = await prisma.company.create({ data: { name: "㈜바", year: YEAR, businessNo: "5" } });
+    const run = await prisma.analysisRun.create({ data: { companyId: c.id, userId: user.id, model: "m", status: "completed", newsJson: "[]" } });
+    await prisma.verificationResult.create({
+      data: { analysisRunId: run.id, status: "needs_review", faithfulness: 0.8, sourceCoverage: 1, evidenceMatch: 0.62, unsupportedClaims: "[]", counterEvidence: "[]", detailJson: "{}" },
+    });
+
+    const review = await countReviewCompanies(YEAR);
+
+    expect(review.items).toEqual([{ id: c.id, name: "㈜바", reasons: ["검토 필요"], failed: ["근거 충실도"] }]);
   });
 
   test("countReviewCompanies still sees an unreviewed verdict behind a later news-only run", async () => {

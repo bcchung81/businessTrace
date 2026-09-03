@@ -11,9 +11,9 @@ async function seedUser() {
   return prisma.user.create({ data: { email: "admin@example.com", passwordHash: "hash" } });
 }
 
-async function seedEvent(companyId: number, severity: string, status: string, key: string) {
+async function seedEvent(companyId: number, severity: string, status: string, key: string, kind = "closure") {
   return prisma.event.create({
-    data: { companyId, kind: "closure", severity, status, occurredAt: new Date("2026-08-20T00:00:00.000Z"), title: `${key} 사건`, evidenceKey: key, evidenceJson: "[]" },
+    data: { companyId, kind, severity, status, occurredAt: new Date("2026-08-20T00:00:00.000Z"), title: `${key} 사건`, evidenceKey: key, evidenceJson: "[]" },
   });
 }
 
@@ -75,6 +75,17 @@ describe("dashboard todo actions", () => {
     expect(rows.find((row) => row.id === open.id)?.reviewedBy).toBe(7);
   });
 
+  test("leaves namesake-conflict events alone — acknowledging one drops it from the automatic cleanup", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
+    const conflict = await seedEvent(company.id, "alert", "open", "s1", "source_conflict");
+    const ordinary = await seedEvent(company.id, "alert", "open", "s2");
+
+    expect(await confirmCompanyEventsAction([company.id])).toEqual({ ok: true, done: 1 });
+
+    expect((await prisma.event.findUniqueOrThrow({ where: { id: conflict.id } })).status).toBe("open");
+    expect((await prisma.event.findUniqueOrThrow({ where: { id: ordinary.id } })).status).toBe("acknowledged");
+  });
+
   test("marks the latest run's unreviewed verification and leaves the bulk note", async () => {
     const user = await seedUser();
     const first = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
@@ -88,7 +99,7 @@ describe("dashboard todo actions", () => {
     expect(await markVerificationsReviewedAction([first.id, verified.id, done.id])).toEqual({ ok: true, done: 1 });
 
     const stored = await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: latest.id } });
-    expect(stored).toMatchObject({ reviewedBy: 7, reviewNote: "일괄 검토 완료" });
+    expect(stored).toMatchObject({ reviewedBy: 7, reviewNote: "일괄 검토 완료 · 근거 미열람" });
     expect(stored.reviewedAt).not.toBeNull();
     expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: older.id } })).reviewedAt).toBeNull();
     expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: passed.id } })).reviewedAt).toBeNull();
@@ -104,10 +115,23 @@ describe("dashboard todo actions", () => {
 
     expect(await markVerificationsReviewedAction([company.id])).toEqual({ ok: true, done: 1 });
 
-    expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: second.id } })).reviewNote).toBe("일괄 검토 완료");
+    expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: second.id } })).reviewNote).toBe("일괄 검토 완료 · 근거 미열람");
     expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: first.id } })).reviewedAt).toBeNull();
     const summary = await loadReviewItemsAction(company.id);
     expect(summary.ok && summary.summary?.items.some((item) => item.kind === "verification")).toBe(false);
+  });
+
+  test("the note says whether the evidence was actually opened", async () => {
+    const user = await seedUser();
+    const opened = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
+    const skimmed = await prisma.company.create({ data: { name: "㈜나", year: 2026 } });
+    const read = await seedRun(opened.id, user.id, "2026-08-20T00:00:00.000Z", { status: "needs_review" });
+    const unread = await seedRun(skimmed.id, user.id, "2026-08-20T00:00:00.000Z", { status: "needs_review" });
+
+    expect(await markVerificationsReviewedAction([opened.id, skimmed.id], [opened.id])).toEqual({ ok: true, done: 2 });
+
+    expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: read.id } })).reviewNote).toBe("일괄 검토 완료 · 근거 열람");
+    expect((await prisma.verificationResult.findUniqueOrThrow({ where: { analysisRunId: unread.id } })).reviewNote).toBe("일괄 검토 완료 · 근거 미열람");
   });
 
   test("an empty selection settles nothing", async () => {
