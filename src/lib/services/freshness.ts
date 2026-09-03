@@ -18,8 +18,12 @@ export type FreshnessInput = {
   stale: number;
 };
 
-export type RibbonItem = { text: string; href?: string; stale?: boolean };
+export type RibbonChoice = { href: string; label: string; note?: string };
+export type RibbonItem = { text: string; href?: string; stale?: boolean; menu?: RibbonChoice[] };
 export type RibbonGroup = { label: string; items: RibbonItem[] };
+
+export type ReviewListItem = { id: number; name: string; reasons: string[] };
+export type OpenEventItem = { id: number; companyId: number; companyName: string; title: string; severity: "alert" | "notice" };
 
 export type RibbonInput = {
   now: Date;
@@ -29,8 +33,9 @@ export type RibbonInput = {
   reviewCompanies: number;
   openAlertNotice: number;
   needsReview: number;
-  firstReviewId: number | null;
-  firstNeedsReviewId: number | null;
+  reviewItems: ReviewListItem[];
+  needsReviewItems: ReviewListItem[];
+  openEvents: OpenEventItem[];
   year: number;
 };
 
@@ -75,8 +80,15 @@ function dated(label: string, iso: string | null, now: Date): RibbonItem {
 }
 
 /**
+ * 셀 자체가 목록일 때만 메뉴를 단다 — 펼칠 것이 없는 0 은 링크도 메뉴도 없는 글자로 남는다.
+ */
+function menu(choices: RibbonChoice[]) {
+  return choices.length > 0 ? choices : undefined;
+}
+
+/**
  * 리본 두 묶음 — 이 화면의 숫자가 언제 것인지(기준일 3) 와 운영자가 지금 할 일(할 일 3).
- * 할 일은 조치할 수 있는 자리로 보낸다 — 큐의 첫 기업 상세, 또는 미확인만 켠 사건 표.
+ * 할 일은 처리할 목록을 그 자리에서 펼치고, 고른 기업의 상세로 큐를 달고 보낸다.
  * 파이프라인 수치는 밴드가 보여주므로 여기 두지 않는다. 0 도 남긴다(§2-K).
  */
 export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
@@ -92,9 +104,18 @@ export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
     {
       label: "할 일",
       items: [
-        { text: `확인 필요 ${input.reviewCompanies}개사`, href: input.firstReviewId === null ? undefined : `/companies/${input.firstReviewId}?queue=review` },
-        { text: `미확인 경보·주의 ${input.openAlertNotice}`, href: input.openAlertNotice > 0 ? `/dashboard?year=${input.year}&open=1#events` : undefined },
-        { text: `검토 필요 ${input.needsReview}`, href: input.firstNeedsReviewId === null ? undefined : `/companies/${input.firstNeedsReviewId}?queue=verification` },
+        {
+          text: `확인 필요 ${input.reviewCompanies}개사`,
+          menu: menu(input.reviewItems.map((item) => ({ href: `/companies/${item.id}?queue=review`, label: item.name, note: item.reasons.join(" · ") }))),
+        },
+        {
+          text: `미확인 경보·주의 ${input.openAlertNotice}`,
+          menu: menu(input.openEvents.map((event) => ({ href: `/companies/${event.companyId}?queue=review`, label: event.companyName, note: `${event.severity === "alert" ? "경보" : "주의"} · ${event.title}` }))),
+        },
+        {
+          text: `검토 필요 ${input.needsReview}`,
+          menu: menu(input.needsReviewItems.map((item) => ({ href: `/companies/${item.id}?queue=verification`, label: item.name, note: "검증 검토" }))),
+        },
       ],
     },
   ];

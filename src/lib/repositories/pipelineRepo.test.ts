@@ -49,6 +49,25 @@ describe("pipelineRepo", () => {
     expect(review.needsReviewIds).toEqual([]);
   });
 
+  test("countReviewCompanies spells out why each company is listed and stacks the open events newest first", async () => {
+    const a = await prisma.company.create({ data: { name: "㈜가", year: YEAR, businessNo: null, displayOrder: 0 } });
+    const b = await prisma.company.create({ data: { name: "㈜나", year: YEAR, businessNo: "2", displayOrder: 1 } });
+    await prisma.sourceSnapshot.create({ data: { companyId: a.id, source: "nps", status: "conflict", payload: "{}" } });
+    const older = await prisma.event.create({ data: { companyId: a.id, kind: "closure", severity: "alert", status: "open", occurredAt: new Date("2026-08-01"), title: "폐업 위험", evidenceJson: "[]", evidenceKey: "e1" } });
+    const newer = await prisma.event.create({ data: { companyId: b.id, kind: "negative_press", severity: "notice", status: "open", occurredAt: new Date("2026-08-20"), title: "부정 보도", evidenceJson: "[]", evidenceKey: "e2" } });
+
+    const review = await countReviewCompanies(YEAR);
+
+    expect(review.items).toEqual([
+      { id: a.id, name: "㈜가", reasons: ["사업자번호 미확보", "동명 충돌 1", "미확인 경보·주의 1"] },
+      { id: b.id, name: "㈜나", reasons: ["미확인 경보·주의 1"] },
+    ]);
+    expect(review.openEvents).toEqual([
+      { id: newer.id, companyId: b.id, companyName: "㈜나", title: "부정 보도", severity: "notice" },
+      { id: older.id, companyId: a.id, companyName: "㈜가", title: "폐업 위험", severity: "alert" },
+    ]);
+  });
+
   test("countReviewCompanies orders the ids by registration and names the unreviewed ones", async () => {
     const user = await prisma.user.create({ data: { email: "q3@example.com", passwordHash: "x" } });
     const late = await prisma.company.create({ data: { name: "㈜늦게", year: YEAR, displayOrder: 9 } });
@@ -61,6 +80,8 @@ describe("pipelineRepo", () => {
 
     expect(review.ids).toEqual([early.id, unreviewed.id, late.id]);
     expect(review.needsReviewIds).toEqual([unreviewed.id]);
+    expect(review.items.map((item) => item.reasons)).toEqual([["사업자번호 미확보"], ["검토 필요"], ["사업자번호 미확보"]]);
+    expect(review.openEvents).toEqual([]);
   });
 
   test("countReviewCompanies still sees an unreviewed verdict behind a later news-only run", async () => {
