@@ -18,8 +18,10 @@ export type FreshnessInput = {
   stale: number;
 };
 
-export type RibbonChoice = { href: string; label: string; note?: string };
-export type RibbonItem = { text: string; href?: string; stale?: boolean; menu?: RibbonChoice[] };
+export type TodoKind = "review" | "events" | "verification";
+export type TodoRow = { companyId: number; name: string; note: string; selectable: boolean };
+export type RibbonTodo = { kind: TodoKind; rows: TodoRow[] };
+export type RibbonItem = { text: string; href?: string; stale?: boolean; todo?: RibbonTodo };
 export type RibbonGroup = { label: string; items: RibbonItem[] };
 
 export type ReviewListItem = { id: number; name: string; reasons: string[] };
@@ -80,17 +82,17 @@ function dated(label: string, iso: string | null, now: Date): RibbonItem {
 }
 
 /**
- * 셀 자체가 목록일 때만 메뉴를 단다 — 펼칠 것이 없는 0 은 링크도 메뉴도 없는 글자로 남는다.
+ * 셀 자체가 목록일 때만 팝업을 단다 — 펼칠 것이 없는 0 은 링크도 팝업도 없는 글자로 남는다.
  */
-function menu(choices: RibbonChoice[]) {
-  return choices.length > 0 ? choices : undefined;
+function todo(kind: TodoKind, rows: TodoRow[]): RibbonTodo | undefined {
+  return rows.length > 0 ? { kind, rows } : undefined;
 }
 
 /**
  * 미확인 사건을 기업 단위로 묶는다 — 같은 기업이 사건 수만큼 반복되면 고를 목록이 아니라 로그가 된다.
  * 첫 사건(최신)의 제목을 대표로 쓰고 건수를 앞에 적는다.
  */
-function groupOpenEvents(events: OpenEventItem[]): Array<{ href: string; label: string; note: string }> {
+function groupOpenEvents(events: OpenEventItem[]): TodoRow[] {
   const byCompany = new Map<number, { label: string; count: number; alerts: number; title: string; severity: OpenEventItem["severity"] }>();
   for (const event of events) {
     const entry = byCompany.get(event.companyId);
@@ -102,15 +104,16 @@ function groupOpenEvents(events: OpenEventItem[]): Array<{ href: string; label: 
     }
   }
   return [...byCompany.entries()].map(([companyId, entry]) => ({
-    href: `/companies/${companyId}?queue=review`,
-    label: entry.label,
+    companyId,
+    name: entry.label,
     note: entry.count === 1 ? `${entry.severity === "alert" ? "경보" : "주의"} · ${entry.title}` : `${entry.count}건(경보 ${entry.alerts}) · ${entry.title}`,
+    selectable: true,
   }));
 }
 
 /**
  * 리본 두 묶음 — 이 화면의 숫자가 언제 것인지(기준일 3) 와 운영자가 지금 할 일(할 일 3).
- * 할 일은 처리할 목록을 그 자리에서 펼치고, 고른 기업의 상세로 큐를 달고 보낸다.
+ * 할 일은 처리할 목록을 팝업으로 열고 그 안에서 정리한다 — 화면을 떠나지 않는다.
  * 파이프라인 수치는 밴드가 보여주므로 여기 두지 않는다. 0 도 남긴다(§2-K).
  */
 export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
@@ -128,15 +131,18 @@ export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
       items: [
         {
           text: `확인 필요 ${input.reviewCompanies}개사`,
-          menu: menu(input.reviewItems.map((item) => ({ href: `/companies/${item.id}?queue=review`, label: item.name, note: item.reasons.join(" · ") }))),
+          todo: todo(
+            "review",
+            input.reviewItems.map((item) => ({ companyId: item.id, name: item.name, note: item.reasons.join(" · "), selectable: item.reasons.some((reason) => reason.startsWith("미확인 경보·주의")) })),
+          ),
         },
         {
           text: `미확인 경보·주의 ${input.openAlertNotice}`,
-          menu: menu(groupOpenEvents(input.openEvents)),
+          todo: todo("events", groupOpenEvents(input.openEvents)),
         },
         {
           text: `검토 필요 ${input.needsReview}`,
-          menu: menu(input.needsReviewItems.map((item) => ({ href: `/companies/${item.id}?queue=verification`, label: item.name, note: "검증 검토" }))),
+          todo: todo("verification", input.needsReviewItems.map((item) => ({ companyId: item.id, name: item.name, note: "검증 검토", selectable: true }))),
         },
       ],
     },

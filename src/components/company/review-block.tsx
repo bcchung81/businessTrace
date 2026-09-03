@@ -197,9 +197,10 @@ function NoBusinessNo({ item, companyId, run, actions }: { item: Extract<ReviewI
 }
 
 /**
- * 헤더 바로 아래 절 00 — 사람이 정해야 다음 단계가 열리는 것만 모은다. 정리되면 한 줄로 준다(§2-K).
+ * 확인 필요 항목 본체 — 상세의 절 00 과 대시보드 팝업이 같은 것을 그린다.
+ * `onSettled` 는 한 건이 정리된 뒤 불린다 — 호출자가 목록을 다시 읽을 자리다.
  */
-export function ReviewBlock({ companyId, year, summary, actions }: { companyId: number; year: number; summary: ReviewSummary; actions: ReviewActions }) {
+export function ReviewItems({ companyId, year, summary, actions, onSettled }: { companyId: number; year: number; summary: ReviewSummary; actions: ReviewActions; onSettled?: () => void }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -213,8 +214,34 @@ export function ReviewBlock({ companyId, year, summary, actions }: { companyId: 
       after?.();
       setSaved("저장했습니다 · 화면을 다시 읽는 중");
       router.refresh();
+      onSettled?.();
     });
   };
+  if (summary.items.length === 0) return null;
+
+  return (
+    <fieldset disabled={pending} className="flex flex-col border-0 p-0">
+      {error ? <p role="alert" className="border-l-2 border-risk bg-risk-surface px-3 py-2 text-[12px] font-medium text-risk">{error}</p> : null}
+      {saved ? <p role="status" className="border-l-2 border-primary bg-accent px-3 py-2 text-[12px] font-medium text-accent-foreground">{saved}</p> : null}
+      {summary.items.map((item, index) => {
+        switch (item.kind) {
+          case "no_business_no": return <NoBusinessNo key={index} item={item} companyId={companyId} run={run} actions={actions} />;
+          case "nps_conflict": return <NpsConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
+          case "dart_conflict": return <DartConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
+          case "fsc_conflict": return <FscConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
+          case "verification": return <Verification key={index} item={item} run={run} actions={actions} />;
+          case "open_events": return <OpenEvents key={index} item={item} companyId={companyId} run={run} actions={actions} />;
+          case "no_news": return <NoNews key={index} item={item} companyId={companyId} year={year} run={run} actions={actions} />;
+        }
+      })}
+    </fieldset>
+  );
+}
+
+/**
+ * 헤더 바로 아래 절 00 — 사람이 정해야 다음 단계가 열리는 것만 모은다. 정리되면 한 줄로 준다(§2-K).
+ */
+export function ReviewBlock({ companyId, year, summary, actions }: { companyId: number; year: number; summary: ReviewSummary; actions: ReviewActions }) {
   const count = summary.items.length;
   const tally = (kind: ReviewItem["kind"]) => summary.items.filter((i) => i.kind === kind).length;
   const openCount = summary.items.reduce((acc, i) => acc + (i.kind === "open_events" ? i.events.length : 0), 0);
@@ -224,23 +251,7 @@ export function ReviewBlock({ companyId, year, summary, actions }: { companyId: 
 
   return (
     <Panel index="00" title="확인 필요" tag={count === 0 ? "없음" : `${count}건`} tone={count === 0 ? "plain" : "review"} note={note}>
-      {count === 0 ? null : (
-        <fieldset disabled={pending} className="flex flex-col border-0 p-0">
-          {error ? <p role="alert" className="border-l-2 border-risk bg-risk-surface px-3 py-2 text-[12px] font-medium text-risk">{error}</p> : null}
-          {saved ? <p role="status" className="border-l-2 border-primary bg-accent px-3 py-2 text-[12px] font-medium text-accent-foreground">{saved}</p> : null}
-          {summary.items.map((item, index) => {
-            switch (item.kind) {
-              case "no_business_no": return <NoBusinessNo key={index} item={item} companyId={companyId} run={run} actions={actions} />;
-              case "nps_conflict": return <NpsConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
-              case "dart_conflict": return <DartConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
-              case "fsc_conflict": return <FscConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
-              case "verification": return <Verification key={index} item={item} run={run} actions={actions} />;
-              case "open_events": return <OpenEvents key={index} item={item} companyId={companyId} run={run} actions={actions} />;
-              case "no_news": return <NoNews key={index} item={item} companyId={companyId} year={year} run={run} actions={actions} />;
-            }
-          })}
-        </fieldset>
-      )}
+      {count === 0 ? null : <ReviewItems companyId={companyId} year={year} summary={summary} actions={actions} />}
     </Panel>
   );
 }

@@ -49,25 +49,33 @@ describe("buildRibbonGroups", () => {
     expect(dates.items[1]).toMatchObject({ text: "원천 07-01 (60일 전) · 낡음", stale: true });
   });
 
-  it("ends with three things to do, each unfolding the list it stands for", () => {
+  it("ends with three things to do, each opening the list it stands for", () => {
     const [, todo] = buildRibbonGroups(base);
     expect(todo.label).toBe("할 일");
     expect(todo.items).toEqual([
       {
         text: "확인 필요 12개사",
-        menu: [
-          { href: "/companies/5?queue=review", label: "㈜가", note: "사업자번호 미확보 · 동명 충돌 1" },
-          { href: "/companies/9?queue=review", label: "㈜나", note: "검토 필요" },
-        ],
+        todo: {
+          kind: "review",
+          rows: [
+            { companyId: 5, name: "㈜가", note: "사업자번호 미확보 · 동명 충돌 1", selectable: false },
+            { companyId: 9, name: "㈜나", note: "검토 필요", selectable: false },
+          ],
+        },
       },
-      { text: "미확인 경보·주의 16", menu: [{ href: "/companies/7?queue=review", label: "㈜다", note: "경보 · 폐업 위험" }] },
-      { text: "검토 필요 7", menu: [{ href: "/companies/9?queue=verification", label: "㈜나", note: "검증 검토" }] },
+      { text: "미확인 경보·주의 16", todo: { kind: "events", rows: [{ companyId: 7, name: "㈜다", note: "경보 · 폐업 위험", selectable: true }] } },
+      { text: "검토 필요 7", todo: { kind: "verification", rows: [{ companyId: 9, name: "㈜나", note: "검증 검토", selectable: true }] } },
     ]);
   });
 
-  it("calls a notice a notice in the event menu", () => {
+  it("only offers a bulk tick to the review rows that carry unconfirmed events", () => {
+    const [, todo] = buildRibbonGroups({ ...base, reviewItems: [{ id: 5, name: "㈜가", reasons: ["미확인 경보·주의 2"] }] });
+    expect(todo.items[0].todo?.rows).toEqual([{ companyId: 5, name: "㈜가", note: "미확인 경보·주의 2", selectable: true }]);
+  });
+
+  it("calls a notice a notice in the event list", () => {
     const [, todo] = buildRibbonGroups({ ...base, openEvents: [{ id: 12, companyId: 8, companyName: "㈜라", title: "부정 보도", severity: "notice" as const }] });
-    expect(todo.items[1].menu).toEqual([{ href: "/companies/8?queue=review", label: "㈜라", note: "주의 · 부정 보도" }]);
+    expect(todo.items[1].todo?.rows).toEqual([{ companyId: 8, name: "㈜라", note: "주의 · 부정 보도", selectable: true }]);
   });
 
   it("keeps zero counts visible and dashes out dates that never happened", () => {
@@ -75,10 +83,10 @@ describe("buildRibbonGroups", () => {
     expect(dates.items[0].text).toBe("뉴스 —");
     expect(dates.items[1].text).toBe("원천 —");
     expect(todo.items.map((i) => i.text)).toEqual(["확인 필요 0개사", "미확인 경보·주의 0", "검토 필요 0"]);
-    expect(todo.items.every((i) => i.href === undefined && i.menu === undefined)).toBe(true);
+    expect(todo.items.every((i) => i.href === undefined && i.todo === undefined)).toBe(true);
   });
 
-  it("groups open events by company so one company is one choice, with the count and the latest title", () => {
+  it("groups open events by company so one company is one row, with the count and the latest title", () => {
     const [, todo] = buildRibbonGroups({
       ...base,
       openEvents: [
@@ -87,9 +95,9 @@ describe("buildRibbonGroups", () => {
         { id: 19, companyId: 7, companyName: "㈜다", title: "폐업 위험", severity: "alert" as const },
       ],
     });
-    expect(todo.items[1].menu).toEqual([
-      { href: "/companies/9?queue=review", label: "㈜마", note: "2건(경보 1) · 최신 경보" },
-      { href: "/companies/7?queue=review", label: "㈜다", note: "경보 · 폐업 위험" },
+    expect(todo.items[1].todo?.rows).toEqual([
+      { companyId: 9, name: "㈜마", note: "2건(경보 1) · 최신 경보", selectable: true },
+      { companyId: 7, name: "㈜다", note: "경보 · 폐업 위험", selectable: true },
     ]);
   });
 });

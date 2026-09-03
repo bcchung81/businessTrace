@@ -138,7 +138,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         aside={<CompanySearch year={year} companies={registry} />}
       />
 
-      <Ribbon groups={ribbon} className="-mt-12" />
+      <Ribbon groups={ribbon} year={year} className="-mt-12" />
 
       <div className="grid items-start gap-8 lg:grid-cols-2">
         <Panel index="01" title="추이 상승 TOP 10" tag="실시간" tone="fresh" note="시상 후보 검토용">
