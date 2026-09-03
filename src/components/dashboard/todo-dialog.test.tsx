@@ -131,6 +131,25 @@ describe("TodoDialog", () => {
     expect(screen.getByRole("button", { name: "㈜가 열기" })).toBeInTheDocument();
   });
 
+  test("clears a stale load error once the batch has refreshed the panel", async () => {
+    let calls = 0;
+    const load: Load = async (companyId: number) =>
+      companyId === 5
+        ? calls++ === 0
+          ? { ok: false as const, message: "불러오지 못했습니다" }
+          : { ok: true as const, summary: ONE_LEFT }
+        : { ok: true as const, summary: NOTHING_LEFT };
+    setup({ load });
+    fireEvent.click(screen.getByRole("button", { name: "㈜가 열기" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("불러오지 못했습니다"));
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1건 사건 확인" }));
+
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: "인원 감소" })).toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   test("a company whose evidence never loaded is not recorded as read", async () => {
     const load: Load = async (companyId: number) => (companyId === 5 ? { ok: false as const, message: "불러오지 못했습니다" } : { ok: true as const, summary: NOTHING_LEFT });
     const { bulk } = setup({ kind: "verification", load });

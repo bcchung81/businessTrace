@@ -115,7 +115,7 @@ export function TodoDialog({
    * 일괄 처리한 기업을 다시 읽는다 — 비워진 기업은 목록에서 빼고, 남은 기업은 열린 패널을 갱신하는 데 쓴다.
    */
   async function reread(companyIds: number[]) {
-    const rows = await Promise.all(
+    const settled = await Promise.all(
       companyIds.map(async (companyId) => {
         try {
           const result = await load(companyId);
@@ -125,7 +125,7 @@ export function TodoDialog({
         }
       }),
     );
-    return rows.filter((row): row is { companyId: number; summary: ReviewSummary | null } => row !== null);
+    return settled.filter((row): row is { companyId: number; summary: ReviewSummary | null } => row !== null);
   }
 
   async function runBulk() {
@@ -147,6 +147,7 @@ export function TodoDialog({
         const fresh = reloaded.find((row) => row.companyId === selected && !emptied.includes(selected));
         setSelected(fresh ? selected : null);
         setSummary(fresh ? fresh.summary : null);
+        setLoadError(null);
       }
       setNotice(`${result.done}건 처리했습니다`);
       router.refresh();
