@@ -90,16 +90,22 @@ export function EventTable({
 
   async function confirm(event: EventRow) {
     setPending((prev) => new Set(prev).add(event.id));
-    const result = await onConfirm({ companyId: event.companyId, eventIds: [event.id], action: "acknowledge" });
-    setPending((prev) => withoutId(prev, event.id));
-    if (!result.ok) {
-      setError(result.message);
-      return;
-    }
+    setNotice(null);
     setError(null);
-    setAcknowledged((prev) => new Set(prev).add(event.id));
-    setNotice("확인했습니다");
-    router.refresh();
+    try {
+      const result = await onConfirm({ companyId: event.companyId, eventIds: [event.id], action: "acknowledge" });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setAcknowledged((prev) => new Set(prev).add(event.id));
+      setNotice("확인했습니다");
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "확인 실패");
+    } finally {
+      setPending((prev) => withoutId(prev, event.id));
+    }
   }
 
   function toggleKind(kind: EventKind) {

@@ -15,6 +15,7 @@ export function RibbonMenu({ text, choices }: { text: string; choices: RibbonCho
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const active = useRef(0);
   const wrapper = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -33,13 +34,21 @@ export function RibbonMenu({ text, choices }: { text: string; choices: RibbonCho
     return `${listId}-${index}`;
   }
 
+  /**
+   * 활성 항목을 상태와 ref 양쪽에 둔다 — 초점이 옮겨간 직후의 Enter 는 아직 다시 그려지기 전이라 상태를 읽으면 옛 값이다.
+   */
+  function activate(index: number) {
+    active.current = index;
+    setHighlight(index);
+  }
+
   function move(step: number) {
     if (!open) {
       setOpen(true);
-      setHighlight(0);
+      activate(0);
       return;
     }
-    setHighlight((prev) => (prev + step + choices.length) % choices.length);
+    activate((active.current + step + choices.length) % choices.length);
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -54,7 +63,7 @@ export function RibbonMenu({ text, choices }: { text: string; choices: RibbonCho
       return;
     }
     if (event.key === "Enter" && open) {
-      const choice = choices[highlight];
+      const choice = choices[active.current];
       if (!choice) return;
       event.preventDefault();
       setOpen(false);
@@ -70,7 +79,10 @@ export function RibbonMenu({ text, choices }: { text: string; choices: RibbonCho
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          activate(0);
+          setOpen((prev) => !prev);
+        }}
         className="font-display text-[12px] font-bold underline decoration-primary-foreground/60 underline-offset-4 hover:decoration-primary-foreground"
       >
         {text}
@@ -90,9 +102,11 @@ export function RibbonMenu({ text, choices }: { text: string; choices: RibbonCho
               key={`${choice.href}#${index}`}
               id={optionId(index)}
               role="option"
+              tabIndex={-1}
               aria-selected={index === highlight}
               href={choice.href}
-              onMouseEnter={() => setHighlight(index)}
+              onFocus={() => activate(index)}
+              onMouseEnter={() => activate(index)}
               onClick={() => setOpen(false)}
               className={`flex flex-col gap-0.5 px-3 py-1.5 hover:bg-band-foreground/10 ${index === highlight ? "bg-band-foreground/10" : ""}`}
             >

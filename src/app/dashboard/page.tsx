@@ -116,7 +116,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     openAlertNotice: review.openAlertNotice,
     needsReview: review.needsReview,
     reviewItems: review.items,
-    needsReviewItems: review.items.filter((item) => item.reasons.includes("검토 필요")),
+    needsReviewItems: review.items.filter((item) => review.needsReviewIds.includes(item.id)),
     openEvents: review.openEvents,
     year,
   });

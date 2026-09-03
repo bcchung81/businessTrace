@@ -99,6 +99,44 @@ describe("EventTable", () => {
     expect(screen.getByRole("row", { name: /폐업 위험/ })).toBeInTheDocument();
   });
 
+  test("re-enables the button and says why when the confirm throws", async () => {
+    const onConfirm = vi.fn(async () => {
+      throw new Error("이미 확인된 사건입니다");
+    });
+    render(<EventTable events={[row({ id: 5, severity: "alert", status: "open", title: "폐업 위험" })]} silence={[]} now={NOW} onConfirm={onConfirm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "폐업 위험 확인" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("이미 확인된 사건입니다");
+    expect(screen.getByRole("button", { name: "폐업 위험 확인" })).toBeEnabled();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  test("drops the last 확인했습니다 as soon as the next confirm starts", async () => {
+    const deferred: { resolve: (value: { ok: true }) => void } = { resolve: () => {} };
+    const onConfirm = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true })
+      .mockImplementationOnce(() => new Promise<{ ok: true }>((resolve) => { deferred.resolve = resolve; }));
+    render(
+      <EventTable
+        events={[row({ id: 5, severity: "alert", status: "open", title: "폐업 위험" }), row({ id: 6, severity: "notice", status: "open", title: "부정 보도" })]}
+        silence={[]}
+        now={NOW}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "폐업 위험 확인" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("확인했습니다");
+
+    fireEvent.click(screen.getByRole("button", { name: "부정 보도 확인" }));
+    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+
+    deferred.resolve({ ok: true });
+    expect(await screen.findByRole("status")).toHaveTextContent("확인했습니다");
+  });
+
   test("keeps the row and says why when the confirm is refused", async () => {
     const onConfirm = vi.fn(async () => ({ ok: false as const, message: "unauthorized" }));
     render(<EventTable events={[row({ id: 5, severity: "alert", status: "open", title: "폐업 위험" })]} silence={[]} now={NOW} onConfirm={onConfirm} />);
