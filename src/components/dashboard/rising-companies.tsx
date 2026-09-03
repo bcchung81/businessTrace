@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { RisingRow } from "@/lib/services/rising";
 
+const ROW =
+  "grid items-center gap-2.5 border-b border-hairline py-1.5 text-[12.5px] last:border-0 grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_2.5rem_3rem_2.75rem] sm:grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_2.5rem_5.5rem_3rem_2.75rem]";
+
 function signed(value: number) {
   return `${value > 0 ? "+" : "−"}${Math.abs(value).toFixed(2)}`;
 }
@@ -8,7 +11,7 @@ function signed(value: number) {
 /**
  * 순위 추이 TOP 10 — 실시간 랭킹을 확정 기준과 대조한 상승(▲ verified) 또는 하락(▼ risk) 목록.
  * 인원 추이와 같은 문법으로 증감 색을 쓴다.
- * 순위 폭 옆에 총점 변동과 그것을 끈 지표를 함께 적는다 — 압축된 중위권에서는 몇 계단이 몇 점인지 알 수 없다.
+ * 열 폭을 고정한 격자로 그린다 — 값이 빈 행에서도 칸이 남아 아래위 숫자가 세로로 맞는다.
  */
 export function RisingCompanies({ rows, periodLabelText, direction = "up" }: { rows: RisingRow[]; periodLabelText: string | null; direction?: "up" | "down" }) {
   if (rows.length === 0) {
@@ -27,24 +30,22 @@ export function RisingCompanies({ rows, periodLabelText, direction = "up" }: { r
       {periodLabelText ? <p className="text-[11.5px] text-muted-foreground">{periodLabelText}</p> : null}
       <ol className="flex flex-col">
         {rows.map((row, index) => (
-          <li key={row.companyId} className="flex items-center gap-2.5 border-b border-hairline py-1.5 text-[12.5px] last:border-0">
-            <span className="font-display w-6 text-[15px] font-black tabular-nums">{index + 1}</span>
-            <Link href={`/companies/${row.companyId}`} className="min-w-0 flex-1 truncate font-semibold hover:underline">
+          <li key={row.companyId} className={ROW}>
+            <span className="font-display text-[15px] font-black tabular-nums">{index + 1}</span>
+            <Link href={`/companies/${row.companyId}`} className="min-w-0 truncate font-semibold hover:underline">
               {row.companyName}
             </Link>
-            <span className="whitespace-nowrap font-mono text-[11px] tabular-nums text-muted-foreground">
+            <span className="truncate font-mono text-[11px] tabular-nums text-muted-foreground">
               {row.prevRank}위→{row.rank}위
             </span>
-            <span className={`w-9 whitespace-nowrap text-right font-mono text-[12px] font-bold tabular-nums ${tone}`}>{arrow}{row.delta}</span>
-            {row.reason ? (
-              <span className="hidden max-w-[86px] truncate text-[10.5px] text-muted-foreground sm:inline" title={row.reason.label}>
-                {row.reason.label}
-              </span>
-            ) : null}
-            {row.totalDelta === null ? null : (
-              <span className="w-11 whitespace-nowrap text-right font-mono text-[11px] tabular-nums text-muted-foreground">{signed(row.totalDelta)}</span>
-            )}
-            <span className="w-10 text-right font-mono text-[11.5px] tabular-nums">{row.total.toFixed(2)}</span>
+            <span className={`truncate text-right font-mono text-[12px] font-bold tabular-nums ${tone}`}>{arrow}{row.delta}</span>
+            <span className="hidden truncate text-[10.5px] text-muted-foreground sm:block" title={row.reason?.label}>
+              {row.reason?.label ?? ""}
+            </span>
+            <span className="truncate text-right font-mono text-[11px] tabular-nums text-muted-foreground">
+              {row.totalDelta === null ? "" : signed(row.totalDelta)}
+            </span>
+            <span className="truncate text-right font-mono text-[11.5px] tabular-nums">{row.total.toFixed(2)}</span>
           </li>
         ))}
       </ol>

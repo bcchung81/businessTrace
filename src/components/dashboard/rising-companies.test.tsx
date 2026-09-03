@@ -53,6 +53,25 @@ describe("RisingCompanies", () => {
     expect(screen.getByText("−0.12")).toBeInTheDocument();
   });
 
+  it("keeps every column the same width so rows do not shift, even when a value is missing", () => {
+    render(
+      <RisingCompanies
+        rows={[
+          { companyId: 12, companyName: "미타운", prevRank: 13, rank: 4, delta: 9, total: 0.56, totalDelta: 0.08, reason: { key: "award", label: "수상 상승", delta: 0.06 } },
+          { companyId: 15, companyName: "무암", prevRank: 40, rank: 20, delta: 20, total: 0.44, totalDelta: null, reason: null },
+        ]}
+        periodLabelText={null}
+      />,
+    );
+
+    const rows = screen.getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    expect(rows[0].className).toContain("grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_2.5rem_3rem_2.75rem]");
+    expect(rows[0].className).toContain("sm:grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_2.5rem_5.5rem_3rem_2.75rem]");
+    expect(rows[0].className).toBe(rows[1].className);
+    expect(rows[1].children).toHaveLength(rows[0].children.length);
+  });
+
   it("explains why it is empty instead of hiding", () => {
     render(<RisingCompanies rows={[]} periodLabelText={null} />);
 
