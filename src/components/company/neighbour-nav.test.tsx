@@ -40,5 +40,18 @@ describe("NeighbourNav", () => {
     render(<NeighbourNav prev={null} next={null} position={null} total={12} queue="review" />);
 
     expect(screen.getByText("확인 필요 큐 밖")).toBeInTheDocument();
+    expect(screen.getByText("마지막 →")).toBeInTheDocument();
+  });
+
+  test("offers the next company still in the queue after this one was settled", () => {
+    render(<NeighbourNav prev={null} next={NEXT} position={null} total={11} queue="review" />);
+
+    expect(screen.getByRole("link", { name: "다음 확인 필요 기업 →" })).toHaveAttribute("href", "/companies/6?queue=review");
+  });
+
+  test("keeps naming the neighbour when the company is still in the queue", () => {
+    render(<NeighbourNav prev={null} next={NEXT} position={3} total={11} queue="review" />);
+
+    expect(screen.getByRole("link", { name: "㈜뒤 →" })).toBeInTheDocument();
   });
 });

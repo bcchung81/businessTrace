@@ -1,19 +1,31 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 import { LoginForm } from "@/components/layout/login-form";
+import { checkLoginAttempt } from "@/lib/services/loginThrottle";
+import { clientAddress } from "@/lib/services/clientAddress";
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
   const callbackUrl = typeof params.callbackUrl === "string" ? params.callbackUrl : "/";
   const error = typeof params.error === "string" ? params.error : undefined;
+  const retryAfterSec = Number(params.retryAfter) || undefined;
 
   async function submit(formData: FormData) {
     "use server";
     const target = String(formData.get("callbackUrl") ?? "/");
+    const email = String(formData.get("email") ?? "");
+    const gate = checkLoginAttempt({ ip: clientAddress(await headers()), email });
+    if (!gate.ok) {
+      redirect(
+        `/login?error=TooManyAttempts&retryAfter=${gate.retryAfterSec}&callbackUrl=${encodeURIComponent(target)}`,
+      );
+    }
+
     try {
       await signIn("credentials", {
-        email: String(formData.get("email") ?? ""),
+        email,
         password: String(formData.get("password") ?? ""),
         redirectTo: target,
       });
@@ -25,17 +37,9 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     }
   }
 
-  const autofillEnabled = process.env.NODE_ENV !== "production";
-
   return (
     <div className="flex min-h-svh items-center justify-center bg-surface p-6">
-      <LoginForm
-        callbackUrl={callbackUrl}
-        error={error}
-        action={submit}
-        defaultEmail={autofillEnabled ? process.env.DEV_AUTOFILL_EMAIL : undefined}
-        defaultPassword={autofillEnabled ? process.env.DEV_AUTOFILL_PASSWORD : undefined}
-      />
+      <LoginForm callbackUrl={callbackUrl} error={error} retryAfterSec={retryAfterSec} action={submit} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { saveVerification } from "@/lib/repositories/verificationResult";
 import { analyzeCompany, type AnalysisResult, type AnalyzeEvent } from "@/lib/services/analyzer";
 import { extractAnalysisEvents, type NewEvent } from "@/lib/services/eventRules";
 import { defaultLlmClient, resolveModel, type Usage } from "@/lib/services/llm";
+import { logEvent } from "@/lib/services/logger";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import { verifyAnalysis, type VerificationOutput } from "@/lib/services/verification";
 
@@ -61,6 +62,7 @@ function emptyResult(companyName: string, model: string, total: number): Analysi
     comprehensiveOpinion: "회사가 주제인 기사가 없어 분석하지 않았습니다.",
     stats: { totalNews: total, scoredNews: 0, excludedNews: total, averageSentiment: null, positiveCount: 0, negativeCount: 0, neutralCount: 0, awardCount: 0, investmentCount: 0 },
     usage: NO_USAGE,
+    fallbacks: 0,
   };
 }
 
@@ -77,6 +79,7 @@ export async function runCompanyAnalysis(
   const open = () => deps.isOpen?.() ?? true;
   const persistEvents = deps.persistEvents ?? upsertEvents;
   let usage = NO_USAGE;
+  let analyseError: string | null = null;
 
   const primary = input.news.filter((item) => item.relevance === "primary");
   if (primary.length === 0) {
@@ -93,12 +96,17 @@ export async function runCompanyAnalysis(
         return { runId: run.id, status: "aborted", usage };
       }
       if (event.type !== "complete") {
+        if (event.type === "error") analyseError = event.message;
         emit(event);
         continue;
       }
 
       await completeRun(run.id, event.result);
       usage = addUsage(usage, event.result.usage);
+      const partial = event.result.fallbacks > 0 ? { message: `LLM 응답 실패 ${event.result.fallbacks}건을 기본값으로 메움` } : {};
+      if (event.result.fallbacks > 0) {
+        logEvent("warn", "analysis.fallbacks", { companyId: input.company.id, runId: run.id, fallbacks: event.result.fallbacks });
+      }
       emit({ ...event, runId: run.id });
       if (event.result.stats.scoredNews === 0) return { runId: run.id, status: "no_news", usage };
 
@@ -129,13 +137,16 @@ export async function runCompanyAnalysis(
         emit({ type: "events_failed", runId: run.id, message });
       }
 
-      return { runId: run.id, status: verification.status, usage };
+      return { runId: run.id, status: verification.status, ...partial, usage };
     }
-    await failRun(run.id, "분석이 결과 없이 끝났습니다.");
-    return { runId: run.id, status: "failed", message: "분석이 결과 없이 끝났습니다.", usage };
+    const message = analyseError ?? "분석이 결과 없이 끝났습니다.";
+    await failRun(run.id, message);
+    logEvent("error", "analysis.failed", { companyId: input.company.id, runId: run.id, message });
+    return { runId: run.id, status: "failed", message, usage };
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : "알 수 없는 오류";
     await failRun(run.id, message);
+    logEvent("error", "analysis.threw", { companyId: input.company.id, runId: run.id, error: caught });
     return { runId: run.id, status: "failed", message, usage };
   }
 }

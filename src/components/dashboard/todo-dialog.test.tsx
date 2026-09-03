@@ -3,12 +3,12 @@ import { describe, expect, test, vi } from "vitest";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
-vi.mock("@/app/dashboard/actions", () => ({
+vi.mock("@/app/(app)/dashboard/actions", () => ({
   loadReviewItemsAction: vi.fn(),
   confirmCompanyEventsAction: vi.fn(),
   markVerificationsReviewedAction: vi.fn(),
 }));
-vi.mock("@/app/companies/[id]/actions", () => ({
+vi.mock("@/app/(app)/companies/[id]/actions", () => ({
   decideNpsAction: vi.fn(),
   holdNpsAction: vi.fn(),
   decideDartAction: vi.fn(),
@@ -34,6 +34,10 @@ const OPEN_EVENTS: ReviewSummary = {
   lastDecidedAt: null,
 };
 const NOTHING_LEFT: ReviewSummary = { items: [], lastDecidedAt: null };
+const VERIFICATION: ReviewSummary = {
+  items: [{ kind: "verification", runId: 9, status: "needs_review", failed: ["근거 충실도"], sourceCoverage: 1, faithfulness: 0.5, evidenceMatch: 0.6, counterEvidence: [], note: null }],
+  lastDecidedAt: null,
+};
 const ONE_LEFT: ReviewSummary = {
   items: [{ kind: "open_events", events: [{ id: 22, occurredAt: "2026-08-26T00:00:00.000Z", severity: "notice", kind: "headcount_down", title: "인원 감소", evidence: [] }] }],
   lastDecidedAt: null,
@@ -158,19 +162,66 @@ describe("TodoDialog", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
     fireEvent.click(screen.getByRole("button", { name: "선택 1건 검토 완료" }));
+    fireEvent.click(await screen.findByRole("button", { name: "근거 없이 기록" }));
 
     await waitFor(() => expect(bulk).toHaveBeenCalledWith([5], []));
   });
 
-  test("tells the action which companies had their evidence opened", async () => {
-    const { bulk, load } = setup({ kind: "verification", summaries: { 5: NOTHING_LEFT, 11: NOTHING_LEFT } });
+  test("opening the row is not reading the evidence — only the evidence link counts", async () => {
+    const { bulk, load } = setup({ kind: "verification", summaries: { 5: VERIFICATION, 11: VERIFICATION } });
     fireEvent.click(screen.getByRole("button", { name: "㈜가 열기" }));
     await waitFor(() => expect(load).toHaveBeenCalledWith(5));
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1건 검토 완료" }));
+    fireEvent.click(await screen.findByRole("button", { name: "근거 없이 기록" }));
+
+    await waitFor(() => expect(bulk).toHaveBeenCalledWith([5], []));
+  });
+
+  test("records the evidence as read once the operator follows the evidence link", async () => {
+    const { bulk, load } = setup({ kind: "verification", summaries: { 5: VERIFICATION, 11: VERIFICATION } });
+    fireEvent.click(screen.getByRole("button", { name: "㈜가 열기" }));
+    await waitFor(() => expect(load).toHaveBeenCalledWith(5));
+    fireEvent.click(screen.getByRole("link", { name: "검증 근거 열기" }));
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1건 검토 완료" }));
+
+    await waitFor(() => expect(bulk).toHaveBeenCalledWith([5], [5]));
+  });
+
+  test("asks before recording a verification review nobody looked at", async () => {
+    const { bulk } = setup({ kind: "verification", summaries: { 5: VERIFICATION, 11: VERIFICATION } });
     fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "㈜다 선택" }));
     fireEvent.click(screen.getByRole("button", { name: "선택 2건 검토 완료" }));
 
-    await waitFor(() => expect(bulk).toHaveBeenCalledWith([5, 11], [5]));
+    expect(await screen.findByRole("alert")).toHaveTextContent("2개사를 근거 확인 없이 검토 완료로 기록합니다");
+    expect(bulk).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    expect(bulk).not.toHaveBeenCalled();
+  });
+
+  test("does not ask when nothing is being recorded blind", async () => {
+    const { bulk, load } = setup({ kind: "verification", summaries: { 5: VERIFICATION, 11: VERIFICATION } });
+    fireEvent.click(screen.getByRole("button", { name: "㈜가 열기" }));
+    await waitFor(() => expect(load).toHaveBeenCalledWith(5));
+    fireEvent.click(screen.getByRole("link", { name: "검증 근거 열기" }));
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1건 검토 완료" }));
+
+    await waitFor(() => expect(bulk).toHaveBeenCalled());
+  });
+
+  test("confirming events never asks — that queue has no evidence panel to read", async () => {
+    const { bulk } = setup({ summaries: { 5: NOTHING_LEFT } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "㈜가 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1건 사건 확인" }));
+
+    await waitFor(() => expect(bulk).toHaveBeenCalledWith([5], []));
   });
 
   test("closing the dialog forgets what was settled and what was checked", async () => {

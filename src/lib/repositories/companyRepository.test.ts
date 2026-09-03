@@ -180,11 +180,12 @@ describe("listNeighbours", () => {
     expect(await listNeighbours(a.id, [a.id, c.id])).toEqual({ prev: null, next: { id: c.id, name: "다" }, position: 1, total: 2 });
   });
 
-  it("gives no neighbours and no position for a company outside the queue", async () => {
+  it("points a company that just left the queue at the next one still in it", async () => {
     const a = await prisma.company.create({ data: { name: "가", year: 2026, displayOrder: 0 } });
     const b = await prisma.company.create({ data: { name: "나", year: 2026, displayOrder: 1 } });
     const c = await prisma.company.create({ data: { name: "다", year: 2026, displayOrder: 2 } });
 
-    expect(await listNeighbours(b.id, [a.id, c.id])).toEqual({ prev: null, next: null, position: null, total: 2 });
+    expect(await listNeighbours(b.id, [a.id, c.id])).toEqual({ prev: null, next: { id: a.id, name: "가" }, position: null, total: 2 });
+    expect(await listNeighbours(b.id, [])).toEqual({ prev: null, next: null, position: null, total: 0 });
   });
 });

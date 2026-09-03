@@ -52,6 +52,7 @@ function result(analyses: NewsAnalysis[] = [analysis()]): AnalysisResult {
       investmentCount: 1,
     },
     usage: { inputTokens: 1000, outputTokens: 200, cacheReadTokens: 0 },
+  fallbacks: 0,
   };
 }
 

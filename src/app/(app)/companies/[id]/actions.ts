@@ -66,6 +66,21 @@ export async function reviewVerificationAction(input: { runId: number; note: str
   return done(stored.analysisRun.companyId);
 }
 
+/**
+ * 검토 완료 기록을 지운다 — 일괄 기록을 되돌리는 유일한 경로다.
+ * 근거를 못 본 채 남은 기록은 지워야 다음 사람이 그 판정을 다시 본다.
+ */
+export async function undoVerificationReviewAction(input: { runId: number }): Promise<ActionResult> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, message: "unauthorized" };
+  const stored = await prisma.verificationResult.update({
+    where: { analysisRunId: input.runId },
+    data: { reviewedAt: null, reviewedBy: null, reviewNote: null },
+    include: { analysisRun: { select: { companyId: true } } },
+  });
+  return done(stored.analysisRun.companyId);
+}
+
 export async function confirmEventsAction(input: { companyId: number; eventIds: number[]; action: "acknowledge" | "done" }): Promise<ActionResult> {
   const userId = await currentUserId();
   if (!userId) return { ok: false, message: "unauthorized" };

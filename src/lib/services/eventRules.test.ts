@@ -4,7 +4,7 @@ import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
 import {
   isSameStory,
   compareSeverity, dashboardEvents, extractAnalysisEvents, extractPensionEvents, extractSourceEvents,
-  HEADCOUNT_RATIO, NEGATIVE_PRESS_MAX, POSITIVE_PRESS_MIN, type EventKind,
+  HEADCOUNT_RATIO, NEGATIVE_PRESS_MAX, POSITIVE_PRESS_MIN, isUnacknowledged, type EventKind, type Severity,
 } from "@/lib/services/eventRules";
 
 const NOW = new Date("2026-08-30T00:00:00.000Z");
@@ -21,6 +21,7 @@ function analysis(over: { link: string; about?: boolean; score?: number; award?:
 
 function result(analyses: NewsAnalysis[]): AnalysisResult {
   return { companyName: "딥노이드", model: "m", analyses, comprehensiveOpinion: "", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 },
+  fallbacks: 0,
     stats: { totalNews: analyses.length, scoredNews: analyses.length, excludedNews: 0, averageSentiment: 0, positiveCount: 0, negativeCount: 0, neutralCount: 0, awardCount: 0, investmentCount: 0 } };
 }
 
@@ -182,5 +183,29 @@ describe("dashboardEvents", () => {
 describe("compareSeverity", () => {
   it("sorts alert before notice before positive before info", () => {
     expect((["info", "positive", "alert", "notice"] as const).slice().sort(compareSeverity)).toEqual(["alert", "notice", "positive", "info"]);
+  });
+});
+
+describe("isUnacknowledged", () => {
+  const at = (over: Partial<{ kind: EventKind; severity: Severity; status: string }>) =>
+    ({ kind: "award" as EventKind, severity: "alert" as Severity, status: "open", ...over });
+
+  it("counts an open alert and an open notice", () => {
+    expect(isUnacknowledged(at({ severity: "alert" }))).toBe(true);
+    expect(isUnacknowledged(at({ severity: "notice" }))).toBe(true);
+  });
+
+  it("does not count positive or info — the confirm button is not on them, so their column could never reach 0", () => {
+    expect(isUnacknowledged(at({ severity: "positive" }))).toBe(false);
+    expect(isUnacknowledged(at({ severity: "info" }))).toBe(false);
+  });
+
+  it("does not count an event already acknowledged or done", () => {
+    expect(isUnacknowledged(at({ status: "acknowledged" }))).toBe(false);
+    expect(isUnacknowledged(at({ status: "done" }))).toBe(false);
+  });
+
+  it("does not count a name-clash event — bulk confirm deliberately skips those", () => {
+    expect(isUnacknowledged(at({ kind: "source_conflict" }))).toBe(false);
   });
 });

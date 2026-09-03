@@ -7,7 +7,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/services/refreshSources", () => ({ refreshSourcesFor: vi.fn(async () => ({})) }));
 import { auth } from "@/auth";
 import { refreshSourcesFor } from "@/lib/services/refreshSources";
-import { editCompanyAction, setCompanyActiveAction } from "@/app/companies/actions";
+import { editCompanyAction, setCompanyActiveAction } from "@/app/(app)/companies/actions";
 
 describe("company edit actions", () => {
   beforeEach(async () => {

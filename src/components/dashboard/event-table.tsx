@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { confirmEventsAction } from "@/app/companies/[id]/actions";
+import { confirmEventsAction } from "@/app/(app)/companies/[id]/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";

@@ -5,6 +5,8 @@ import { createOpenAiClient } from "@/lib/services/llmOpenai";
 import { resolveModel as resolveActiveModel, resolveProvider } from "@/lib/services/llmProvider";
 
 const MAX_TOKENS = 8000;
+/** 한 호출 상한. SDK 기본(약 10분) × 재시도 3회면 기사 하나가 배치를 40분 붙잡는다. */
+const TIMEOUT_MS = 120_000;
 
 export type Effort = "low" | "medium" | "high";
 
@@ -114,13 +116,18 @@ export function createLlmClient(sdk: StreamingMessages, model = resolveModel()):
   };
 }
 
+/** 두 공급자 SDK 에 같은 재시도·타임아웃을 준다. */
+export function sdkOptions() {
+  return { maxRetries: 3, timeout: TIMEOUT_MS };
+}
+
 /**
  * 환경변수 자격증명으로 기본 LLM 클라이언트를 만든다 — LLM_PROVIDER 가 어느 어댑터를 쓸지 정한다.
  * 두 어댑터가 같은 LlmClient 를 내므로 호출부(분석·검증)는 어느 쪽인지 알지 못한다.
  */
 export function defaultLlmClient(): LlmClient {
   if (resolveProvider() === "openai") {
-    return createOpenAiClient(new OpenAI({ maxRetries: 3 }) as never);
+    return createOpenAiClient(new OpenAI(sdkOptions()) as never);
   }
-  return createLlmClient(new Anthropic({ maxRetries: 3 }) as unknown as StreamingMessages);
+  return createLlmClient(new Anthropic(sdkOptions()) as unknown as StreamingMessages);
 }

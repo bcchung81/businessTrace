@@ -1,3 +1,5 @@
+import type { Lookup } from "@/lib/services/outboundUrl";
+
 export type NewsProvider = "naver" | "google";
 
 export type Relevance = "primary" | "mention" | "unrelated";
@@ -15,4 +17,4 @@ export type NewsItem = {
   relevance: Relevance;
 };
 
-export type FetchDeps = { fetchImpl?: typeof fetch };
+export type FetchDeps = { fetchImpl?: typeof fetch; lookup?: Lookup };

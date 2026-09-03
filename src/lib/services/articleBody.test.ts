@@ -4,6 +4,9 @@ import type { NewsItem } from "@/lib/services/newsTypes";
 import tokens from "./__fixtures__/google-tokens.json";
 import naverHtml from "./__fixtures__/article-naver.html?raw";
 
+/** 이름은 전부 공인 주소로 푼다 — 크롤러의 DNS 방어만 끄고 나머지 동작을 본다. */
+const lookup = async () => ["203.0.113.10"];
+
 function jsonResponse(body: string) {
   return new Response(body, { status: 200 });
 }
@@ -12,7 +15,7 @@ describe("resolveGoogleNewsUrl", () => {
   it("passes a publisher url straight through without calling google", async () => {
     const fetchImpl = vi.fn() as unknown as typeof fetch;
 
-    expect(await resolveGoogleNewsUrl("https://www.yna.co.kr/view/1", { fetchImpl })).toBe(
+    expect(await resolveGoogleNewsUrl("https://www.yna.co.kr/view/1", { fetchImpl, lookup })).toBe(
       "https://www.yna.co.kr/view/1",
     );
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -33,7 +36,7 @@ describe("resolveGoogleNewsUrl", () => {
 
     const resolved = await resolveGoogleNewsUrl(
       `https://news.google.com/rss/articles/${tokens.modern}?oc=5`,
-      { fetchImpl },
+      { fetchImpl, lookup },
     );
 
     expect(resolved).toBe("https://www.yna.co.kr/view/9");
@@ -44,7 +47,7 @@ describe("resolveGoogleNewsUrl", () => {
 
     const resolved = await resolveGoogleNewsUrl(
       `https://news.google.com/rss/articles/${tokens.legacyBase64}?oc=5`,
-      { fetchImpl },
+      { fetchImpl, lookup },
     );
 
     expect(resolved).toBe("https://www.yna.co.kr/view/2");
@@ -54,7 +57,7 @@ describe("resolveGoogleNewsUrl", () => {
     const link = "https://news.google.com/rss/articles/not-a-token?oc=5";
     const fetchImpl = vi.fn(async () => new Response("", { status: 500 })) as unknown as typeof fetch;
 
-    expect(await resolveGoogleNewsUrl(link, { fetchImpl })).toBe(link);
+    expect(await resolveGoogleNewsUrl(link, { fetchImpl, lookup })).toBe(link);
   });
 });
 
@@ -64,7 +67,7 @@ describe("fetchArticleBody", () => {
       new Response(naverHtml, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } }),
     ) as unknown as typeof fetch;
 
-    const body = await fetchArticleBody("https://n.news.naver.com/article/1/2", { fetchImpl });
+    const body = await fetchArticleBody("https://n.news.naver.com/article/1/2", { fetchImpl, lookup });
 
     expect(body).toContain("시리즈A 투자를 유치했다");
     expect(body).not.toContain("회원가입");
@@ -74,7 +77,7 @@ describe("fetchArticleBody", () => {
   it("returns an empty string when the publisher blocks the request", async () => {
     const fetchImpl = vi.fn(async () => new Response("", { status: 403 })) as unknown as typeof fetch;
 
-    expect(await fetchArticleBody("https://x.kr/a", { fetchImpl })).toBe("");
+    expect(await fetchArticleBody("https://x.kr/a", { fetchImpl, lookup })).toBe("");
   });
 
   it("returns an empty string instead of throwing when the request fails", async () => {
@@ -82,22 +85,82 @@ describe("fetchArticleBody", () => {
       throw new Error("network down");
     }) as unknown as typeof fetch;
 
-    expect(await fetchArticleBody("https://x.kr/a", { fetchImpl })).toBe("");
+    expect(await fetchArticleBody("https://x.kr/a", { fetchImpl, lookup })).toBe("");
   });
 
   it("gives up on a google url it could not resolve rather than crawling google", async () => {
     const fetchImpl = vi.fn(async () => new Response("", { status: 500 })) as unknown as typeof fetch;
 
     expect(
-      await fetchArticleBody("https://news.google.com/rss/articles/not-a-token?oc=5", { fetchImpl }),
+      await fetchArticleBody("https://news.google.com/rss/articles/not-a-token?oc=5", { fetchImpl, lookup }),
     ).toBe("");
+  });
+
+  it("follows a redirect itself so every hop is checked again", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+      String(input) === "https://x.kr/a"
+        ? new Response("", { status: 302, headers: { location: "https://moved.example.kr/b" } })
+        : new Response(naverHtml, { status: 200 }),
+    ) as unknown as typeof fetch;
+
+    expect(await fetchArticleBody("https://x.kr/a", { fetchImpl, lookup })).toContain("시리즈A 투자를 유치했다");
+    expect(vi.mocked(fetchImpl).mock.calls[0][1]).toMatchObject({ redirect: "manual" });
+  });
+
+  it("refuses a link that redirects into the metadata service instead of following it", async () => {
+    const seen: string[] = [];
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      seen.push(String(input));
+      return new Response("", { status: 302, headers: { location: "http://169.254.169.254/latest/meta-data/" } });
+    }) as unknown as typeof fetch;
+
+    expect(await fetchArticleBody("https://x.kr/a", { fetchImpl, lookup })).toBe("");
+    expect(seen).toEqual(["https://x.kr/a"]);
+  });
+
+  it("refuses a publisher name that resolves to a loopback address", async () => {
+    const fetchImpl = vi.fn(async () => new Response(naverHtml, { status: 200 })) as unknown as typeof fetch;
+
+    expect(await fetchArticleBody("https://x.kr/a", { fetchImpl, lookup: async () => ["127.0.0.1"] })).toBe("");
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("refuses a non-http scheme without opening a socket", async () => {
+    const fetchImpl = vi.fn() as unknown as typeof fetch;
+
+    expect(await fetchArticleBody("file:///etc/passwd", { fetchImpl, lookup })).toBe("");
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("drops an oversized response instead of parsing it", async () => {
+    const fetchImpl = vi.fn(async () =>
+      new Response(naverHtml, { status: 200, headers: { "content-length": String(50 * 1024 * 1024) } }),
+    ) as unknown as typeof fetch;
+
+    expect(await fetchArticleBody("https://x.kr/a", { fetchImpl, lookup })).toBe("");
+  });
+
+  it("stops reading a body that keeps growing past the cap", async () => {
+    const chunk = new TextEncoder().encode("가".repeat(64 * 1024));
+    let sent = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        sent += 1;
+        if (sent > 200) return controller.close();
+        controller.enqueue(chunk);
+      },
+    });
+    const fetchImpl = vi.fn(async () => new Response(stream, { status: 200 })) as unknown as typeof fetch;
+
+    expect(await fetchArticleBody("https://x.kr/a", { fetchImpl, lookup })).toBe("");
+    expect(sent).toBeLessThan(200);
   });
 
   it("caps a very long body so one article cannot fill the prompt", async () => {
     const long = `<html><body><div id="dic_area"><p>${"본문 ".repeat(4000)}</p></div></body></html>`;
     const fetchImpl = vi.fn(async () => new Response(long, { status: 200 })) as unknown as typeof fetch;
 
-    expect((await fetchArticleBody("https://x.kr/a", { fetchImpl })).length).toBeLessThanOrEqual(4000);
+    expect((await fetchArticleBody("https://x.kr/a", { fetchImpl, lookup })).length).toBeLessThanOrEqual(4000);
   });
 });
 
@@ -119,7 +182,7 @@ describe("enrichWithBodies", () => {
   it("replaces the snippet with the crawled body", async () => {
     const fetchImpl = vi.fn(async () => new Response(naverHtml, { status: 200 })) as unknown as typeof fetch;
 
-    const [enriched] = await enrichWithBodies([item()], { fetchImpl });
+    const [enriched] = await enrichWithBodies([item()], { fetchImpl, lookup });
 
     expect(enriched.content).toContain("시리즈A 투자를 유치했다");
   });
@@ -127,7 +190,7 @@ describe("enrichWithBodies", () => {
   it("keeps the snippet when the body could not be crawled", async () => {
     const fetchImpl = vi.fn(async () => new Response("", { status: 403 })) as unknown as typeof fetch;
 
-    const [enriched] = await enrichWithBodies([item()], { fetchImpl });
+    const [enriched] = await enrichWithBodies([item()], { fetchImpl, lookup });
 
     expect(enriched.content).toBe("짧은 요약");
   });
@@ -138,7 +201,7 @@ describe("enrichWithBodies", () => {
       item({ link: `https://x.kr/${slug}`, title: slug }),
     );
 
-    const enriched = await enrichWithBodies(items, { fetchImpl, concurrency: 3 });
+    const enriched = await enrichWithBodies(items, { fetchImpl, lookup, concurrency: 3 });
 
     expect(enriched.map((entry) => entry.title)).toEqual(["a", "b", "c", "d", "e"]);
   });
@@ -151,7 +214,7 @@ describe("enrichWithBodies", () => {
 
     const [enriched] = await enrichWithBodies(
       [item({ link: `https://news.google.com/rss/articles/${token}?oc=5`, provider: "google" })],
-      { fetchImpl },
+      { fetchImpl, lookup },
     );
 
     expect(enriched.link).toBe("https://biz.example.kr/a/1");
@@ -162,7 +225,7 @@ describe("enrichWithBodies", () => {
 
     const [enriched] = await enrichWithBodies(
       [item({ link: "https://x.kr/ok?newsId=1&utm_source=naver&utm_medium=referral&fbclid=abc" })],
-      { fetchImpl },
+      { fetchImpl, lookup },
     );
 
     expect(enriched.link).toBe("https://x.kr/ok?newsId=1");

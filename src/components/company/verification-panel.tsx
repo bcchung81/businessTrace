@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { VerdictPill } from "@/components/dashboard/verdict-pill";
 import { kstDate } from "@/lib/services/kst";
 import { EVIDENCE_MATCH_THRESHOLD, FAITHFULNESS_THRESHOLD, SOURCE_COVERAGE_THRESHOLD, failedGates } from "@/lib/services/verificationScores";
@@ -26,9 +26,12 @@ function score(value: number | null, threshold: number) {
 /**
  * 판정 배지 하나로 시작해, 누르면 4층 검증 근거를 사이드 패널로 편다.
  * 탈락한 게이트를 이름으로 적고, 검토 기록이 있으면 배지 아래 한 줄로 남긴다 — 일괄 기록이 보이지 않으면 추적할 수 없다.
+ * 그 기록을 지우는 자리도 여기 하나뿐이다. 되돌릴 곳이 없는 감사 기록은 실수 한 번으로 영구해진다.
  */
-export function VerificationPanel({ layers }: { layers: VerificationLayers | null }) {
+export function VerificationPanel({ layers, runId, undo }: { layers: VerificationLayers | null; runId?: number | null; undo?: (input: { runId: number }) => Promise<{ ok: boolean; message?: string }> }) {
   const [open, setOpen] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const [undoing, startUndo] = useTransition();
   const trigger = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
 
@@ -66,7 +69,26 @@ export function VerificationPanel({ layers }: { layers: VerificationLayers | nul
           검증 근거
         </button>
         {layers.reviewedAt ? (
-          <span className="text-[11px] text-muted-foreground">{`검토 ${kstDate(layers.reviewedAt)}${layers.reviewNote ? ` · ${layers.reviewNote}` : ""}`}</span>
+          <div className="flex flex-col items-start gap-0.5 md:items-end">
+            <span className="text-[11px] text-muted-foreground">{`검토 ${kstDate(layers.reviewedAt)}${layers.reviewNote ? ` · ${layers.reviewNote}` : ""}`}</span>
+            {undo && typeof runId === "number" ? (
+              <button
+                type="button"
+                disabled={undoing}
+                onClick={() => {
+                  setUndoError(null);
+                  startUndo(async () => {
+                    const result = await undo({ runId });
+                    if (!result.ok) setUndoError(result.message ?? "검토 기록을 취소하지 못했습니다");
+                  });
+                }}
+                className="text-[11px] underline decoration-dotted underline-offset-2 text-muted-foreground"
+              >
+                검토 기록 취소
+              </button>
+            ) : null}
+            {undoError ? <span role="alert" className="text-[11px] font-medium text-risk">{undoError}</span> : null}
+          </div>
         ) : null}
       </div>
       {open ? (

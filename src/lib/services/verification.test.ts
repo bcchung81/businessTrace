@@ -51,6 +51,7 @@ function result(analyses: NewsAnalysis[]): AnalysisResult {
       investmentCount: 0,
     },
     usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 },
+  fallbacks: 0,
   };
 }
 

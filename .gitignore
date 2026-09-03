@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# 키 목록은 서버에서 clone 한 직후에도 있어야 한다 — 값은 전부 비어 있다
+!.env.example
 
 # vercel
 .vercel

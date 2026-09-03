@@ -65,6 +65,17 @@ export function dashboardEvents<T extends { kind: EventKind; status: string }>(e
   return events.filter((event) => !(event.kind === "source_conflict" && event.status === "done"));
 }
 
+/**
+ * 「미확인」의 단 하나의 정의 — 아직 확인하지 않은 경보·주의다.
+ * 긍정·정보는 확인 버튼이 붙지 않아 세면 0 이 될 수 없고, 동명 충돌은 일괄 확인이 일부러 건드리지 않는다.
+ * 밴드·리본·기업 목록·월간 문서가 전부 이 함수를 쓴다. 화면마다 다른 수를 말하면 어느 것도 못 믿는다.
+ */
+export function isUnacknowledged(event: { kind: string; severity: Severity; status: string }): boolean {
+  if (event.kind === "source_conflict") return false;
+  if (event.severity !== "alert" && event.severity !== "notice") return false;
+  return event.status === "open";
+}
+
 function articleEvent(companyId: number, runId: number, trust: Trust, analysis: NewsAnalysis, kind: EventKind, severity: Severity, title: string, label: string): NewEvent {
   return {
     companyId, kind, severity, runId, trust, title,

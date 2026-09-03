@@ -1,6 +1,7 @@
 import { advanceBatch, finishBatch, startBatch, type BatchStage } from "@/lib/services/batchRegistry";
 import { runCompanyAnalysis, type PipelineDeps, type PipelineEvent, type PipelineOutcome } from "@/lib/services/analysisPipeline";
 import { NewsRateLimitError, type CollectResult } from "@/lib/services/newsCollector";
+import { logEvent } from "@/lib/services/logger";
 
 export type BatchTarget = { id: number; name: string; year: number; businessNo: string | null; verified: boolean; aliases: string | null };
 export type BatchOptions = {
@@ -25,10 +26,22 @@ export type BatchDeps = {
   collect: (options: { query: string; aliases: string | null; startDate?: string; endDate?: string; limit: number; naver: boolean; google: boolean }) => Promise<CollectResult>;
   collectOnly: (input: { companyId: number; userId: number; news: CollectResult["items"]; duplicatesRemoved: number }) => Promise<unknown>;
   refreshSources: (company: BatchTarget) => Promise<unknown>;
+  /** 첫 기업 전에 한 번 도는 준비 작업 — 20MB corpCode zip 같은 것. 요청 안에서 돌면 프록시 타임아웃과 겹친다. */
+  prepare?: () => Promise<unknown>;
   isOpen?: () => boolean;
 };
 
 type Step = { events: BatchEvent[]; done: Extract<BatchEvent, { type: "company_done" }>; rateLimited?: boolean };
+
+/**
+ * 한 기업의 한 단계가 던졌을 때 그 기업만 실패로 닫는다.
+ * 감싸지 않으면 17번째 기업의 data.go.kr 500 하나가 남은 39개사를 시도조차 못 하게 만든다.
+ */
+function failed(target: BatchTarget, step: string, caught: unknown, done: (status: CompanyStatus, extra?: { message?: string; articles?: number }) => Step): Step {
+  const message = caught instanceof Error ? caught.message : `${step} 실패`;
+  logEvent("error", "batch.company_failed", { companyId: target.id, name: target.name, step, message });
+  return done("failed", { message });
+}
 
 async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDeps, open: () => boolean): Promise<Step> {
   const events: BatchEvent[] = [];
@@ -38,7 +51,11 @@ async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDep
   });
 
   if (options.stage === "sources") {
-    await deps.refreshSources(target);
+    try {
+      await deps.refreshSources(target);
+    } catch (caught) {
+      return failed(target, "sources", caught, done);
+    }
     return done("sources_done");
   }
   if (target.verified && !options.force && options.stage === "full") return done("skipped", { message: "이미 검증됨" });
@@ -59,7 +76,11 @@ async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDep
     return done("failed", { message: caught instanceof Error ? caught.message : "수집 실패" });
   }
   if (options.stage === "news") {
-    await deps.collectOnly({ companyId: target.id, userId: deps.userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved });
+    try {
+      await deps.collectOnly({ companyId: target.id, userId: deps.userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved });
+    } catch (caught) {
+      return failed(target, "store", caught, done);
+    }
     return done("collected", { articles: collected.items.length });
   }
   const outcome = await runCompanyAnalysis(
@@ -75,12 +96,21 @@ async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDep
  */
 export async function* runBatch(targets: BatchTarget[], options: BatchOptions, deps: BatchDeps): AsyncGenerator<BatchEvent> {
   startBatch({ stage: options.stage, total: targets.length });
+  logEvent("info", "batch.start", { stage: options.stage, total: targets.length, userId: deps.userId });
   const open = () => deps.isOpen?.() ?? true;
   let done = 0;
   let aborted = false;
   let rateLimited = false;
   try {
     yield { type: "batch_start", total: targets.length, stage: options.stage };
+    try {
+      await deps.prepare?.();
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "준비 단계 실패";
+      logEvent("error", "batch.prepare_failed", { stage: options.stage, message });
+      yield { type: "batch_done", done: 0, total: targets.length, aborted: true };
+      return;
+    }
     for (const [index, target] of targets.entries()) {
       if (!open()) {
         aborted = true;
@@ -103,6 +133,7 @@ export async function* runBatch(targets: BatchTarget[], options: BatchOptions, d
         aborted = true;
       }
     }
+    logEvent("info", "batch.done", { stage: options.stage, done, total: targets.length, aborted });
     yield { type: "batch_done", done, total: targets.length, aborted };
   } finally {
     finishBatch();

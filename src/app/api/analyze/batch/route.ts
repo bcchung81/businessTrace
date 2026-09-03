@@ -7,6 +7,7 @@ import { abortRequested, readBatch } from "@/lib/services/batchRegistry";
 import { launchBatch } from "@/lib/services/batchSession";
 import { runBatch, type BatchTarget } from "@/lib/services/batchRun";
 import { refreshCorpCodes } from "@/lib/services/dartCorpCode";
+import { logEvent } from "@/lib/services/logger";
 import { collectForCompany } from "@/lib/services/collectForCompany";
 import { refreshSourcesFor } from "@/lib/services/refreshSources";
 
@@ -43,7 +44,6 @@ export async function POST(request: Request) {
     aliases: company.aliases,
   }));
   if (targets.length === 0) return Response.json({ message: "실행할 기업이 없습니다." }, { status: 400 });
-  if (parsed.data.stage === "sources") await refreshCorpCodes();
 
   const userId = Number(session.user.id);
   const events = runBatch(targets, parsed.data, {
@@ -52,10 +52,15 @@ export async function POST(request: Request) {
     collect: ({ query, aliases, ...options }) => collectForCompany({ name: query, aliases }, options),
     collectOnly: createCollectionRun,
     refreshSources: (target) => refreshSourcesFor(target.id),
+    // 20MB zip 을 요청 안에서 받으면 202 를 돌려주기 전에 프록시 타임아웃과 겹친다 — 배치 첫 스텝으로 민다.
+    prepare: parsed.data.stage === "sources" ? refreshCorpCodes : undefined,
     isOpen: () => !abortRequested(),
   });
   const first = await events.next();
-  if (first.done) return Response.json({ message: "배치를 시작하지 못했습니다." }, { status: 500 });
+  if (first.done) {
+    logEvent("error", "route.batch_start_failed", { userId, companies: targets.length, stage: parsed.data.stage });
+    return Response.json({ message: "배치를 시작하지 못했습니다." }, { status: 500 });
+  }
   void launchBatch(prepend(first.value, events));
   return Response.json({ batch: readBatch() }, { status: 202 });
 }

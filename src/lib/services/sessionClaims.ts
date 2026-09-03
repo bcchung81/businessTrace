@@ -19,3 +19,17 @@ export function applyUserId<T extends SessionShape>(session: T, token: Token): T
   if (!session.user || typeof token.uid !== "string") return session;
   return { ...session, user: { ...session.user, id: token.uid } };
 }
+
+/**
+ * 세션을 낼 때마다 계정이 아직 살아 있는지 확인한다.
+ * JWT 는 서버가 취소할 수 없다 — 비활성 처리한 계정이 만료까지 그대로 도는 것을 막는 유일한 지점이다.
+ */
+export async function applyActiveUserId<T extends SessionShape>(
+  session: T,
+  token: Token,
+  isActive: (userId: string) => Promise<boolean>,
+): Promise<T> {
+  const uid = typeof token.uid === "string" ? token.uid : null;
+  if (!uid || !(await isActive(uid))) return { ...session, user: undefined };
+  return applyUserId(session, token);
+}

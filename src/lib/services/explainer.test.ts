@@ -78,6 +78,7 @@ function result(analyses: NewsAnalysis[], opinion = ""): AnalysisResult {
     comprehensiveOpinion: opinion,
     stats: { totalNews: analyses.length, scoredNews: analyses.length, excludedNews: 0, averageSentiment: 0, positiveCount: 0, negativeCount: 0, neutralCount: 0, awardCount: 0, investmentCount: 0 },
     usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 },
+  fallbacks: 0,
   };
 }
 

@@ -16,7 +16,7 @@ import {
   reviewVerificationAction,
   saveAliasesAction,
   saveBusinessNoAction,
-} from "@/app/companies/[id]/actions";
+} from "@/app/(app)/companies/[id]/actions";
 
 describe("company review actions", () => {
   beforeEach(async () => {

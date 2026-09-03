@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { describe, expect, test, vi } from "vitest";
 import { ContributionBars } from "@/components/company/contribution-bars";
 import { OpinionCitations } from "@/components/company/opinion-citations";
 import { VerificationPanel, type VerificationLayers } from "@/components/company/verification-panel";
@@ -120,6 +120,30 @@ describe("VerificationPanel", () => {
   test("says nothing about a review that never happened", () => {
     render(<VerificationPanel layers={layers} />);
     expect(screen.queryByText(/^검토 2026/)).not.toBeInTheDocument();
+  });
+
+  test("offers to undo a review record — a bulk tick must be reversible somewhere", async () => {
+    const undo = vi.fn(async () => ({ ok: true as const }));
+    render(<VerificationPanel layers={{ ...layers, reviewedAt: "2026-09-02T04:00:00.000Z", reviewNote: "일괄 검토 완료 · 근거 미열람" }} runId={9} undo={undo} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "검토 기록 취소" }));
+
+    await waitFor(() => expect(undo).toHaveBeenCalledWith({ runId: 9 }));
+  });
+
+  test("offers no undo when there is no review record to undo", () => {
+    render(<VerificationPanel layers={layers} runId={9} undo={vi.fn()} />);
+
+    expect(screen.queryByRole("button", { name: "검토 기록 취소" })).not.toBeInTheDocument();
+  });
+
+  test("says why the undo failed instead of pretending it worked", async () => {
+    const undo = vi.fn(async () => ({ ok: false as const, message: "unauthorized" }));
+    render(<VerificationPanel layers={{ ...layers, reviewedAt: "2026-09-02T04:00:00.000Z", reviewNote: null }} runId={9} undo={undo} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "검토 기록 취소" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("unauthorized");
   });
 
   test("names the failed gate so the reader knows why it is 검토 필요", () => {

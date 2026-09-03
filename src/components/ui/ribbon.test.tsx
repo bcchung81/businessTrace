@@ -2,12 +2,12 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
-vi.mock("@/app/dashboard/actions", () => ({
+vi.mock("@/app/(app)/dashboard/actions", () => ({
   loadReviewItemsAction: vi.fn(),
   confirmCompanyEventsAction: vi.fn(),
   markVerificationsReviewedAction: vi.fn(),
 }));
-vi.mock("@/app/companies/[id]/actions", () => ({
+vi.mock("@/app/(app)/companies/[id]/actions", () => ({
   decideNpsAction: vi.fn(),
   holdNpsAction: vi.fn(),
   decideDartAction: vi.fn(),

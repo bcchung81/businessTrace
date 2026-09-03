@@ -1,12 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Gothic_A1 } from "next/font/google";
-import { AppShell } from "@/components/layout/app-shell";
-import { HeaderTools } from "@/components/layout/header-tools";
-import { SignOutForm } from "@/components/layout/sign-out-form";
-import { auth } from "@/auth";
-import { signOutAction } from "@/app/actions";
-import { readBatch } from "@/lib/services/batchRegistry";
-import { loadHeaderTools } from "@/lib/services/headerTools";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,7 +15,7 @@ const geistMono = Geist_Mono({
 const gothicA1 = Gothic_A1({ weight: ["700", "900"], subsets: ["latin"], variable: "--font-gothic-a1", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "기업성과추적",
+  title: "성과돋보기",
   description: "뉴스·AI 기반 기업 분석 및 우수기업 선정 관리 시스템",
 };
 
@@ -31,9 +24,7 @@ export const metadata: Metadata = {
 const THEME_SCRIPT =
   "(function(){try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}})();";
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const session = await auth();
-  const tools = session?.user ? await loadHeaderTools() : null;
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
@@ -47,15 +38,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
       </head>
-      <body className="min-h-full">
-        <AppShell
-          batch={readBatch()}
-          tools={tools ? <HeaderTools tools={tools} /> : undefined}
-          account={session?.user ? <SignOutForm action={signOutAction} /> : undefined}
-        >
-          {children}
-        </AppShell>
-      </body>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }

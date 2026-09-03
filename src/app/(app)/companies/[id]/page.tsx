@@ -10,9 +10,9 @@ import { parseId } from "@/lib/services/routeParams";
 import { buildExplanation } from "@/lib/repositories/explainInputs";
 import { buildReviewItems } from "@/lib/repositories/reviewItems";
 import { ReviewBlock } from "@/components/company/review-block";
-import { confirmEventsAction, decideDartAction, decideFscAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction } from "@/app/companies/[id]/actions";
+import { confirmEventsAction, decideDartAction, decideFscAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction, undoVerificationReviewAction } from "@/app/(app)/companies/[id]/actions";
 import { EditCompanyDialog } from "@/components/company/edit-company-dialog";
-import { editCompanyAction, setCompanyActiveAction } from "@/app/companies/actions";
+import { editCompanyAction, setCompanyActiveAction } from "@/app/(app)/companies/actions";
 import { parseAliases } from "@/lib/services/collectForCompany";
 import { buildDashboard } from "@/lib/services/dashboardSummary";
 import { ContributionBars } from "@/components/company/contribution-bars";
@@ -113,7 +113,7 @@ export default async function CompanyDetailPage({ params, searchParams }: PagePr
         index="01"
         title="기여도 · 인용 근거"
         tag="분석 산출"
-        aside={explanation ? <VerificationPanel layers={explanation.layers} /> : null}
+        aside={explanation ? <VerificationPanel layers={explanation.layers} runId={explanation.runId} undo={undoVerificationReviewAction} /> : null}
       >
         {explanation ? (
           <div className="flex flex-col gap-5">

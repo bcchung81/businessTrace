@@ -128,10 +128,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         facts={facts}
         summary={
           <p className="text-[15px] font-medium leading-[1.35] text-band-foreground/78">
-            {companies.length}개사 중 <b className="font-black text-band-foreground">{eventSummary.companiesWithEvents}개사</b>에 사건 · 주의{" "}
-            <b className="font-black text-[#FFB454]">{eventSummary.bySeverity.notice}</b> · 경보{" "}
-            <b className="font-black text-[#FF8080]">{eventSummary.bySeverity.alert}</b> · 홍보 후보{" "}
-            <b className="font-black text-[#49E57D]">{eventSummary.bySeverity.positive}</b> · 미확인{" "}
+            최근 30일 · {companies.length}개사 중 <b className="font-black text-band-foreground">{eventSummary.companiesWithEvents}개사</b>에 사건 · 주의{" "}
+            <b className="font-black text-review">{eventSummary.bySeverity.notice}</b> · 경보{" "}
+            <b className="font-black text-risk">{eventSummary.bySeverity.alert}</b> · 홍보 후보{" "}
+            <b className="font-black text-verified">{eventSummary.bySeverity.positive}</b> · 열린 사건{" "}
             <b className="font-black text-band-foreground">{eventSummary.open}</b>
           </p>
         }

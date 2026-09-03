@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { submitFileAction } from "@/app/reports/actions";
+import { submitFileAction } from "@/app/(app)/reports/actions";
 import { Button } from "@/components/ui/button";
 import { Pager, paginate } from "@/components/ui/pager";
 import type { SubmissionRow } from "@/lib/repositories/submission";

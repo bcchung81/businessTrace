@@ -1,17 +1,30 @@
 import type { NewsAnalysis } from "@/lib/services/analyzer";
+import { DATA_FENCE_RULE, fenceUntrusted } from "@/lib/services/prompts/untrusted";
 
 export const SYSTEM_JUDGE =
-  "당신은 AI 분석 결과를 원문과 대조하는 검증 심사관입니다. 새로운 분석을 하지 말고, 주어진 기사에 근거가 있는지만 판정하세요.";
+  "당신은 AI 분석 결과를 원문과 대조하는 검증 심사관입니다. 새로운 분석을 하지 말고, 주어진 기사에 근거가 있는지만 판정하세요. " +
+  DATA_FENCE_RULE;
 
+/**
+ * 기사 원문을 구분자 안에 넣어 낸다 — 제목·출처까지 전부 외부에서 온 문자열이라 함께 감싼다.
+ * 번호는 코드가 붙인다. 본문이 자기 번호를 주장하면 없는 근거를 만들 수 있다.
+ */
 function sourceBlock(analyses: NewsAnalysis[]) {
   return analyses
     .map((analysis, index) =>
       [
         `[기사 ${index + 1}]`,
-        `제목: ${analysis.news.title}`,
-        `출처: ${analysis.news.source}`,
-        `링크: ${analysis.news.link}`,
-        `본문: ${analysis.news.content}`,
+        fenceUntrusted(
+          "article",
+          index + 1,
+          [
+            `제목 | ${analysis.news.title}`,
+            `출처 | ${analysis.news.source}`,
+            `링크 | ${analysis.news.link}`,
+            "---",
+            analysis.news.content,
+          ].join("\n"),
+        ),
       ].join("\n"),
     )
     .join("\n\n");

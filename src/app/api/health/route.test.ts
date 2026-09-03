@@ -16,6 +16,14 @@ describe("GET /api/health", () => {
     const response = await checkHealth(async () => { throw new Error("no such table"); });
 
     expect(response.status).toBe(503);
-    expect(await response.json()).toMatchObject({ status: "degraded", database: "down" });
+    expect(await response.json()).toEqual({ status: "degraded", database: "down" });
+  });
+
+  test("keeps the exception text out of an unauthenticated response", async () => {
+    const response = await checkHealth(async () => {
+      throw new Error("no such table: main.User — file:/app/db/prod.db");
+    });
+
+    expect(JSON.stringify(await response.json())).not.toContain("prod.db");
   });
 });

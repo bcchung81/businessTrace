@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import type { ActionResult } from "@/app/companies/[id]/actions";
+import type { ActionResult } from "@/app/(app)/companies/[id]/actions";
 import { updateCompany } from "@/lib/repositories/companyRepository";
 import { currentUserId } from "@/lib/services/currentUserId";
 import { refreshSourcesFor } from "@/lib/services/refreshSources";

@@ -2,7 +2,7 @@ import ExcelJS from "exceljs";
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import type { CompanyCardData } from "@/lib/services/companyCards";
 import { STATUS_LABEL } from "@/lib/services/eventReview";
-import { KIND_LABEL, SEVERITY_LABEL, type Severity, type Trust } from "@/lib/services/eventRules";
+import { KIND_LABEL, SEVERITY_LABEL, isUnacknowledged, type Severity, type Trust } from "@/lib/services/eventRules";
 import type { FreshnessInput } from "@/lib/services/freshness";
 import { formatRunTime } from "@/lib/services/formatRunTime";
 import { kstDate } from "@/lib/services/kst";
@@ -53,7 +53,7 @@ export function summaryParagraph(stats: MonthlyStats): string {
   const noticeDetail = stats.firstNoticeCompany ? `(${stats.firstNoticeCompany} 외)` : "";
   return (
     `${stats.month}월 우수기업 ${stats.total}개사 중 ${stats.companiesWithEvents}개사에서 사건 ${stats.events}건. ` +
-    `주의 ${stats.notice}건${noticeDetail}, 경보 ${stats.alert}건, 홍보 후보 ${stats.positive}건. 미확인 ${stats.open}건.`
+    `주의 ${stats.notice}건${noticeDetail}, 경보 ${stats.alert}건, 홍보 후보 ${stats.positive}건. 미확인 경보·주의 ${stats.open}건.`
   );
 }
 
@@ -71,7 +71,7 @@ function computeStats(year: number, month: number, events: EventRow[], cards: Co
     alert: bySeverity.alert,
     notice: bySeverity.notice,
     positive: bySeverity.positive,
-    open: events.filter((event) => event.status === "open").length,
+    open: events.filter(isUnacknowledged).length,
     firstNoticeCompany: firstNotice?.companyName ?? null,
   };
 }
@@ -89,7 +89,7 @@ function writeSummarySheet(sheet: ExcelJS.Worksheet, stats: MonthlyStats, freshn
     ["주의", stats.notice],
     ["경보", stats.alert],
     ["홍보 후보", stats.positive],
-    ["미확인", stats.open],
+    ["미확인 경보·주의", stats.open],
     ["뉴스 수집일", formatRunTime(freshness.latestNewsAt)],
     ["원천 수집일", formatRunTime(freshness.latestSourceAt)],
     ["연금 ym", pensionLabel(freshness.pensionYm)],

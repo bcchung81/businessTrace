@@ -123,6 +123,19 @@ describe("BatchRunner", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
+  test("a batch that dies mid-run says so out loud, not just in the log", async () => {
+    const fetchImpl = api([
+      { type: "batch_start", total: 3, stage: "full" },
+      { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
+      { type: "error", message: "배치 실패 — ECONNRESET" },
+    ]);
+    render(<BatchRunner candidates={CANDIDATES} resume="running" fetchImpl={fetchImpl as unknown as typeof fetch} />);
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("배치 실패 — ECONNRESET"));
+    expect(screen.getByText("중단됨")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
+  });
+
   test("replaying a finished batch does not refresh the page", async () => {
     const fetchImpl = api([
       { type: "batch_start", total: 1, stage: "full" },

@@ -1,15 +1,25 @@
 import type { NewsItem } from "@/lib/services/newsTypes";
+import { DATA_FENCE_RULE, fenceUntrusted } from "@/lib/services/prompts/untrusted";
 
-export const SYSTEM_NEWS = "당신은 뉴스 분석 전문가입니다. 정확하고 객관적으로 뉴스를 분석해주세요.";
+export const SYSTEM_NEWS =
+  "당신은 뉴스 분석 전문가입니다. 정확하고 객관적으로 뉴스를 분석해주세요. " + DATA_FENCE_RULE;
 
+/**
+ * 기사 한 건을 구분자 안에 넣어 낸다 — 제목·출처도 외부 문자열이라 함께 감싼다.
+ */
 export function newsText(item: NewsItem) {
-  return `
-뉴스 제목: ${item.title}
-뉴스 내용: ${item.content}
-출처: ${item.source}
-날짜: ${item.published}
-링크: ${item.link}
-`;
+  return fenceUntrusted(
+    "article",
+    1,
+    [
+      `제목 | ${item.title}`,
+      `출처 | ${item.source}`,
+      `날짜 | ${item.published}`,
+      `링크 | ${item.link}`,
+      "---",
+      item.content,
+    ].join("\n"),
+  );
 }
 
 /**

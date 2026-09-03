@@ -30,7 +30,7 @@ describe("buildCompanyCards", () => {
     const deep = cards.find((c) => c.id === 1)!;
     const al = cards.find((c) => c.id === 2)!;
 
-    expect(deep).toMatchObject({ headcount: { latest: 89, delta12m: 0.11 }, latestArticle: "2026-08-26T00:00:00.000Z", events30d: { alert: 0, notice: 0, positive: 2, info: 0 }, open: 1, worstSeverity: "positive", trust: "verified" });
+    expect(deep).toMatchObject({ headcount: { latest: 89, delta12m: 0.11 }, latestArticle: "2026-08-26T00:00:00.000Z", events30d: { alert: 0, notice: 0, positive: 2, info: 0 }, open: 0, worstSeverity: "positive", trust: "verified" });
     expect(al).toMatchObject({ headcount: { latest: null, delta12m: null }, worstSeverity: "alert", open: 2, trust: null });
     expect(cards.find((c) => c.id === 3)!.worstSeverity).toBeNull();
   });
@@ -77,4 +77,35 @@ test("filterCards narrows by query together with the flags", () => {
   expect(filterCards(cards, { query: "넷" }).map((c) => c.id)).toEqual([2]);
   expect(filterCards(cards, { query: "넷", reviewOnly: true }).map((c) => c.id)).toEqual([2]);
   expect(filterCards(cards, { query: "크립", reviewOnly: true })).toEqual([]);
+});
+
+describe("the 미확인 column", () => {
+  const row = (over: Partial<EventRow>): EventRow => ({
+    id: Math.random(), companyId: 1, companyName: "가", kind: "award", severity: "positive",
+    occurredAt: "2026-08-20T00:00:00.000Z", title: "t", evidence: [], runId: null, trust: null,
+    status: "open", note: null, reviewedAt: null, ...over,
+  });
+
+  function cardFor(events: EventRow[]) {
+    return buildCompanyCards({
+      companies: [{ id: 1, name: "가", industry: null, businessNo: null }],
+      events, series: [], news: [], verdicts: [],
+    })[0];
+  }
+
+  it("counts only unacknowledged alerts and notices", () => {
+    expect(cardFor([row({ severity: "alert" }), row({ severity: "notice" })]).open).toBe(2);
+  });
+
+  it("can reach zero for a company whose only events are awards — the header promises 경보·주의", () => {
+    expect(cardFor([row({ severity: "positive" }), row({ severity: "positive" }), row({ severity: "info" })]).open).toBe(0);
+  });
+
+  it("drops an acknowledged alert", () => {
+    expect(cardFor([row({ severity: "alert", status: "acknowledged" })]).open).toBe(0);
+  });
+
+  it("drops a name-clash event that bulk confirm never touches", () => {
+    expect(cardFor([row({ severity: "alert", kind: "source_conflict" })]).open).toBe(0);
+  });
 });

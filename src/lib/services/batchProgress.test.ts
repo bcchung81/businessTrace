@@ -75,3 +75,28 @@ describe("reduceBatch", () => {
     expect(STEP_ORDER).toEqual(["collect", "analyze", "verify", "report"]);
   });
 });
+
+describe("reduceBatch when the whole batch dies", () => {
+  const running = reduceBatch(INITIAL_BATCH, { type: "batch_start", total: 3, stage: "full" });
+
+  test("folds the run closed instead of leaving it running forever", () => {
+    const next = reduceBatch(running, { type: "error", message: "배치 실패 — ECONNRESET" });
+
+    expect(next.phase).toBe("done");
+    expect(next.aborted).toBe(true);
+    expect(next.failure).toBe("배치 실패 — ECONNRESET");
+  });
+
+  test("keeps the message in the log so the operator can read what happened", () => {
+    const next = reduceBatch(running, { type: "error", message: "배치 실패 — ECONNRESET" });
+
+    expect(next.log.at(-1)).toEqual({ level: "error", text: "배치 실패 — ECONNRESET" });
+  });
+
+  test("leaves a normal finish alone", () => {
+    const next = reduceBatch(running, { type: "batch_done", done: 3, total: 3, aborted: false });
+
+    expect(next.aborted).toBe(false);
+    expect(next.failure).toBeNull();
+  });
+});

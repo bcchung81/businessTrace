@@ -19,6 +19,23 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate && npm run build
 
+# 마이그레이션과 정기 스크립트를 돌리는 이미지 — devDependencies(tsx·prisma CLI)가 통째로 필요하다.
+# 웹 이미지에 CLI 를 선별 복사하는 길은 닫혀 있다: prisma CLI 가 최상위로 호이스트된 effect·c12 …를
+# 줄줄이 require 하므로 한 번에 끝나지 않는다. 그래서 실행 경로를 아예 분리한다.
+FROM ${NODE_IMAGE} AS cli
+WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NPM_CONFIG_CACHE=/tmp/.npm
+RUN apt-get update && apt-get install -y --no-install-recommends openssl sqlite3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --system --uid 1001 --create-home appuser
+COPY --from=builder /app ./
+# 웹과 같은 uid 로 돌아야 한다 — root 가 만든 prod.db 는 appuser 인 웹이 못 쓴다.
+RUN mkdir -p /app/db /app/data && chown appuser:appuser /app/db /app/data
+USER appuser
+CMD ["npx", "prisma", "migrate", "deploy"]
+
 FROM ${NODE_IMAGE} AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
@@ -33,15 +50,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# 기동 시 마이그레이션을 적용하기 위한 최소 CLI — standalone 트레이스에는 들어가지 않는다.
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh && mkdir -p /app/data /app/prisma && chown -R appuser:appuser /app
+# DB 파일은 /app/db, 산출물은 /app/data — 둘 다 볼륨이다. 스키마(/app/prisma)는 이미지에만 둔다.
+RUN mkdir -p /app/data /app/db && chown -R appuser:appuser /app
 
 USER appuser
 EXPOSE 3000
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["node", "server.js"]

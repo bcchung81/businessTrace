@@ -20,6 +20,7 @@ function result(over: Partial<AnalysisResult> = {}): AnalysisResult {
     comprehensiveOpinion: "요약",
     stats: { totalNews: 1, scoredNews: 1, excludedNews: 0, averageSentiment: 0.5, positiveCount: 1, negativeCount: 0, neutralCount: 0, awardCount: 0, investmentCount: 1 },
     usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0 },
+    fallbacks: 0,
     ...over,
   };
 }
@@ -225,5 +226,46 @@ describe("runCompanyAnalysis — events", () => {
     expect(run.verification?.status).toBe("verified");
     expect(outcome).toMatchObject({ status: "verified" });
     expect(types).toEqual(["progress", "complete", "verifying", "verified", "events_failed"]);
+  });
+});
+
+describe("runCompanyAnalysis and silent LLM failures", () => {
+  beforeEach(resetDatabase);
+
+  it("closes the run as failed with the analyser's own message, not a generic one", async () => {
+    const { company, user } = await seed();
+    async function* onlyError(): AsyncGenerator<AnalyzeEvent> {
+      yield { type: "error", message: "LLM 호출이 3건 모두 실패했습니다 — 401 invalid api key" };
+    }
+
+    const outcome = await runCompanyAnalysis(
+      { company, userId: user.id, news: NEWS },
+      deps({ analyze: () => onlyError() }),
+    );
+
+    expect(outcome.status).toBe("failed");
+    expect(outcome.message).toContain("401 invalid api key");
+    const run = await prisma.analysisRun.findUnique({ where: { id: outcome.runId } });
+    expect(run?.status).toBe("failed");
+  });
+
+  it("says on the row when part of the answer was a fallback", async () => {
+    const { company, user } = await seed();
+
+    const outcome = await runCompanyAnalysis(
+      { company, userId: user.id, news: NEWS },
+      deps({ analyze: () => completes(result({ fallbacks: 2 })) }),
+    );
+
+    expect(outcome.status).toBe("verified");
+    expect(outcome.message).toContain("2건");
+  });
+
+  it("says nothing extra when every answer came from the model", async () => {
+    const { company, user } = await seed();
+
+    const outcome = await runCompanyAnalysis({ company, userId: user.id, news: NEWS }, deps());
+
+    expect(outcome.message).toBeUndefined();
   });
 });

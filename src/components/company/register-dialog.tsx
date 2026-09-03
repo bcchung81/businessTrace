@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CompanyBulkForm } from "@/components/layout/company-bulk-form";
 import { CompanyTable } from "@/components/layout/company-table";
-import { setCompanyActiveAction } from "@/app/companies/actions";
+import { setCompanyActiveAction } from "@/app/(app)/companies/actions";
 
 type Tab = "register" | "manage";
 const TAB_LABEL: Record<Tab, string> = { register: "일괄 등록", manage: "등록된 기업" };

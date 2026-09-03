@@ -5,7 +5,7 @@ import type { CompanyModel } from "@/generated/prisma/models";
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh: vi.fn() }) }));
-vi.mock("@/app/companies/actions", () => ({ setCompanyActiveAction: vi.fn() }));
+vi.mock("@/app/(app)/companies/actions", () => ({ setCompanyActiveAction: vi.fn() }));
 
 function company(over: Partial<CompanyModel> = {}): CompanyModel {
   return {

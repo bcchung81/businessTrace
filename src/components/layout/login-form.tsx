@@ -6,19 +6,17 @@ import { Label } from "@/components/ui/label";
 type LoginFormProps = {
   callbackUrl: string;
   error?: string;
+  retryAfterSec?: number;
   action?: (formData: FormData) => void | Promise<void>;
-  defaultEmail?: string;
-  defaultPassword?: string;
 };
 
-export function LoginForm({
-  callbackUrl,
-  error,
-  action,
-  defaultEmail,
-  defaultPassword,
-}: LoginFormProps) {
-  const prefilled = Boolean(defaultEmail || defaultPassword);
+export function LoginForm({ callbackUrl, error, retryAfterSec, action }: LoginFormProps) {
+  const message =
+    error === "TooManyAttempts"
+      ? `시도가 너무 잦습니다. ${retryAfterSec ?? 300}초 뒤에 다시 시도해주세요.`
+      : error
+        ? "이메일 또는 비밀번호가 올바르지 않습니다."
+        : null;
 
   return (
     <form
@@ -35,12 +33,12 @@ export function LoginForm({
         </p>
       </div>
 
-      {error ? (
+      {message ? (
         <p
           role="alert"
           className="border-l-2 border-risk bg-risk-surface px-3 py-2 text-[13px] text-risk"
         >
-          이메일 또는 비밀번호가 올바르지 않습니다.
+          {message}
         </p>
       ) : null}
 
@@ -49,39 +47,16 @@ export function LoginForm({
           <Label htmlFor="email" className="text-[13px]">
             이메일
           </Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            defaultValue={defaultEmail ?? ""}
-            required
-          />
+          <Input id="email" name="email" type="email" autoComplete="email" required />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password" className="text-[13px]">
             비밀번호
           </Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            defaultValue={defaultPassword ?? ""}
-            required
-          />
+          <Input id="password" name="password" type="password" autoComplete="current-password" required />
         </div>
       </div>
-
-      {prefilled ? (
-        <p
-          data-testid="autofill-notice"
-          className="border-l-2 border-review bg-review-surface px-3 py-2 text-[12px] leading-relaxed text-review"
-        >
-          테스트 기간 동안 계정이 자동으로 입력됩니다. 배포 전 환경변수에서 제거하세요.
-        </p>
-      ) : null}
 
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
       <Button type="submit" className="h-10">

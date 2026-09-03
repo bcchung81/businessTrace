@@ -1,4 +1,5 @@
 import { closeBatchStream, publishBatchEvent } from "@/lib/services/batchRegistry";
+import { logEvent } from "@/lib/services/logger";
 
 /**
  * 배치 제너레이터를 끝까지 소비해 레지스트리에 발행한다. 호출자는 기다리지 않는다 — 요청은 202 로 먼저 돌아간다.
@@ -8,6 +9,7 @@ export async function launchBatch(source: AsyncIterable<unknown>): Promise<void>
   try {
     for await (const event of source) publishBatchEvent(event);
   } catch (caught) {
+    logEvent("error", "batch.crashed", { error: caught });
     publishBatchEvent({ type: "error", message: caught instanceof Error ? caught.message : "배치 실패" });
   } finally {
     closeBatchStream();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { confirmSelectionAction } from "@/app/ranking/actions";
+import { confirmSelectionAction } from "@/app/(app)/ranking/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { periodLabel, periodsOfYear, type PeriodKind } from "@/lib/services/periods";

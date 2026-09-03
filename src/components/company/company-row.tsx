@@ -12,7 +12,7 @@ export const COLUMN_HINT: Partial<Record<(typeof COMPANY_COLUMNS)[number], strin
   "가입자": "국민연금 가입자 수 · 12개월 증감",
   "수상·투자·긍정": "지난 30일 긍정 사건 수",
   "주의": "지난 30일 주의·경보 사건 수",
-  "미확인": "확인하지 않은 경보·주의 사건 수",
+  "미확인": "지난 30일 · 확인하지 않은 경보·주의 수",
 };
 
 function deltaLabel(delta: number | null) {

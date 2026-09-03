@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { SubmissionBox } from "@/components/reports/submission-box";
 
-vi.mock("@/app/reports/actions", () => ({ submitFileAction: vi.fn(async () => ({ ok: true as const })) }));
+vi.mock("@/app/(app)/reports/actions", () => ({ submitFileAction: vi.fn(async () => ({ ok: true as const })) }));
 
 describe("SubmissionBox", () => {
   it("lists stored submissions with filename, short hash and date", () => {

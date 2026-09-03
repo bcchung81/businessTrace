@@ -24,6 +24,8 @@ export function NeighbourNav({
   queue: Queue | null;
 }) {
   const suffix = queue ? `?queue=${queue}` : "";
+  // 큐에서 빠진 기업(방금 정리한 곳)에서는 이웃이 아니라 "다음 남은 것" 을 준다 — 이름을 대면 순서를 오해한다.
+  const nextLabel = queue && position === null && next ? `다음 ${QUEUE_LABEL[queue]} 기업` : next?.name;
 
   return (
     <nav aria-label="기업 이동" className="flex items-center gap-2 text-[12px]">
@@ -42,7 +44,7 @@ export function NeighbourNav({
       <span className="text-hairline">|</span>
       {next ? (
         <Link href={`/companies/${next.id}${suffix}`} className="underline-offset-2 hover:underline">
-          {next.name} →
+          {nextLabel} →
         </Link>
       ) : (
         <span className="text-muted-foreground/45">마지막 →</span>

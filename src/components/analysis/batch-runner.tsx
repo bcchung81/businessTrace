@@ -229,7 +229,7 @@ export function BatchRunner({
         ) : (
           <Button type="button" variant="signal" disabled={selected.size === 0} onClick={run}>실행</Button>
         )}
-        {error ? <p role="alert" className="text-[12px] font-medium text-risk">{error}</p> : null}
+        {error ?? state.failure ? <p role="alert" className="text-[12px] font-medium text-risk">{error ?? state.failure}</p> : null}
         {state.phase === "done" ? (
           <p className="text-[12px] text-muted-foreground">
             완료 <b className="font-mono text-foreground">{state.done}/{state.total}</b>

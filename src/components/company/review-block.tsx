@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { SeverityIcon, SeverityMark } from "@/components/dashboard/severity-ui";
 import { Panel } from "@/components/dashboard/panel";
 import { Button } from "@/components/ui/button";
-import type { ActionResult } from "@/app/companies/[id]/actions";
+import type { ActionResult } from "@/app/(app)/companies/[id]/actions";
 import type { ReviewItem, ReviewSummary } from "@/lib/repositories/reviewItems";
 import { KIND_LABEL, type EventKind } from "@/lib/services/eventRules";
 import { kstDate } from "@/lib/services/kst";
@@ -99,7 +100,7 @@ function DartConflict({ item, companyId, run, actions }: { item: Extract<ReviewI
   );
 }
 
-function Verification({ item, run, actions }: { item: Extract<ReviewItem, { kind: "verification" }>; run: Runner; actions: ReviewActions }) {
+function Verification({ item, companyId, run, actions, onOpenEvidence }: { item: Extract<ReviewItem, { kind: "verification" }>; companyId: number; run: Runner; actions: ReviewActions; onOpenEvidence?: () => void }) {
   const [note, setNote] = useState(item.note ?? "");
   const gate = (label: string, value: number | null, threshold: number, failed: boolean) => (
     <span className="flex flex-col">
@@ -111,7 +112,7 @@ function Verification({ item, run, actions }: { item: Extract<ReviewItem, { kind
     <Item icon="notice" title="검증 검토 필요" why={`탈락 사유: ${item.failed.join(" · ") || "없음"} · 검증 근거 패널에서 문장별 지지 여부를 볼 수 있다`}
       actions={<>
         <Button variant="signal" size="sm" onClick={() => run(() => actions.reviewVerification({ runId: item.runId, note }))}>검토 완료로 기록</Button>
-        <a href="#verification" className="text-[11.5px] underline decoration-dotted underline-offset-2">검증 근거 열기</a>
+        <Link href={`/companies/${companyId}?queue=verification#verification`} onClick={onOpenEvidence} className="text-[11.5px] underline decoration-dotted underline-offset-2">검증 근거 열기</Link>
       </>}
     >
       <div className="flex flex-col gap-2 text-[11.5px]">
@@ -199,8 +200,9 @@ function NoBusinessNo({ item, companyId, run, actions }: { item: Extract<ReviewI
 /**
  * 확인 필요 항목 본체 — 상세의 절 00 과 대시보드 팝업이 같은 것을 그린다.
  * `onSettled` 는 한 건이 정리된 뒤 불린다 — 호출자가 목록을 다시 읽을 자리다.
+ * `onOpenEvidence` 는 검증 근거를 실제로 연 순간에만 불린다 — 행을 펼친 것은 근거를 본 것이 아니다.
  */
-export function ReviewItems({ companyId, year, summary, actions, onSettled }: { companyId: number; year: number; summary: ReviewSummary; actions: ReviewActions; onSettled?: () => void }) {
+export function ReviewItems({ companyId, year, summary, actions, onSettled, onOpenEvidence }: { companyId: number; year: number; summary: ReviewSummary; actions: ReviewActions; onSettled?: () => void; onOpenEvidence?: () => void }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -229,7 +231,7 @@ export function ReviewItems({ companyId, year, summary, actions, onSettled }: { 
           case "nps_conflict": return <NpsConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
           case "dart_conflict": return <DartConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
           case "fsc_conflict": return <FscConflict key={index} item={item} companyId={companyId} run={run} actions={actions} />;
-          case "verification": return <Verification key={index} item={item} run={run} actions={actions} />;
+          case "verification": return <Verification key={index} item={item} companyId={companyId} run={run} actions={actions} onOpenEvidence={onOpenEvidence} />;
           case "open_events": return <OpenEvents key={index} item={item} companyId={companyId} run={run} actions={actions} />;
           case "no_news": return <NoNews key={index} item={item} companyId={companyId} year={year} run={run} actions={actions} />;
         }

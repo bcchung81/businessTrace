@@ -5,7 +5,7 @@ const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
 
 let search = new URLSearchParams();
 vi.mock("next/navigation", () => ({ usePathname: () => "/x", useSearchParams: () => search, useRouter: () => ({ refresh }) }));
-vi.mock("@/app/companies/[id]/actions", () => ({ confirmEventsAction: vi.fn() }));
+vi.mock("@/app/(app)/companies/[id]/actions", () => ({ confirmEventsAction: vi.fn() }));
 
 import { EventTable } from "@/components/dashboard/event-table";
 import type { EventRow } from "@/lib/repositories/eventRepository";

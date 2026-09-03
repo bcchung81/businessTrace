@@ -30,6 +30,7 @@ function result(): AnalysisResult {
       investmentCount: 0,
     },
     usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 10 },
+  fallbacks: 0,
   };
 }
 

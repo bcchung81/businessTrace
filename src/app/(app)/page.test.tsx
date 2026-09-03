@@ -5,7 +5,7 @@ const redirect = vi.fn((_path: string) => {
 });
 vi.mock("next/navigation", () => ({ redirect: (path: string) => redirect(path) }));
 
-import Home from "@/app/page";
+import Home from "@/app/(app)/page";
 
 describe("루트 페이지", () => {
   test("sends the operator straight to the trend dashboard", () => {

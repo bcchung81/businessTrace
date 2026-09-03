@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { z } from "zod";
-import { createLlmClient, defaultLlmClient, resolveModel, LlmRefusalError, LlmParseError } from "@/lib/services/llm";
+import { createLlmClient, defaultLlmClient, resolveModel, sdkOptions, LlmRefusalError, LlmParseError } from "@/lib/services/llm";
 
 type StreamArgs = Record<string, unknown>;
 
@@ -155,5 +155,15 @@ describe("defaultLlmClient", () => {
     process.env.LLM_PROVIDER = "gemini";
 
     expect(() => defaultLlmClient()).toThrow(/gemini/);
+  });
+});
+
+describe("sdkOptions", () => {
+  it("caps one call so a single article cannot hold a 40-minute batch", () => {
+    expect(sdkOptions().timeout).toBe(120_000);
+  });
+
+  it("still retries — a transient 429 should not lose the article", () => {
+    expect(sdkOptions().maxRetries).toBe(3);
   });
 });

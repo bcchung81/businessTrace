@@ -71,6 +71,8 @@ export type AnalysisResult = {
   comprehensiveOpinion: string;
   stats: AnalysisStats;
   usage: Usage;
+  /** LLM 이 답하지 못해 기본값으로 메운 횟수 — 0 이 아니면 이 결과는 그만큼 비어 있다. */
+  fallbacks: number;
 };
 
 export type AnalyzeStep = "trend" | "award" | "investment" | "opinion";
@@ -173,13 +175,23 @@ export async function* analyzeCompany(
   const model = deps.model ?? resolveModel();
   const analyses = new Array<NewsAnalysis>(news.length);
   let usage: Usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
+  let asked = 0;
+  let fallbacks = 0;
+  let lastFailure = "";
 
+  /**
+   * 한 질문에 답을 받는다. 실패하면 기본값으로 메우되 그 사실을 센다.
+   * 세지 않으면 키가 틀린 실행이 감성 0 짜리 "완료" 로 조용히 닫힌다 — 어디에도 오류가 뜨지 않는다.
+   */
   async function ask<T>(prompt: string, schema: z.ZodType<T>, fallback: T, context?: string): Promise<T> {
+    asked += 1;
     try {
       const answer = await deps.llm.json({ system: SYSTEM_NEWS, context, prompt, schema });
       usage = addUsage(usage, answer.usage);
       return answer.data;
-    } catch {
+    } catch (caught) {
+      fallbacks += 1;
+      lastFailure = caught instanceof Error ? caught.message : "알 수 없는 오류";
       return fallback;
     }
   }
@@ -247,6 +259,11 @@ export async function* analyzeCompany(
   }
   await workers;
 
+  if (asked > 0 && fallbacks === asked) {
+    yield { type: "error", message: `LLM 호출이 ${fallbacks}건 모두 실패했습니다 — ${lastFailure}` };
+    return;
+  }
+
   const stats = summarise(analyses);
 
   yield { type: "progress", step: "opinion", current: news.length, total: news.length };
@@ -264,6 +281,7 @@ export async function* analyzeCompany(
       comprehensiveOpinion: opinion.comprehensive_opinion,
       stats,
       usage,
+      fallbacks,
     },
   };
 }

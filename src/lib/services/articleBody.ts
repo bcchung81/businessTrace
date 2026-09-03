@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
 import { JSDOM } from "jsdom";
 import type { FetchDeps, NewsItem } from "@/lib/services/newsTypes";
+import { resolvePublicUrl, systemLookup } from "@/lib/services/outboundUrl";
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
@@ -11,6 +12,8 @@ const BATCHEXECUTE = "https://news.google.com/_/DotsSplashUi/data/batchexecute";
 const REQUEST_TIMEOUT_MS = 8000;
 const MIN_BODY_LENGTH = 100;
 const MAX_BODY_LENGTH = 4000;
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+const MAX_REDIRECTS = 5;
 
 function googleToken(link: string) {
   if (!link.includes(GOOGLE_HOST)) return null;
@@ -169,20 +172,70 @@ export async function fetchArticleBody(url: string, deps: FetchDeps & DomFactory
   return fetchBodyFromUrl(resolved, deps);
 }
 
-async function fetchBodyFromUrl(resolved: string, deps: FetchDeps & DomFactory = {}) {
-  const fetchImpl = deps.fetchImpl ?? fetch;
+/**
+ * 응답 본문을 상한까지만 읽고, 넘으면 버린다.
+ * 선언된 길이를 믿지 않고 스트림을 세면서 끊는다 — 헤더 없이 계속 보내는 서버가 OOM 을 만든다.
+ */
+async function readCapped(response: Response) {
+  const declared = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_RESPONSE_BYTES) return null;
 
-  try {
-    const response = await fetchImpl(resolved, {
+  const stream = response.body;
+  if (!stream) {
+    const whole = Buffer.from(await response.arrayBuffer());
+    return whole.length > MAX_RESPONSE_BYTES ? null : whole;
+  }
+
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > MAX_RESPONSE_BYTES) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks);
+}
+
+/**
+ * 리다이렉트를 직접 걸으면서 홉마다 대상 주소를 다시 검사한다.
+ * `redirect: "follow"` 로 두면 첫 홉만 검사한 셈이라, 뉴스 색인의 한 페이지가 302 로 내부망을 부를 수 있다.
+ */
+async function fetchGuarded(start: string, deps: FetchDeps) {
+  const fetchImpl = deps.fetchImpl ?? fetch;
+  const lookup = deps.lookup ?? systemLookup;
+
+  let target = await resolvePublicUrl(start, lookup);
+  for (let hop = 0; target && hop <= MAX_REDIRECTS; hop += 1) {
+    const response = await fetchImpl(target.href, {
       headers: { "User-Agent": USER_AGENT },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      redirect: "follow",
+      redirect: "manual",
     });
-    if (!response.ok) return "";
+    if (response.status < 300 || response.status >= 400) {
+      return response.ok ? { response, href: target.href } : null;
+    }
+    const location = response.headers.get("location");
+    target = location ? await resolvePublicUrl(new URL(location, target).href, lookup) : null;
+  }
+  return null;
+}
 
-    const html = decodeHtml(Buffer.from(await response.arrayBuffer()), response.headers.get("content-type"));
+async function fetchBodyFromUrl(resolved: string, deps: FetchDeps & DomFactory = {}) {
+  try {
+    const hop = await fetchGuarded(resolved, deps);
+    if (!hop) return "";
 
-    const article = extractReadableText(html, resolved, deps);
+    const raw = await readCapped(hop.response);
+    if (!raw) return "";
+    const html = decodeHtml(raw, hop.response.headers.get("content-type"));
+
+    const article = extractReadableText(html, hop.href, deps);
     if (article.length >= MIN_BODY_LENGTH) return article.slice(0, MAX_BODY_LENGTH);
 
     const naverBody = cheerio.load(html)("#dic_area").text().replace(/\s+/g, " ").trim();

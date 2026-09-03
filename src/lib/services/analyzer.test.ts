@@ -272,3 +272,44 @@ describe("analyzeCompany — parallelism", () => {
     expect(events.at(-1)?.type).toBe("complete");
   });
 });
+
+describe("analyzeCompany when the LLM keeps failing", () => {
+  /** 호출 n 번째마다 던지는 클라이언트 — 키가 틀렸거나 API 가 간헐 실패하는 상황이다. */
+  function failingLlm(shouldFail: (prompt: string) => boolean): LlmClient {
+    const ok = fakeLlm();
+    return {
+      json: (async (request: { prompt: string }) => {
+        if (shouldFail(request.prompt)) throw new Error("401 invalid api key");
+        return ok.json(request as never);
+      }) as LlmClient["json"],
+    };
+  }
+
+  async function drain(llm: LlmClient, items = [news()]) {
+    const events: AnalyzeEvent[] = [];
+    for await (const event of analyzeCompany("넷록스", items, { llm })) events.push(event);
+    return events;
+  }
+
+  it("counts how many answers were fallbacks instead of hiding them", async () => {
+    const events = await drain(failingLlm((prompt) => prompt.includes("수상을 받았는지")));
+    const complete = events.find((event) => event.type === "complete");
+
+    expect(complete?.type === "complete" && complete.result.fallbacks).toBe(1);
+  });
+
+  it("reports zero fallbacks on a clean run", async () => {
+    const events = await drain(fakeLlm() as unknown as LlmClient);
+    const complete = events.find((event) => event.type === "complete");
+
+    expect(complete?.type === "complete" && complete.result.fallbacks).toBe(0);
+  });
+
+  it("fails the run outright when every call failed rather than closing it as completed", async () => {
+    const events = await drain(failingLlm(() => true));
+
+    expect(events.some((event) => event.type === "complete")).toBe(false);
+    const error = events.find((event) => event.type === "error");
+    expect(error?.type === "error" && error.message).toMatch(/LLM/);
+  });
+});

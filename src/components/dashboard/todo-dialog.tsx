@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { confirmEventsAction, decideDartAction, decideFscAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction } from "@/app/companies/[id]/actions";
-import { confirmCompanyEventsAction, loadReviewItemsAction, markVerificationsReviewedAction, type BulkResult, type LoadReviewResult } from "@/app/dashboard/actions";
+import { confirmEventsAction, decideDartAction, decideFscAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction } from "@/app/(app)/companies/[id]/actions";
+import { confirmCompanyEventsAction, loadReviewItemsAction, markVerificationsReviewedAction, type BulkResult, type LoadReviewResult } from "@/app/(app)/dashboard/actions";
 import { ReviewItems, type ReviewActions } from "@/components/company/review-block";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -66,6 +66,7 @@ export function TodoDialog({
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<number | null>(null);
 
   const visible = rows.filter((row) => !handled.has(row.companyId));
   const selectable = visible.filter((row) => row.selectable);
@@ -88,7 +89,6 @@ export function TodoDialog({
         return;
       }
       setSummary(result.summary);
-      setOpened((prev) => new Set(prev).add(companyId));
       if (settled && (result.summary?.items.length ?? 0) === 0) setHandled((prev) => new Set(prev).add(companyId));
     } catch (caught) {
       setLoadError(caught instanceof Error ? caught.message : "확인 필요 항목을 불러오지 못했습니다");
@@ -128,7 +128,22 @@ export function TodoDialog({
     return settled.filter((row): row is { companyId: number; summary: ReviewSummary | null } => row !== null);
   }
 
+  /**
+   * 근거를 한 번도 열지 않은 기업이 섞여 있으면 먼저 묻는다.
+   * 검증 검토는 되돌릴 UI 가 상세에만 있고, 문장별 지지 여부를 못 본 채 남는 감사 기록은 그 자체로 틀린 기록이다.
+   */
+  function requestBulk() {
+    const companyIds = visible.filter((row) => checked.has(row.companyId)).map((row) => row.companyId);
+    const blind = companyIds.filter((companyId) => !opened.has(companyId));
+    if (kind === "verification" && blind.length > 0) {
+      setConfirming(blind.length);
+      return;
+    }
+    void runBulk();
+  }
+
   async function runBulk() {
+    setConfirming(null);
     const companyIds = visible.filter((row) => checked.has(row.companyId)).map((row) => row.companyId);
     setRunning(true);
     setError(null);
@@ -170,6 +185,7 @@ export function TodoDialog({
     setLoadError(null);
     setNotice(null);
     setError(null);
+    setConfirming(null);
   }
 
   return (
@@ -222,17 +238,24 @@ export function TodoDialog({
             ) : loadError ? (
               <p role="alert" className="text-[12.5px] font-medium text-risk">{loadError}</p>
             ) : summary && summary.items.length > 0 ? (
-              <ReviewItems companyId={selected} year={year} summary={summary} actions={actions} onSettled={() => openCompany(selected, true)} />
+              <ReviewItems companyId={selected} year={year} summary={summary} actions={actions} onSettled={() => openCompany(selected, true)} onOpenEvidence={() => setOpened((prev) => new Set(prev).add(selected))} />
             ) : (
               <p className="text-[12.5px] text-muted-foreground">확인 필요 항목이 없습니다.</p>
             )}
           </div>
         </div>
+        {confirming !== null ? (
+          <div role="alert" className="flex flex-wrap items-center gap-3 border-l-2 border-review bg-review-surface px-3 py-2 text-[12px] font-medium text-review">
+            <span>{confirming}개사를 근거 확인 없이 검토 완료로 기록합니다. 이 기록은 상세 화면에서만 되돌릴 수 있습니다.</span>
+            <Button variant="signal" size="sm" onClick={() => void runBulk()}>근거 없이 기록</Button>
+            <Button variant="signal-outline" size="sm" onClick={() => setConfirming(null)}>취소</Button>
+          </div>
+        ) : null}
         {error ? <p role="alert" className="border-l-2 border-risk bg-risk-surface px-3 py-2 text-[12px] font-medium text-risk">{error}</p> : null}
         {notice && !error ? <p role="status" className="border-l-2 border-primary bg-accent px-3 py-2 text-[12px] font-medium text-accent-foreground">{notice}</p> : null}
         <DialogFooter className="sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="signal" size="sm" disabled={checked.size === 0 || running} onClick={runBulk}>
+            <Button variant="signal" size="sm" disabled={checked.size === 0 || running} onClick={requestBulk}>
               선택 {checked.size}건 {bulkLabel}
             </Button>
             <Button variant="signal-outline" size="sm" disabled={running || selectable.length === 0} onClick={toggleAll}>

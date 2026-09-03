@@ -21,11 +21,13 @@ export type BatchState = {
   total: number;
   done: number;
   aborted: boolean;
+  /** 배치가 통째로 죽은 이유 — 화면이 로그를 뒤지지 않고 바로 띄울 수 있게 따로 둔다. */
+  failure: string | null;
   companies: CompanyProgress[];
   log: LogEntry[];
 };
 
-export const INITIAL_BATCH: BatchState = { phase: "idle", stage: null, total: 0, done: 0, aborted: false, companies: [], log: [] };
+export const INITIAL_BATCH: BatchState = { phase: "idle", stage: null, total: 0, done: 0, aborted: false, failure: null, companies: [], log: [] };
 
 export const STATUS_TEXT: Record<CompanyStatus, string> = {
   verified: "검증 통과",
@@ -106,7 +108,8 @@ export function reduceBatch(state: BatchState, raw: unknown): BatchState {
     case "batch_done":
       return { ...state, phase: "done", done: event.done, aborted: event.aborted };
     case "error":
-      return log(state, "error", event.message);
+      // 서버가 통째로 죽었다는 유일한 신호다 — running 인 채로 두면 완료 줄도 경고 줄도 뜨지 않는다.
+      return { ...log(state, "error", event.message), phase: "done", aborted: true, failure: event.message };
     default:
       return state;
   }

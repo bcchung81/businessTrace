@@ -1,12 +1,15 @@
 import type { EventRow } from "@/lib/repositories/eventRepository";
 import type { CompanySeries } from "@/lib/services/dashboardSummary";
-import { compareSeverity, type Severity, type Trust } from "@/lib/services/eventRules";
+import { compareSeverity, isUnacknowledged, type Severity, type Trust } from "@/lib/services/eventRules";
 import type { CompanyNews } from "@/lib/services/newsCoverage";
 
 export type CompanyCardData = {
   id: number; name: string; industry: string | null; businessNo: string | null;
   headcount: { latest: number | null; delta12m: number | null }; latestArticle: string | null;
-  events30d: Record<Severity, number>; open: number; worstSeverity: Severity | null; trust: Trust;
+  events30d: Record<Severity, number>;
+  /** 아직 확인하지 않은 경보·주의 — 정의는 isUnacknowledged 하나뿐이다. */
+  open: number;
+  worstSeverity: Severity | null; trust: Trust;
   needsReview: boolean;
   everHadEvents: boolean;
 };
@@ -57,7 +60,7 @@ export function buildCompanyCards(input: {
     return {
       id: company.id, name: company.name, industry: company.industry, businessNo: company.businessNo,
       headcount: headcount(seriesById.get(company.id)), latestArticle: newsById.get(company.id)?.latest ?? null,
-      events30d, open: events.filter((e) => e.status === "open").length, worstSeverity: worst, trust: trustById.get(company.id) ?? null,
+      events30d, open: events.filter(isUnacknowledged).length, worstSeverity: worst, trust: trustById.get(company.id) ?? null,
       needsReview: reviewIds.has(company.id),
       everHadEvents: everEventIds.has(company.id) || events.length > 0,
     };

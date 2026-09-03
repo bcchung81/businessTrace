@@ -9,12 +9,12 @@ describe("checkPasswordStrength", () => {
     });
   });
 
-  it("rejects seven characters and accepts eight", () => {
-    expect(checkPasswordStrength("ab12345")).toEqual({
+  it("rejects eleven characters and accepts twelve", () => {
+    expect(checkPasswordStrength("ab123456789")).toEqual({
       ok: false,
-      message: "비밀번호는 최소 8자 이상이어야 합니다.",
+      message: "비밀번호는 최소 12자 이상이어야 합니다.",
     });
-    expect(checkPasswordStrength("ab123456")).toEqual({ ok: true });
+    expect(checkPasswordStrength("ab1234567890")).toEqual({ ok: true });
   });
 
   it("rejects more than 128 characters", () => {
@@ -25,19 +25,19 @@ describe("checkPasswordStrength", () => {
   });
 
   it("rejects a single character class", () => {
-    expect(checkPasswordStrength("abcdefghij")).toEqual({
+    expect(checkPasswordStrength("abcdefghijklmn")).toEqual({
       ok: false,
       message: "비밀번호는 영문, 숫자, 특수문자 중 최소 2가지 조합이어야 합니다.",
     });
-    expect(checkPasswordStrength("1234567890")).toEqual({
+    expect(checkPasswordStrength("12345678901234")).toEqual({
       ok: false,
       message: "비밀번호는 영문, 숫자, 특수문자 중 최소 2가지 조합이어야 합니다.",
     });
   });
 
   it("accepts any two of letters, digits and symbols", () => {
-    expect(checkPasswordStrength("abcdefg1")).toEqual({ ok: true });
-    expect(checkPasswordStrength("abcdefg!")).toEqual({ ok: true });
-    expect(checkPasswordStrength("1234567!")).toEqual({ ok: true });
+    expect(checkPasswordStrength("abcdefghijk1")).toEqual({ ok: true });
+    expect(checkPasswordStrength("abcdefghijk!")).toEqual({ ok: true });
+    expect(checkPasswordStrength("123456789012!")).toEqual({ ok: true });
   });
 });

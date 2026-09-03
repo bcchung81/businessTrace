@@ -107,3 +107,67 @@ describe("runBatch", () => {
     await drain(first);
   });
 });
+
+describe("runBatch survives a step that throws", () => {
+  beforeEach(finishBatch);
+
+  test("keeps going when refreshing one company's sources throws", async () => {
+    let calls = 0;
+    const events = await drain(
+      runBatch(targets, { ...options, stage: "sources" }, deps({
+        refreshSources: vi.fn(async () => {
+          calls += 1;
+          if (calls === 1) throw new Error("data.go.kr 500");
+          return {};
+        }),
+      })),
+    );
+
+    expect(events).toContainEqual({ type: "company_done", companyId: 1, status: "failed", message: "data.go.kr 500" });
+    expect(events).toContainEqual({ type: "company_done", companyId: 2, status: "sources_done" });
+    expect(events.at(-1)).toEqual({ type: "batch_done", done: 2, total: 2, aborted: false });
+  });
+
+  test("keeps going when storing one company's collection throws", async () => {
+    const events = await drain(
+      runBatch(targets, { ...options, stage: "news" }, deps({
+        collectOnly: vi.fn(async ({ companyId }) => {
+          if (companyId === 1) throw new Error("SQLITE_BUSY");
+          return {};
+        }),
+      })),
+    );
+
+    expect(events).toContainEqual({ type: "company_done", companyId: 1, status: "failed", message: "SQLITE_BUSY" });
+    expect(events.some((event) => event.type === "company_done" && event.companyId === 2 && event.status === "collected")).toBe(true);
+  });
+});
+
+describe("runBatch preparation step", () => {
+  beforeEach(finishBatch);
+
+  test("runs the slow preparation after the first event so the request can return 202", async () => {
+    const order: string[] = [];
+    const gen = runBatch(targets, options, deps({ prepare: async () => void order.push("prepare") }));
+
+    const first = await gen.next();
+    expect(first.value).toEqual({ type: "batch_start", total: 2, stage: "full" });
+    expect(order).toEqual([]);
+
+    await drain(gen);
+    expect(order).toEqual(["prepare"]);
+  });
+
+  test("closes the batch instead of dying silently when preparation throws", async () => {
+    const events = await drain(
+      runBatch(targets, options, deps({
+        prepare: async () => {
+          throw new Error("corpCode zip 20MB 실패");
+        },
+      })),
+    );
+
+    expect(events.at(-1)).toMatchObject({ type: "batch_done", done: 0, total: 2, aborted: true });
+    expect(events.some((event) => event.type === "company_start")).toBe(false);
+  });
+});

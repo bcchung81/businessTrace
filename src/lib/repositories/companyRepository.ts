@@ -143,7 +143,8 @@ async function queueRows(ids: number[]) {
 
 /**
  * 상세 화면의 이전·다음 — 같은 연도의 활성 기업을 등록 순서로 본 이웃이다. 제외된 기업에서 열어도 활성 이웃을 준다.
- * within 을 주면 그 id 목록 안에서만 걷는다 — 할 일 큐를 하나씩 처리하는 경로다. 목록 밖 기업은 position 이 null 이다.
+ * within 을 주면 그 id 목록 안에서만 걷는다 — 할 일 큐를 하나씩 처리하는 경로다.
+ * 방금 정리해 큐에서 빠진 기업은 position 이 null 이지만 next 는 준다 — 안 그러면 한 건마다 목록으로 돌아가야 한다.
  */
 export async function listNeighbours(companyId: number, within?: number[]) {
   const current = await prisma.company.findUnique({
@@ -157,6 +158,6 @@ export async function listNeighbours(companyId: number, within?: number[]) {
     select: { id: true, name: true },
   });
   const index = rows.findIndex((row) => row.id === companyId);
-  if (index === -1) return { prev: null, next: null, position: null, total: rows.length };
+  if (index === -1) return { prev: null, next: rows[0] ?? null, position: null, total: rows.length };
   return { prev: rows[index - 1] ?? null, next: rows[index + 1] ?? null, position: index + 1, total: rows.length };
 }

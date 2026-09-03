@@ -5,7 +5,7 @@ import { resetDatabase } from "@/lib/test-support/db";
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 import { auth } from "@/auth";
-import { confirmCompanyEventsAction, loadReviewItemsAction, markVerificationsReviewedAction } from "@/app/dashboard/actions";
+import { confirmCompanyEventsAction, loadReviewItemsAction, markVerificationsReviewedAction } from "@/app/(app)/dashboard/actions";
 
 async function seedUser() {
   return prisma.user.create({ data: { email: "admin@example.com", passwordHash: "hash" } });

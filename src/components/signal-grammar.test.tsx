@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 import { EvidenceGrid } from "@/components/company/evidence-grid";
@@ -8,8 +8,9 @@ import { Segmented } from "@/components/ui/segmented";
 import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
 
 const SCREENS = [
-  "src/app/companies/page.tsx",
-  "src/app/companies/[id]/page.tsx",
+  "src/app/(app)/dashboard/page.tsx",
+  "src/app/(app)/companies/page.tsx",
+  "src/app/(app)/companies/[id]/page.tsx",
   "src/components/analysis/analysis-runner.tsx",
   "src/components/company/evidence-grid.tsx",
   "src/components/company/event-timeline.tsx",
@@ -24,6 +25,11 @@ const SCREENS = [
   "src/components/dashboard/verdict-pill.tsx",
 ];
 
+/** 앱 전체가 쓰는 primitive — 여기서 hex 가 새면 모든 화면이 한 테마에서 어긋난다. */
+const PRIMITIVES = readdirSync(resolve(process.cwd(), "src/components/ui"))
+  .filter((name) => name.endsWith(".tsx") && !name.endsWith(".test.tsx"))
+  .map((name) => `src/components/ui/${name}`);
+
 describe("signal grammar — square, rule-separated, shadowless", () => {
   test.each(SCREENS)("%s carries no rounded box or drop shadow", (file) => {
     const source = readFileSync(resolve(process.cwd(), file), "utf8");
@@ -33,8 +39,14 @@ describe("signal grammar — square, rule-separated, shadowless", () => {
     expect(source).not.toMatch(/bg-secondary p-0\.5/);
   });
 
+  test.each([...SCREENS, ...PRIMITIVES])("%s spells colour with tokens, not hex literals", (file: string) => {
+    const source = readFileSync(resolve(process.cwd(), file), "utf8");
+
+    expect(source, "하드코딩한 hex 는 테마 하나에서만 맞는다").not.toMatch(/(?:text|bg|border|fill|stroke|from|to|via)-\[#[0-9a-fA-F]{3,8}\]/);
+  });
+
   test("page titles use the display face", () => {
-    for (const file of ["src/app/companies/page.tsx", "src/app/companies/[id]/page.tsx"]) {
+    for (const file of ["src/app/(app)/companies/page.tsx", "src/app/(app)/companies/[id]/page.tsx"]) {
       const source = readFileSync(resolve(process.cwd(), file), "utf8");
       expect(source, file).toMatch(/<h1 className="[^"]*font-display[^"]*font-black/);
     }

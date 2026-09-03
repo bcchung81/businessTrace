@@ -10,9 +10,9 @@ const FRESH = { now: new Date("2026-09-01"), latestNewsAt: "2026-08-30T03:03:00.
 describe("summaryParagraph", () => {
   it("fills the template without inventing anything", () => {
     expect(summaryParagraph({ year: 2026, month: 8, total: 50, companiesWithEvents: 12, events: 18, alert: 0, notice: 3, positive: 7, open: 9, firstNoticeCompany: "한국첨단소재" }))
-      .toBe("8월 우수기업 50개사 중 12개사에서 사건 18건. 주의 3건(한국첨단소재 외), 경보 0건, 홍보 후보 7건. 미확인 9건.");
+      .toBe("8월 우수기업 50개사 중 12개사에서 사건 18건. 주의 3건(한국첨단소재 외), 경보 0건, 홍보 후보 7건. 미확인 경보·주의 9건.");
     expect(summaryParagraph({ year: 2026, month: 8, total: 50, companiesWithEvents: 0, events: 0, alert: 0, notice: 0, positive: 0, open: 0, firstNoticeCompany: null }))
-      .toBe("8월 우수기업 50개사 중 0개사에서 사건 0건. 주의 0건, 경보 0건, 홍보 후보 0건. 미확인 0건.");
+      .toBe("8월 우수기업 50개사 중 0개사에서 사건 0건. 주의 0건, 경보 0건, 홍보 후보 0건. 미확인 경보·주의 0건.");
   });
 });
 
