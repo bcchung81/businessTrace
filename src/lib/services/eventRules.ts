@@ -105,7 +105,9 @@ export function extractAnalysisEvents(input: { companyId: number; runId: number;
     if (analysis.investment.is_investment_related === "Y") {
       const { investment_name: name, investment_round: round, investment_amount_krw: amount } = analysis.investment;
       // 라운드·금액이 기사에 있었으면 제목에 적는다 — "투자" 만으로는 시드와 IPO 를 가를 수 없다.
-      const detail = [ROUND_LABEL[round ?? "none"], eokLabel(amount)].filter(Boolean).join(" ");
+      // 다만 "기타" 는 라운드를 못 가렸다는 뜻이라 이름을 버리지 않는다. 유상증자·전환사채가 전부 「기타」가 된다.
+      const stage = round && round !== "none" && round !== "other" ? ROUND_LABEL[round] : name;
+      const detail = [stage, eokLabel(amount)].filter(Boolean).join(" ");
       make("investment", "positive", `투자 — ${detail || name}`, name);
     }
     if (analysis.trend.sentiment_score >= POSITIVE_PRESS_MIN) make("positive_press", "positive", `긍정 보도 — ${analysis.news.title}`, analysis.news.title);

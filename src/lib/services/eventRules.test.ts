@@ -99,6 +99,14 @@ describe("extractAnalysisEvents — 투자 제목에 라운드와 금액", () =>
     expect(event.title).toBe("투자 — 시리즈A 120억");
   });
 
+  it("keeps the article's own wording when the round is only 'other' — 「기타」 says nothing", () => {
+    const [named] = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([{ ...invested({ investment_round: "other", investment_amount_krw: 2_999_900_000 }), investment: { is_investment_related: "Y", investment_name: "소액공모 유상증자", investment_reason: "", investment_round: "other", investment_amount_krw: 2_999_900_000 } }]) });
+    const [plain] = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([{ ...invested({}), investment: { is_investment_related: "Y", investment_name: "일반공모 유상증자", investment_reason: "", investment_round: "other", investment_amount_krw: null } }]) });
+
+    expect(named.title).toBe("투자 — 소액공모 유상증자 30억");
+    expect(plain.title).toBe("투자 — 일반공모 유상증자");
+  });
+
   it("keeps the plain name when neither round nor amount is known", () => {
     const [event] = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([invested({})]) });
 
