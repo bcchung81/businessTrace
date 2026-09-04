@@ -1,6 +1,7 @@
 import Parser from "rss-parser";
 import pressMapping from "@/lib/services/pressMapping.json";
 import { enrichWithBodies } from "@/lib/services/articleBody";
+import { isBlockedLink } from "@/lib/services/pressBlocklist";
 import { countCompanyMentions, diceSimilarity, firstMentionIndex } from "@/lib/services/textSimilarity";
 import type { FetchDeps, NewsItem, Relevance } from "@/lib/services/newsTypes";
 
@@ -29,6 +30,8 @@ export type CollectOptions = {
 export type CollectResult = {
   items: NewsItem[];
   duplicatesRemoved: number;
+  /** 언론 보도가 아닌 도메인이라 수집에서 뺀 건수 — 분석 비용을 쓰기 전에 거른다. */
+  blockedRemoved: number;
   primaryCount: number;
   noNews: boolean;
   errors: string[];
@@ -188,16 +191,18 @@ async function fetchGoogle(query: string, fetchImpl: typeof fetch): Promise<News
   });
   if (!response.ok) throw new Error(`google ${response.status}`);
 
-  const feed = await new Parser({ customFields: { item: [["source", "sourceRaw"]] } }).parseString(
+  const feed = await new Parser({ customFields: { item: [["source", "sourceRaw", { keepArray: true }]] } }).parseString(
     await response.text(),
   );
 
   const items: NewsItem[] = [];
   for (const entry of feed.items) {
     const description = stripHtml(entry.contentSnippet ?? entry.content);
-    const rawSource = (entry as { sourceRaw?: string | { _?: string } }).sourceRaw;
+    const rawList = (entry as { sourceRaw?: Array<string | { _?: string; $?: { url?: string } }> }).sourceRaw;
+    const rawSource = Array.isArray(rawList) ? rawList[0] : rawList;
     const published = entry.isoDate ?? toIso(entry.pubDate);
     if (!published) continue;
+    const sourceUrl = typeof rawSource === "object" ? rawSource?.$?.url : undefined;
     items.push({
       title: stripHtml(entry.title).replace(/\s-\s[^-]+$/, ""),
       link: entry.link ?? "",
@@ -205,6 +210,7 @@ async function fetchGoogle(query: string, fetchImpl: typeof fetch): Promise<News
       content: description,
       published,
       source: (typeof rawSource === "object" ? rawSource?._ : rawSource) ?? "Google News",
+      ...(sourceUrl ? { sourceUrl } : {}),
       provider: "google" as const,
       titleMatch: false,
       mentions: 0,
@@ -264,6 +270,11 @@ export async function collectNews(
     merged = merged.filter((item) => new Date(item.published).getTime() <= to);
   }
 
+  const isBlockedItem = (item: NewsItem) =>
+    isBlockedLink(item.link) || (item.sourceUrl !== undefined && isBlockedLink(item.sourceUrl));
+  const blockedRemoved = merged.filter(isBlockedItem).length;
+  merged = merged.filter((item) => !isBlockedItem(item));
+
   const deduped = removeDuplicates(merged, threshold);
   const ranked = deduped.items
     .map((item) => ({ ...item, ...classifyRelevance({ ...item, name: options.name ?? options.query }) }))
@@ -275,7 +286,8 @@ export async function collectNews(
     .slice(0, limit);
 
   const enriched = await enrichWithBodies(ranked, deps);
-  const linkDeduped = dedupeByLink(enriched);
+  const blockedAfterResolve = enriched.filter((item) => isBlockedLink(item.link)).length;
+  const linkDeduped = dedupeByLink(enriched.filter((item) => !isBlockedLink(item.link)));
   const items = linkDeduped.items.map((item) => ({
     ...item,
     ...classifyRelevance({ title: item.title, content: item.content, name: options.name ?? options.query }),
@@ -286,6 +298,7 @@ export async function collectNews(
   return {
     items,
     duplicatesRemoved: deduped.removed + linkDeduped.removed,
+    blockedRemoved: blockedRemoved + blockedAfterResolve,
     primaryCount,
     noNews: primaryCount === 0,
     errors,

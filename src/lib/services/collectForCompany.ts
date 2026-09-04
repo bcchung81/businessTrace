@@ -27,7 +27,7 @@ export async function collectForCompany(
   const collect = deps.collect ?? collectNews;
   const queries = [company.name, ...parseAliases(company.aliases).filter((alias) => alias !== company.name)];
   const seen = new Set<string>();
-  const merged: CollectResult = { items: [], duplicatesRemoved: 0, errors: [], primaryCount: 0, noNews: true };
+  const merged: CollectResult = { items: [], duplicatesRemoved: 0, blockedRemoved: 0, errors: [], primaryCount: 0, noNews: true };
   for (const query of queries) {
     const result = await collect({ ...options, query, name: company.name });
     merged.duplicatesRemoved += result.duplicatesRemoved;

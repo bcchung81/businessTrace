@@ -129,6 +129,55 @@ describe("classifyRelevance", () => {
   });
 });
 
+describe("collectNews blocks non-press domains before analysis", () => {
+  const rss = (items: string) =>
+    `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>x</title>${items}</channel></rss>`;
+  const item = (title: string, link: string, source: string) =>
+    `<item><title>${title}</title><link>${link}</link><pubDate>Wed, 15 Jan 2025 02:00:00 GMT</pubDate><description>${title}</description><source url="${link}">${source}</source></item>`;
+
+  it("drops an AI stock page from a theme-stock site and counts it, keeping the real article", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("naverapihub")) return new Response(JSON.stringify({ items: [] }), { status: 200 });
+      if (url.includes("news.google.com/rss/search"))
+        return new Response(
+          rss(
+            item("넷록스 투자분석 2026. 08. 25", "https://www.judal.co.kr/?view=stockAI&amp;shareToken=x", "주달") +
+              item("넷록스, 시리즈A 유치", "https://www.etnews.com/20250115000001", "전자신문"),
+          ),
+          { status: 200 },
+        );
+      return new Response("<html><body></body></html>", { status: 200 });
+    });
+
+    const { items, blockedRemoved } = await collectNews({ query: "넷록스" }, { fetchImpl });
+
+    expect(blockedRemoved).toBe(1);
+    expect(items.map((entry) => entry.link)).toEqual(["https://www.etnews.com/20250115000001"]);
+  });
+
+  it("blocks by the RSS source domain when the Google link cannot be resolved — the stored link stays google", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("naverapihub")) return new Response(JSON.stringify({ items: [] }), { status: 200 });
+      if (url.includes("news.google.com/rss/search"))
+        return new Response(
+          rss(
+            `<item><title>넷록스 투자분석 2026. 08. 25 - 주달</title><link>https://news.google.com/rss/articles/CBMiAAA?oc=5</link><pubDate>Wed, 15 Jan 2025 02:00:00 GMT</pubDate><description>본 자료와 관련된 투자 결과에 대하여 주달은 어떠한 법적 책임도 지지 않습니다.</description><source url="https://www.judal.co.kr">주달</source></item>` +
+              item("넷록스, 시리즈A 유치", "https://www.etnews.com/20250115000001", "전자신문"),
+          ),
+          { status: 200 },
+        );
+      return new Response("<html><body></body></html>", { status: 200 });
+    });
+
+    const { items, blockedRemoved } = await collectNews({ query: "넷록스" }, { fetchImpl });
+
+    expect(blockedRemoved).toBe(1);
+    expect(items.map((entry) => entry.source)).toEqual(["전자신문"]);
+  });
+});
+
 describe("collectNews", () => {
   beforeEach(() => {
     process.env.NCP_APIGW_API_KEY_ID = "hub-id";

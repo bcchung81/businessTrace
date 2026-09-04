@@ -11,7 +11,8 @@ export type VerificationLayers = {
   sourceCoverage: number;
   evidenceMatch: number;
   counterEvidence: string[];
-  invalid: Array<{ title: string; link: string }>;
+  invalid: Array<{ title: string; link: string; reason?: "invalid_link" | "blocked" }>;
+  unregistered?: Array<{ title: string; link: string; host: string }>;
   cited: number;
   total: number;
   claims: Array<{ claim: string; supported: boolean; evidence: string }>;
@@ -120,7 +121,18 @@ export function VerificationPanel({ layers, runId, undo }: { layers: Verificatio
                 {layers.invalid.length > 0 ? (
                   <ul className="mt-1 text-muted-foreground">
                     {layers.invalid.map((item) => (
-                      <li key={item.link}>{item.title} — 인용 불가 링크</li>
+                      <li key={item.link} className="text-review">
+                        {item.title} — {item.reason === "blocked" ? "차단된 출처 (언론 보도 아님)" : "인용 불가 링크"}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {layers.unregistered && layers.unregistered.length > 0 ? (
+                  <ul className="mt-1 text-muted-foreground">
+                    {layers.unregistered.map((item) => (
+                      <li key={item.link}>
+                        {item.title} — 출처 미등록 ({item.host} · 인용은 유지)
+                      </li>
                     ))}
                   </ul>
                 ) : null}

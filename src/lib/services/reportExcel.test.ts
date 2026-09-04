@@ -64,7 +64,7 @@ const verification: VerificationOutput = {
   unsupportedClaims: ["업계 1위로 올라섰다"],
   counterEvidence: ["단일 출처에 의존한 보도입니다"],
   usage: { inputTokens: 20, outputTokens: 10, cacheReadTokens: 0 },
-  detail: { layer1: { coverage: 1, cited: 1, total: 1, invalid: [] }, layer2: null, layer3: 0.3 },
+  detail: { layer1: { coverage: 1, cited: 1, total: 1, invalid: [], unregistered: [] }, layer2: null, layer3: 0.3 },
 };
 
 async function open(buffer: ArrayBuffer) {

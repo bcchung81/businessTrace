@@ -34,7 +34,7 @@ function verification(status: "verified" | "needs_review" | "failed"): Verificat
     unsupportedClaims: [],
     counterEvidence: [],
     usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 },
-    detail: { layer1: { coverage: 1, cited: 1, total: 1, invalid: [] }, layer2: null, layer3: 0.6 },
+    detail: { layer1: { coverage: 1, cited: 1, total: 1, invalid: [], unregistered: [] }, layer2: null, layer3: 0.6 },
   };
 }
 
@@ -199,7 +199,7 @@ describe("runCompanyAnalysis — events", () => {
     const outcome = await runCompanyAnalysis(
       { company, userId: user.id, news: NEWS },
       deps({
-        verify: async () => ({ ...verification("failed"), faithfulness: null, detail: { layer1: { coverage: 1, cited: 1, total: 1, invalid: [] }, layer2: null, layer3: 0.6, error: "timeout" } }),
+        verify: async () => ({ ...verification("failed"), faithfulness: null, detail: { layer1: { coverage: 1, cited: 1, total: 1, invalid: [], unregistered: [] }, layer2: null, layer3: 0.6, error: "timeout" } }),
         onEvent: (event) => types.push(event.type),
       }),
     );

@@ -54,6 +54,44 @@ describe("checkSources", () => {
   it("treats an empty analysis as zero coverage rather than dividing by zero", () => {
     expect(checkSources([]).coverage).toBe(0);
   });
+
+  it("does not count a blocked domain as a citation — an AI stock page is not a source", () => {
+    const result = checkSources([
+      analysis({ link: "https://www.etnews.com/1" }),
+      analysis({ link: "https://www.judal.co.kr/?view=stockAI&shareToken=x" }),
+    ]);
+
+    expect(result.coverage).toBe(0.5);
+    expect(result.cited).toBe(1);
+    expect(result.invalid).toEqual([
+      expect.objectContaining({ link: "https://www.judal.co.kr/?view=stockAI&shareToken=x", reason: "blocked" }),
+    ]);
+  });
+
+  it("blocks subdomains of a blocked site and PR wires, which are written by the company itself", () => {
+    const result = checkSources([
+      analysis({ link: "https://m.blog.naver.com/someone/1" }),
+      analysis({ link: "https://www.globenewswire.com/news-release/1" }),
+    ]);
+
+    expect(result.cited).toBe(0);
+    expect(result.invalid.map((item) => item.reason)).toEqual(["blocked", "blocked"]);
+  });
+
+  it("keeps an outlet missing from the press list as cited but reports it as unregistered — 연합뉴스 was missing", () => {
+    const result = checkSources([analysis({ link: "https://www.yna.co.kr/view/AKR1" }), analysis({ link: "https://example.org/a" })]);
+
+    expect(result.coverage).toBe(1);
+    expect(result.invalid).toEqual([]);
+    expect(result.unregistered.map((item) => item.host)).toEqual(["example.org"]);
+  });
+
+  it("names why a link was not cited so the panel can tell a broken link from a blocked outlet", () => {
+    const result = checkSources([analysis({ link: "javascript:alert(1)" }), analysis({ link: "https://kr.investing.com/x" })]);
+
+    expect(result.invalid.map((item) => item.reason)).toEqual(["invalid_link", "blocked"]);
+    expect(result.unregistered).toEqual([]);
+  });
 });
 
 describe("evidenceMatch", () => {

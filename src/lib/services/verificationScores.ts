@@ -1,5 +1,7 @@
 import type { NewsAnalysis } from "@/lib/services/analyzer";
 import { containment } from "@/lib/services/textSimilarity";
+import pressMapping from "@/lib/services/pressMapping.json";
+import { hostOf, isBlockedPress } from "@/lib/services/pressBlocklist";
 
 export const FAITHFULNESS_THRESHOLD = 0.85;
 export const SOURCE_COVERAGE_THRESHOLD = 0.5;
@@ -19,19 +21,23 @@ export function failedGates(scores: { sourceCoverage: number; faithfulness: numb
 
 export type VerificationStatus = "verified" | "needs_review" | "failed";
 
+export type UncitedReason = "invalid_link" | "blocked";
 export type SourceCheck = {
   coverage: number;
   cited: number;
   total: number;
-  invalid: Array<{ title: string; link: string }>;
+  invalid: Array<{ title: string; link: string; reason: UncitedReason }>;
+  unregistered: Array<{ title: string; link: string; host: string }>;
 };
 
-function isCitable(link: string) {
-  try {
-    return ["http:", "https:"].includes(new URL(link).protocol);
-  } catch {
-    return false;
-  }
+/**
+ * 링크가 근거로 쓰일 수 없는 이유를 낸다. 쓸 수 있으면 null 이다.
+ * 언론사 목록에 없다는 것만으로는 떨어뜨리지 않는다 — 실측 도메인 435개 중 327개가 목록 밖이고 연합뉴스도 그 안에 있었다.
+ */
+function uncitedReason(link: string): UncitedReason | null {
+  const host = hostOf(link);
+  if (host === null) return "invalid_link";
+  return isBlockedPress(host) ? "blocked" : null;
 }
 
 /**
@@ -39,9 +45,15 @@ function isCitable(link: string) {
  * http(s) 가 아닌 링크는 근거로 쓸 수 없으므로 미인용으로 센다.
  */
 export function checkSources(analyses: NewsAnalysis[]): SourceCheck {
-  const invalid = analyses
-    .filter((analysis) => !isCitable(analysis.news.link))
-    .map((analysis) => ({ title: analysis.news.title, link: analysis.news.link }));
+  const invalid = analyses.flatMap((analysis) => {
+    const reason = uncitedReason(analysis.news.link);
+    return reason ? [{ title: analysis.news.title, link: analysis.news.link, reason }] : [];
+  });
+  const unregistered = analyses.flatMap((analysis) => {
+    const host = hostOf(analysis.news.link);
+    if (host === null || isBlockedPress(host) || host in pressMapping) return [];
+    return [{ title: analysis.news.title, link: analysis.news.link, host }];
+  });
 
   const cited = analyses.length - invalid.length;
 
@@ -50,6 +62,7 @@ export function checkSources(analyses: NewsAnalysis[]): SourceCheck {
     cited,
     total: analyses.length,
     invalid,
+    unregistered,
   };
 }
 

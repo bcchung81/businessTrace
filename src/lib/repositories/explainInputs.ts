@@ -42,6 +42,7 @@ function toLayers(stored: NonNullable<Awaited<ReturnType<typeof findVerification
     evidenceMatch: stored.evidenceMatch ?? 0,
     counterEvidence: parse<string[]>(stored.counterEvidence) ?? [],
     invalid: detail?.layer1?.invalid ?? [],
+    unregistered: detail?.layer1?.unregistered ?? [],
     cited: detail?.layer1?.cited ?? 0,
     total: detail?.layer1?.total ?? 0,
     claims: detail?.layer2?.claims ?? [],

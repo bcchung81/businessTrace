@@ -89,6 +89,28 @@ describe("VerificationPanel", () => {
     reviewNote: null,
   };
 
+  test("says why each article was not counted, and lists unregistered outlets without dropping them", () => {
+    render(
+      <VerificationPanel
+        layers={{
+          ...layers,
+          invalid: [
+            { title: "핀텔 투자분석", link: "https://www.judal.co.kr/?view=stockAI", reason: "blocked" },
+            { title: "깨진 링크", link: "not-a-url", reason: "invalid_link" },
+            { title: "예전 기록", link: "javascript:0" },
+          ],
+          unregistered: [{ title: "연합 기사", link: "https://www.yna.co.kr/view/1", host: "yna.co.kr" }],
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "검증 근거 열기" }));
+    const panel = screen.getByRole("dialog", { name: "검증 근거" });
+    expect(within(panel).getByText(/핀텔 투자분석 — 차단된 출처/)).toBeInTheDocument();
+    expect(within(panel).getByText(/깨진 링크 — 인용 불가 링크/)).toBeInTheDocument();
+    expect(within(panel).getByText(/예전 기록 — 인용 불가 링크/)).toBeInTheDocument();
+    expect(within(panel).getByText(/연합 기사 — 출처 미등록 \(yna\.co\.kr · 인용은 유지\)/)).toBeInTheDocument();
+  });
+
   test("is a badge until clicked, then a side panel with the four layers and thresholds", () => {
     render(<VerificationPanel layers={layers} />);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
