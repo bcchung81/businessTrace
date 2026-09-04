@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { analyzeCompany } from "@/lib/services/analyzer";
-import type { AnalyzeEvent } from "@/lib/services/analyzer";
+import type { AnalysisResult, AnalyzeEvent } from "@/lib/services/analyzer";
 import type { LlmClient } from "@/lib/services/llm";
 import type { NewsItem } from "@/lib/services/newsTypes";
 
@@ -365,5 +365,70 @@ describe("analyzeCompany — 확신도와 부정 사건 종류", () => {
     const result = await complete(llmWith({}));
 
     expect(result.analyses[0].trend.negative_kind).toBe("none");
+  });
+});
+
+describe("analyzeCompany — 투자 라운드·금액과 성장 신호", () => {
+  type Patch = { investment?: Record<string, unknown>; trend?: Record<string, unknown> };
+  function llmWith(patch: Patch): LlmClient {
+    const base = fakeLlm();
+    return {
+      json: (async (request: { prompt: string }) => {
+        const answer = await base.json(request as never);
+        const data = answer.data as Record<string, Record<string, unknown>>;
+        if (request.prompt.includes("투자 관련 정보를 찾아주세요") && patch.investment) {
+          return { ...answer, data: { investment_analysis: { ...data.investment_analysis, is_investment_related: "Y", investment_name: "시리즈A", ...patch.investment } } };
+        }
+        if (request.prompt.includes("동향실적을 분석해주세요") && patch.trend) {
+          return { ...answer, data: { trend_analysis: { ...data.trend_analysis, ...patch.trend } } };
+        }
+        return answer;
+      }) as LlmClient["json"],
+    };
+  }
+  async function first(llm: LlmClient) {
+    for await (const event of analyzeCompany("넷록스", [news()], { llm })) {
+      if (event.type === "complete") return event.result.analyses[0];
+    }
+    throw new Error("no complete");
+  }
+
+  it("carries the investment round and amount through", async () => {
+    const analysis = await first(llmWith({ investment: { investment_round: "series_a", investment_amount_krw: 12_000_000_000 } }));
+
+    expect(analysis.investment.investment_round).toBe("series_a");
+    expect(analysis.investment.investment_amount_krw).toBe(12_000_000_000);
+  });
+
+  it("defaults the round to none and the amount to null when the model left them out", async () => {
+    const analysis = await first(llmWith({ investment: {} }));
+
+    expect(analysis.investment.investment_round).toBe("none");
+    expect(analysis.investment.investment_amount_krw).toBeNull();
+  });
+
+  it("carries growth facts through and defaults to an empty list", async () => {
+    expect((await first(llmWith({ trend: { growth_signals: ["매출 전년 대비 40% 증가"] } }))).trend.growth_signals).toEqual(["매출 전년 대비 40% 증가"]);
+    expect((await first(llmWith({ trend: {} }))).trend.growth_signals).toEqual([]);
+  });
+});
+
+describe("analyzeCompany — 공식 원천 사실", () => {
+  it("passes the facts into the opinion prompt and carries them on the result", async () => {
+    const seen: string[] = [];
+    const base = fakeLlm();
+    const llm: LlmClient = {
+      json: (async (request: { prompt: string }) => {
+        seen.push(request.prompt);
+        return base.json(request as never);
+      }) as LlmClient["json"],
+    };
+    let result: AnalysisResult | null = null;
+    for await (const event of analyzeCompany("넷록스", [news()], { llm, facts: ["국민연금 가입자 52명 — 국민연금"] })) {
+      if (event.type === "complete") result = event.result;
+    }
+
+    expect(seen.find((prompt) => prompt.includes("종합분석을 작성해주세요"))).toContain("국민연금 가입자 52명 — 국민연금");
+    expect(result?.facts).toEqual(["국민연금 가입자 52명 — 국민연금"]);
   });
 });

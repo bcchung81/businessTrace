@@ -52,6 +52,7 @@ export function trendPrompt(companyName: string) {
 3. 수상·투자 유치 사실 자체는 감성 점수에 반영하지 마세요 — 별도 문항에서 따로 셉니다. 여기서는 기사가 전하는 사업의 방향만 보세요.
 4. about_confidence 는 이 기사가 '${companyName}' 회사를 주제로 다룬다는 확신도입니다 (0~1). 동명의 다른 회사일 수 있거나 스쳐 언급된 정도면 낮게 주세요.
 5. 부정적 기사라면 negative_kind 로 종류를 적어주세요 — "lawsuit"(소송·분쟁), "recall"(리콜·품질 사고), "sanction"(규제·제재·과징금), 그 외나 부정적이지 않으면 "none".
+6. growth_signals 에는 기사에 적힌 성장 사실만 기사 표현 그대로 짧게 적어주세요 — 매출·수주·고객사·생산능력·해외 진출·채용 등. 기사에 없으면 빈 배열로 두고, 수치를 추정하지 마세요.
 
 뉴스 내용은 앞서 제공한 본문을 그대로 참고하세요.
 
@@ -63,7 +64,8 @@ export function trendPrompt(companyName: string) {
         "news_trend_summary": "뉴스의 내용을 요약한 내용",
         "sentiment_score": -10 ~ 10 사이의 정수,
         "sentiment_label": "매우 긍정적" or "긍정적" or "중립" or "부정적" or "매우 부정적",
-        "negative_kind": "lawsuit" or "recall" or "sanction" or "none"
+        "negative_kind": "lawsuit" or "recall" or "sanction" or "none",
+        "growth_signals": ["기사에 적힌 성장 사실", ...]
     }
 }
 `;
@@ -99,6 +101,8 @@ export function investmentPrompt(companyName: string) {
 1. 투자 관련 뉴스인지 판단 (투자유치, 투자, 펀딩, funding, 시리즈A/B/C, IPO 등)
 2. 투자 관련이면 구체적인 투자명이나 투자 유형을 찾아주세요
 3. 투자 관련이면 이유 설명
+4. investment_round 는 기사에 적힌 라운드만 — "seed", "series_a", "series_b", "series_c_plus", "ipo", 그 밖의 유형은 "other", 투자가 아니거나 라운드가 안 적혀 있으면 "none".
+5. investment_amount_krw 는 기사에 적힌 금액을 원 단위 정수로 — "120억원" 이면 12000000000. 기사에 금액이 없으면 null 로 두고 추정하지 마세요. 추정한 금액은 검증에서 걸러집니다.
 
 뉴스 내용은 앞서 제공한 본문을 그대로 참고하세요.
 
@@ -107,7 +111,9 @@ export function investmentPrompt(companyName: string) {
     "investment_analysis": {
         "is_investment_related": "Y" or "N",
         "investment_name": "구체적인 투자명이나 투자 유형 (투자 관련이 아닌 경우 빈 문자열)",
-        "investment_reason": "투자실적 여부에 대한 이유 설명"
+        "investment_reason": "투자실적 여부에 대한 이유 설명",
+        "investment_round": "seed" or "series_a" or "series_b" or "series_c_plus" or "ipo" or "other" or "none",
+        "investment_amount_krw": 원 단위 정수 or null
     }
 }
 `;
@@ -124,8 +130,16 @@ export type OpinionStats = {
   investmentCount: number;
 };
 
-export function opinionPrompt(companyName: string, stats: OpinionStats) {
+/**
+ * 종합의견 프롬프트. facts 는 코드가 공공데이터에서 계산한 한 줄 사실들이다 — 모델은 그것만 인용할 수 있다.
+ * 비어 있으면 블록을 아예 넣지 않는다. "사실 없음" 이라고 적으면 모델이 그것을 화제로 삼는다.
+ */
+export function opinionPrompt(companyName: string, stats: OpinionStats, facts: string[] = []) {
   const excluded = stats.totalNews - stats.scoredNews;
+  const factBlock = facts.length === 0 ? "" : `
+공식 원천 사실 (국세청·DART·국민연금·나라장터에서 코드가 집계한 값 — 그대로 인용할 수 있습니다):
+${facts.map((line) => `- ${line}`).join("\n")}
+`;
 
   return `
 다음은 '${companyName}' 회사에 대한 뉴스 분석의 정량 결과입니다. 이를 바탕으로 종합분석을 작성해주세요.
@@ -136,9 +150,9 @@ export function opinionPrompt(companyName: string, stats: OpinionStats) {
 긍정 ${stats.positiveCount}건 / 중립 ${stats.neutralCount}건 / 부정 ${stats.negativeCount}건
 수상 관련: ${stats.awardCount}건
 투자 관련: ${stats.investmentCount}건
-
+${factBlock}
 작성 요구사항:
-1. 위 수치에 근거해서만 작성하고 수치에 없는 사실을 지어내지 마세요
+1. ${facts.length === 0 ? "위 수치에 근거해서만 작성하고 수치에 없는 사실을 지어내지 마세요" : "위 수치와 공식 원천 사실에 있는 것만을 근거로 작성하고, 거기 없는 수치·사실을 지어내지 마세요"}
 2. 집계에서 제외된 뉴스가 있으면 그 사실을 명시하세요
 3. 평가위원회가 읽는 자료이므로 단정적 표현보다 근거를 함께 제시하세요
 

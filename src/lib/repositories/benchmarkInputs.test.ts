@@ -166,3 +166,36 @@ describe("listBenchmarkInputs — 1인당 재무의 재료", () => {
     expect(row.procurementTotal).toBe(3_000);
   });
 });
+
+describe("listBenchmarkInputs — 지속가능성 비율", () => {
+  beforeEach(resetDatabase);
+
+  test("DART 재무에서 부채비율·ROE·영업이익률을 낸다", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+    await prisma.sourceSnapshot.create({
+      data: { companyId: company.id, source: "dartFinance", status: "found", summary: "재무", fetchedAt: new Date("2026-08-01"),
+        payload: JSON.stringify({ revenue: 1000, operatingIncome: 100, netIncome: 60, totalAssets: 900, totalLiabilities: 300, totalEquity: 600 }) },
+    });
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.stability).toEqual({ debtRatio: 0.5, roe: 0.1, operatingMargin: 0.1 });
+  });
+
+  test("자본잠식이면 부채비율·ROE 는 결측이고 영업이익률만 남는다", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+    await prisma.sourceSnapshot.create({
+      data: { companyId: company.id, source: "dartFinance", status: "found", summary: "재무", fetchedAt: new Date("2026-08-01"),
+        payload: JSON.stringify({ revenue: 1000, operatingIncome: -50, netIncome: -80, totalAssets: 200, totalLiabilities: 300, totalEquity: -100 }) },
+    });
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.stability).toEqual({ debtRatio: null, roe: null, operatingMargin: -0.05 });
+  });
+
+  test("재무가 없으면 셋 다 결측이다", async () => {
+    await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.stability).toEqual({ debtRatio: null, roe: null, operatingMargin: null });
+  });
+});

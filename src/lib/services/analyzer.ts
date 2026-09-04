@@ -29,8 +29,23 @@ const trendSchema = z.object({
     sentiment_label: z.string(),
     /** 없으면 "none" — 예전 프롬프트는 묻지 않았다. */
     negative_kind: z.enum(NEGATIVE_KINDS).optional(),
+    /** 기사에 적힌 성장 사실. 검증에서 문장별로 대조된다. 없으면 []. */
+    growth_signals: z.array(z.string()).optional(),
   }),
 });
+
+export const INVESTMENT_ROUNDS = ["seed", "series_a", "series_b", "series_c_plus", "ipo", "other", "none"] as const;
+export type InvestmentRound = (typeof INVESTMENT_ROUNDS)[number];
+export const ROUND_LABEL: Record<InvestmentRound, string> = {
+  seed: "시드", series_a: "시리즈A", series_b: "시리즈B", series_c_plus: "시리즈C+", ipo: "IPO", other: "기타", none: "",
+};
+
+/** 원 단위 금액을 억 단위 문구로. 1억 미만은 소수 한 자리, 정수면 .0 을 뗀다. */
+export function eokLabel(amountKrw: number | null | undefined): string {
+  if (amountKrw === null || amountKrw === undefined || amountKrw <= 0) return "";
+  const eok = Math.round((amountKrw / 100_000_000) * 10) / 10;
+  return `${Number.isInteger(eok) ? eok.toFixed(0) : eok}억`;
+}
 
 const awardSchema = z.object({
   award_analysis: z.object({
@@ -45,6 +60,10 @@ const investmentSchema = z.object({
     is_investment_related: yesNo,
     investment_name: z.string(),
     investment_reason: z.string(),
+    /** 없으면 "none" — 예전 프롬프트는 묻지 않았다. */
+    investment_round: z.enum(INVESTMENT_ROUNDS).optional(),
+    /** 기사에 적힌 금액(원). 없으면 null. 추정 금액은 검증에서 불지지로 잡힌다. */
+    investment_amount_krw: z.number().nullable().optional(),
   }),
 });
 
@@ -83,6 +102,8 @@ export type AnalysisResult = {
   usage: Usage;
   /** LLM 이 답하지 못해 기본값으로 메운 횟수 — 0 이 아니면 이 결과는 그만큼 비어 있다. */
   fallbacks: number;
+  /** 종합의견에 넘긴 공식 원천 사실. 검증이 같은 것을 judge 에게 보여 준다. */
+  facts?: string[];
 };
 
 export type AnalyzeStep = "trend" | "award" | "investment" | "opinion";
@@ -99,6 +120,7 @@ const NEUTRAL_TREND: Trend = {
   sentiment_score: 0,
   sentiment_label: "중립",
   negative_kind: "none",
+  growth_signals: [],
 };
 
 /**
@@ -119,6 +141,8 @@ const NO_INVESTMENT: Investment = {
   is_investment_related: "N",
   investment_name: "",
   investment_reason: "투자실적 분석에 실패했습니다.",
+  investment_round: "none",
+  investment_amount_krw: null,
 };
 
 function addUsage(total: Usage, next: Usage): Usage {
@@ -155,7 +179,7 @@ function summarise(analyses: NewsAnalysis[]): AnalysisStats {
  * 뉴스별 3분석과 종합의견을 만들며 진행 상황을 흘린다.
  * 회사가 주제가 아닌 기사는 집계에서 빼되 결과에는 남긴다.
  */
-type Deps = { llm: LlmClient; model?: string; concurrency?: number };
+type Deps = { llm: LlmClient; model?: string; concurrency?: number; facts?: string[] };
 
 function eventQueue() {
   const buffer: AnalyzeEvent[] = [];
@@ -227,7 +251,7 @@ export async function* analyzeCompany(
 
     queue.push({ type: "progress", step: "trend", current: position, total });
     const answered = (await ask(trendPrompt(companyName), trendSchema, { trend_analysis: NEUTRAL_TREND }, context)).trend_analysis;
-    const trend: Trend = { ...answered, negative_kind: answered.negative_kind ?? "none" };
+    const trend: Trend = { ...answered, negative_kind: answered.negative_kind ?? "none", growth_signals: answered.growth_signals ?? [] };
 
     queue.push({ type: "progress", step: "award", current: position, total });
     const [award, investment] = await Promise.all([
@@ -239,7 +263,11 @@ export async function* analyzeCompany(
         investmentSchema,
         { investment_analysis: NO_INVESTMENT },
         context,
-      ).then((answer) => answer.investment_analysis),
+      ).then((answer): Investment => ({
+        ...answer.investment_analysis,
+        investment_round: answer.investment_analysis.investment_round ?? "none",
+        investment_amount_krw: answer.investment_analysis.investment_amount_krw ?? null,
+      })),
     ]);
 
     const analysis: NewsAnalysis = {
@@ -285,7 +313,7 @@ export async function* analyzeCompany(
   const stats = summarise(analyses);
 
   yield { type: "progress", step: "opinion", current: news.length, total: news.length };
-  const opinion = await ask(opinionPrompt(companyName, stats), opinionSchema, {
+  const opinion = await ask(opinionPrompt(companyName, stats, deps.facts ?? []), opinionSchema, {
     comprehensive_opinion: "종합분석 생성에 실패했습니다.",
   });
 
@@ -300,6 +328,7 @@ export async function* analyzeCompany(
       stats,
       usage,
       fallbacks,
+      ...(deps.facts && deps.facts.length > 0 ? { facts: deps.facts } : {}),
     },
   };
 }

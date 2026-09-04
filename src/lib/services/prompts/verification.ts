@@ -1,4 +1,4 @@
-import type { NewsAnalysis } from "@/lib/services/analyzer";
+import { ROUND_LABEL, eokLabel, type NewsAnalysis } from "@/lib/services/analyzer";
 import { DATA_FENCE_RULE, fenceUntrusted } from "@/lib/services/prompts/untrusted";
 
 export const SYSTEM_JUDGE =
@@ -39,9 +39,13 @@ function claimBlock(analyses: NewsAnalysis[], comprehensiveOpinion: string) {
       claims.push(`[주장 ${position}-수상] ${analysis.award.award_name}: ${analysis.award.award_reason}`);
     }
     if (analysis.investment.is_investment_related === "Y") {
-      claims.push(
-        `[주장 ${position}-투자] ${analysis.investment.investment_name}: ${analysis.investment.investment_reason}`,
-      );
+      const { investment_round: round, investment_amount_krw: amount } = analysis.investment;
+      // 라운드·금액도 주장이다 — 기사에 없는 금액이면 여기서 불지지로 잡힌다.
+      const label = [ROUND_LABEL[round ?? "none"] || analysis.investment.investment_name, eokLabel(amount) ? `${eokLabel(amount)}원` : ""].filter(Boolean).join(" · ");
+      claims.push(`[주장 ${position}-투자] ${label}: ${analysis.investment.investment_reason}`);
+    }
+    for (const signal of analysis.trend.growth_signals ?? []) {
+      claims.push(`[주장 ${position}-성장] ${signal}`);
     }
     return claims;
   });
@@ -49,16 +53,28 @@ function claimBlock(analyses: NewsAnalysis[], comprehensiveOpinion: string) {
   return [...perArticle, `[주장 종합] ${comprehensiveOpinion}`].join("\n");
 }
 
+/**
+ * 판정 프롬프트. facts 는 코드가 공공데이터에서 계산해 종합의견에 넘긴 사실들이다.
+ * judge 에게 같은 것을 보여 주지 않으면 종합의견이 사실을 인용할수록 "기사에 없다" 로 불지지가 늘어 검증이 스스로를 벌한다.
+ */
 export function judgePrompt(
   companyName: string,
-  input: { comprehensiveOpinion: string; analyses: NewsAnalysis[] },
+  input: { comprehensiveOpinion: string; analyses: NewsAnalysis[]; facts?: string[] },
 ) {
+  const facts = input.facts ?? [];
+  const factBlock = facts.length === 0 ? "" : `
+=== 공식 원천 사실 ===
+${facts.map((line) => `- ${line}`).join("\n")}
+`;
+  const factRule = facts.length === 0 ? "" : `
+5. [주장 종합] 이 위 공식 원천 사실을 인용한 부분은 코드가 공공데이터에서 준 값이므로 기사에 없어도 supported 로 하고 evidence 에 그 사실 줄을 적으세요. 단, 공식 원천 사실에도 기사에도 없는 수치는 여전히 false 입니다.`;
+
   return `
 '${companyName}' 회사에 대한 AI 분석 결과를 아래 기사 원문과 대조해 검증해주세요.
 
 === 기사 원문 ===
 ${sourceBlock(input.analyses)}
-
+${factBlock}
 === 검증할 주장 ===
 ${claimBlock(input.analyses, input.comprehensiveOpinion)}
 
@@ -66,7 +82,7 @@ ${claimBlock(input.analyses, input.comprehensiveOpinion)}
 1. 각 주장이 위 기사 원문으로 뒷받침되는지 판정하세요. 기사에 없는 내용이면 당신이 알고 있더라도 supported 를 false 로 하세요.
 2. supported 가 true 이면 근거가 되는 기사 문장을 evidence 에 그대로 인용하세요.
 3. [주장 종합] 안의 평균 감성 점수·긍정/부정 건수·수상/투자 건수 같은 집계 수치는 AI 산출물이라 기사에 있을 수 없습니다. 수치는 대조하지 말고 종합의 서술 부분만 기사와 대조하세요.
-4. counter_evidence 에는 기사 내용과 실제로 모순되는 사실만 적으세요. 출처 편향, 보도자료 의존, 표본 크기, 중복 보도 같은 유의사항은 적지 마세요. 모순이 없으면 빈 배열로 두세요.
+4. counter_evidence 에는 기사 내용과 실제로 모순되는 사실만 적으세요. 출처 편향, 보도자료 의존, 표본 크기, 중복 보도 같은 유의사항은 적지 마세요. 모순이 없으면 빈 배열로 두세요.${factRule}
 
 반드시!!! 다음 JSON 형식으로 응답해주세요. 다른형식으로 응답하면 처리를 할수 없습니다.:
 {

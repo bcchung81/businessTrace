@@ -14,7 +14,7 @@ describe("rubrics", () => {
   });
 
   test("default weights are the roadmap values", () => {
-    expect(book.default.weights).toEqual({ sentiment: 0.25, award: 0.15, investment: 0.15, finance: 0.12, growth: 0.23, verification: 0.1 });
+    expect(book.default.weights).toEqual({ sentiment: 0.22, award: 0.13, investment: 0.13, finance: 0.1, growth: 0.2, stability: 0.12, verification: 0.1 });
   });
 
   test("maps the cohort's industry names onto rubrics and falls back to default", () => {
@@ -29,16 +29,17 @@ describe("rubrics", () => {
   });
 
   test("spells the weights out the way the screen shows them", () => {
-    expect(weightLabel(book.default)).toBe("감성 0.25 · 수상 0.15 · 투자 0.15 · 재무 0.12 · 성장 0.23 · 검증 0.1 · 리스크 감점");
+    expect(weightLabel(book.default)).toBe("감성 0.22 · 수상 0.13 · 투자 0.13 · 재무 0.1 · 성장 0.2 · 안정 0.12 · 검증 0.1 · 리스크 감점");
   });
 });
 
 import { rankCompanies, type BenchmarkInput } from "@/lib/services/benchmarking";
 
 const NO_GROWTH = { revenue: null, headcount: null, hiring: null, procurement: null };
+const NO_STABILITY = { debtRatio: null, roe: null, operatingMargin: null };
 
 function input(over: Partial<BenchmarkInput> & { companyId: number; name: string }): BenchmarkInput {
-  return { industry: null, sentiment: null, awards: null, investments: null, revenue: null, growth: NO_GROWTH, verification: null, confirmedRisks: 0, ...over };
+  return { industry: null, sentiment: null, awards: null, investments: null, revenue: null, growth: NO_GROWTH, stability: NO_STABILITY, verification: null, confirmedRisks: 0, ...over };
 }
 
 describe("rankCompanies", () => {
@@ -257,5 +258,53 @@ describe("재무 축은 1인당이다 — 규모 보정", () => {
 
     expect(financeOf(rows, 1).raw).toBeNull();
     expect(financeOf(rows, 1).normalised).toBeNull();
+  });
+});
+
+describe("지속가능성 축 — 재무 3비율", () => {
+  const book = loadRubrics();
+  const stabilityOf = (rows: ReturnType<typeof rankCompanies>, id: number) =>
+    rows.find((row) => row.companyId === id)!.metrics.find((m) => m.key === "stability")!;
+
+  test("부채비율은 낮을수록 좋다 — 방향을 뒤집어 편다", () => {
+    const rows = rankCompanies(
+      [
+        input({ companyId: 1, name: "가", stability: { ...NO_STABILITY, debtRatio: 0.5 } }),
+        input({ companyId: 2, name: "나", stability: { ...NO_STABILITY, debtRatio: 3.0 } }),
+      ],
+      book,
+    );
+    expect(stabilityOf(rows, 1).normalised).toBe(1);
+    expect(stabilityOf(rows, 2).normalised).toBe(0);
+  });
+
+  test("ROE 와 영업이익률은 높을수록 좋고, 셋을 각각 편 뒤 평균한다", () => {
+    const rows = rankCompanies(
+      [
+        // 부채 최고(0) · ROE 최고(1) · 마진 최고(1) → 0.67
+        input({ companyId: 1, name: "가", stability: { debtRatio: 3.0, roe: 0.3, operatingMargin: 0.2 } }),
+        input({ companyId: 2, name: "나", stability: { debtRatio: 0.5, roe: 0.0, operatingMargin: 0.0 } }),
+      ],
+      book,
+    );
+    expect(stabilityOf(rows, 1).normalised).toBeCloseTo(2 / 3, 6);
+    expect(stabilityOf(rows, 2).normalised).toBeCloseTo(1 / 3, 6);
+  });
+
+  test("자본잠식으로 두 비율이 빠져도 남은 하나로 점수를 받는다", () => {
+    const rows = rankCompanies(
+      [
+        input({ companyId: 1, name: "가", stability: { debtRatio: null, roe: null, operatingMargin: 0.2 } }),
+        input({ companyId: 2, name: "나", stability: { debtRatio: 1.0, roe: 0.1, operatingMargin: -0.1 } }),
+      ],
+      book,
+    );
+    expect(stabilityOf(rows, 1).normalised).toBe(1);
+  });
+
+  test("재무제표가 없으면 가중치에서 빠진다 — 0 점이 아니다", () => {
+    const rows = rankCompanies([input({ companyId: 1, name: "가", sentiment: 5 }), input({ companyId: 2, name: "나", sentiment: 1, stability: { ...NO_STABILITY, roe: 0.1 } })], book);
+    expect(stabilityOf(rows, 1).normalised).toBeNull();
+    expect(stabilityOf(rows, 1).raw).toBeNull();
   });
 });

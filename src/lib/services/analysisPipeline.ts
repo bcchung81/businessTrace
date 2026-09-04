@@ -7,6 +7,9 @@ import { defaultLlmClient, resolveModel, type Usage } from "@/lib/services/llm";
 import { logEvent } from "@/lib/services/logger";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import { verifyAnalysis, type VerificationOutput } from "@/lib/services/verification";
+import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
+import { buildCompanyFacts } from "@/lib/services/companyFacts";
+import { publicFactLines } from "@/lib/services/publicFacts";
 
 export type PipelineEvent =
   | AnalyzeEvent
@@ -17,8 +20,10 @@ export type PipelineEvent =
 
 export type PipelineDeps = {
   model: string;
-  analyze: (name: string, news: NewsItem[], deps: { model: string }) => AsyncGenerator<AnalyzeEvent>;
+  analyze: (name: string, news: NewsItem[], deps: { model: string; facts?: string[] }) => AsyncGenerator<AnalyzeEvent>;
   verify: (result: AnalysisResult) => Promise<VerificationOutput>;
+  /** 기업의 공공데이터 사실을 한 줄씩 낸다 — 없으면 종합의견은 뉴스 통계만 본다. */
+  loadFacts?: (companyId: number) => Promise<string[]>;
   persistEvents?: (events: NewEvent[]) => Promise<unknown>;
   onEvent?: (event: PipelineEvent) => void;
   isOpen?: () => boolean;
@@ -48,9 +53,10 @@ export function defaultPipelineDeps(model = resolveModel()): PipelineDeps {
   const llm = defaultLlmClient();
   return {
     model,
-    analyze: (name, news, deps) => analyzeCompany(name, news, { llm, model: deps.model }),
+    analyze: (name, news, deps) => analyzeCompany(name, news, { llm, model: deps.model, facts: deps.facts }),
     verify: (result) => verifyAnalysis(result, { llm }),
     persistEvents: upsertEvents,
+    loadFacts: async (companyId) => publicFactLines(buildCompanyFacts({ businessNo: null, snapshots: await listSourceSnapshots(companyId) })),
   };
 }
 
@@ -89,8 +95,10 @@ export async function runCompanyAnalysis(
     return { runId: run.id, status: "no_news", usage };
   }
 
+  const facts = deps.loadFacts ? await deps.loadFacts(input.company.id).catch(() => []) : [];
+
   try {
-    for await (const event of deps.analyze(input.company.name, primary, { model: deps.model })) {
+    for await (const event of deps.analyze(input.company.name, primary, { model: deps.model, facts })) {
       if (!open()) {
         await failRun(run.id, "클라이언트가 연결을 끊었습니다.");
         return { runId: run.id, status: "aborted", usage };

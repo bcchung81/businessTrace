@@ -111,3 +111,44 @@ describe("judgePrompt", () => {
     expect(prompt).toContain("넷록스");
   });
 });
+
+describe("judgePrompt — 라운드·금액과 성장 신호도 주장이다", () => {
+  const richer: NewsAnalysis = {
+    ...analysis,
+    trend: { ...analysis.trend, growth_signals: ["매출 전년 대비 40% 증가", "베트남 법인 설립"] },
+    investment: { ...analysis.investment, investment_round: "series_a", investment_amount_krw: 12_000_000_000 },
+  };
+  const prompt = judgePrompt("넷록스", { comprehensiveOpinion: "종합", analyses: [richer] });
+
+  it("puts the round and the amount into the investment claim so the judge checks them", () => {
+    expect(prompt).toContain("[주장 1-투자] 시리즈A · 120억원: 이유");
+  });
+
+  it("lists each growth fact as its own claim", () => {
+    expect(prompt).toContain("[주장 1-성장] 매출 전년 대비 40% 증가");
+    expect(prompt).toContain("[주장 1-성장] 베트남 법인 설립");
+  });
+
+  it("leaves the investment claim as before when round and amount are unknown", () => {
+    const plain = judgePrompt("넷록스", { comprehensiveOpinion: "종합", analyses: [analysis] });
+
+    expect(plain).toContain("[주장 1-투자] 시리즈A: 이유");
+    expect(plain).not.toContain("[주장 1-성장]");
+  });
+});
+
+describe("judgePrompt — 공식 원천 사실은 기사 밖 근거다", () => {
+  it("shows the judge the facts the opinion may cite and says they count as supported", () => {
+    const prompt = judgePrompt("넷록스", { comprehensiveOpinion: "가입자 52명으로 늘었다", analyses: [analysis], facts: ["국민연금 가입자 52명 — 국민연금"] });
+
+    expect(prompt).toContain("=== 공식 원천 사실 ===");
+    expect(prompt).toContain("국민연금 가입자 52명 — 국민연금");
+    expect(prompt).toMatch(/공식 원천 사실.*기사에 없어도.*supported/);
+  });
+
+  it("adds nothing when there are no facts", () => {
+    const prompt = judgePrompt("넷록스", { comprehensiveOpinion: "종합", analyses: [analysis] });
+
+    expect(prompt).not.toContain("공식 원천 사실");
+  });
+});

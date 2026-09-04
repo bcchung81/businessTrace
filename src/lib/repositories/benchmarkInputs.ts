@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { listLatestVerifications } from "@/lib/repositories/verificationResult";
-import type { BenchmarkInput, GrowthSignals } from "@/lib/services/benchmarking";
+import type { BenchmarkInput, GrowthSignals, StabilitySignals } from "@/lib/services/benchmarking";
+import { financeRatios } from "@/lib/services/financeRatios";
 import { growthRate, headcountGrowth, hiringBalance, procurementGrowth, type AwardYear } from "@/lib/services/growthSignals";
 
 type Stats = { averageSentiment?: number; awardCount?: number; investmentCount?: number };
@@ -23,7 +24,7 @@ function parsePayload<T>(payload: string | undefined): T | null {
   }
 }
 
-type FinancePayload = { revenue?: number | null; previous?: { revenue?: number | null } };
+type FinancePayload = { revenue?: number | null; operatingIncome?: number | null; netIncome?: number | null; totalAssets?: number | null; totalLiabilities?: number | null; totalEquity?: number | null; previous?: { revenue?: number | null } };
 type ProcurementPayload = { total?: number; years?: AwardYear[] };
 
 /** 가장 최근 달의 가입자 수. 측정된 달이 없으면 null. */
@@ -68,6 +69,15 @@ export async function listBenchmarkInputs(year: number, now: Date = new Date()):
       procurement: procurementGrowth(procurement?.years ?? [], now),
     };
 
+    const ratios = finance
+      ? financeRatios({ revenue: finance.revenue ?? null, operatingIncome: finance.operatingIncome ?? null, netIncome: finance.netIncome ?? null, totalAssets: finance.totalAssets ?? null, totalLiabilities: finance.totalLiabilities ?? null, totalEquity: finance.totalEquity ?? null })
+      : null;
+    const stability: StabilitySignals = {
+      debtRatio: ratios?.debtRatio.value ?? null,
+      roe: ratios?.roe.value ?? null,
+      operatingMargin: ratios?.operatingMargin.value ?? null,
+    };
+
     return {
       companyId: company.id,
       name: company.name,
@@ -79,6 +89,7 @@ export async function listBenchmarkInputs(year: number, now: Date = new Date()):
       procurementTotal: procurement?.total ?? null,
       headcount: latestSubscribers(pension),
       growth,
+      stability,
       verification: verification.get(company.id) ?? null,
       confirmedRisks: company.events.length,
     };

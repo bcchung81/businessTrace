@@ -63,6 +63,7 @@ export async function verifyAnalysis(
       prompt: judgePrompt(result.companyName, {
         comprehensiveOpinion: result.comprehensiveOpinion,
         analyses: result.analyses,
+        facts: result.facts,
       }),
       schema: judgeSchema,
       effort: "low",

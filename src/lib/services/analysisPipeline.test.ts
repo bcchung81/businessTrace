@@ -269,3 +269,35 @@ describe("runCompanyAnalysis and silent LLM failures", () => {
     expect(outcome.message).toBeUndefined();
   });
 });
+
+describe("runCompanyAnalysis — 공식 원천 사실", () => {
+  beforeEach(resetDatabase);
+
+  it("loads the facts for the company and hands them to the analyser and the verifier", async () => {
+    const { company, user } = await seed();
+    let askedFor: number | null = null;
+    let analyserGot: string[] | undefined;
+    let verifierGot: string[] | undefined;
+
+    await runCompanyAnalysis(
+      { company, userId: user.id, news: NEWS },
+      deps({
+        loadFacts: async (companyId) => { askedFor = companyId; return ["국민연금 가입자 52명 — 국민연금"]; },
+        analyze: (_name, _news, options) => { analyserGot = options.facts; return completes(result({ facts: options.facts })); },
+        verify: async (res) => { verifierGot = res.facts; return verification("verified"); },
+      }),
+    );
+
+    expect(askedFor).toBe(company.id);
+    expect(analyserGot).toEqual(["국민연금 가입자 52명 — 국민연금"]);
+    expect(verifierGot).toEqual(["국민연금 가입자 52명 — 국민연금"]);
+  });
+
+  it("still analyses when no fact loader is wired", async () => {
+    const { company, user } = await seed();
+
+    const outcome = await runCompanyAnalysis({ company, userId: user.id, news: NEWS }, deps());
+
+    expect(outcome.status).toBe("verified");
+  });
+});

@@ -1,17 +1,18 @@
 import rubricsJson from "@/lib/services/rubrics.json";
 
-export type MetricKey = "sentiment" | "award" | "investment" | "finance" | "growth" | "verification";
+export type MetricKey = "sentiment" | "award" | "investment" | "finance" | "growth" | "stability" | "verification";
 export type Weights = Record<MetricKey, number>;
 export type Rubric = { id: string; name: string; industries: string[]; weights: Weights; riskPenalty: number };
 export type RubricBook = { formulaVersion: string; default: Rubric; rubrics: Rubric[] };
 
-export const METRIC_KEYS: MetricKey[] = ["sentiment", "award", "investment", "finance", "growth", "verification"];
+export const METRIC_KEYS: MetricKey[] = ["sentiment", "award", "investment", "finance", "growth", "stability", "verification"];
 export const METRIC_LABEL: Record<MetricKey, string> = {
   sentiment: "감성",
   award: "수상",
   investment: "투자",
   finance: "재무",
   growth: "성장",
+  stability: "안정",
   verification: "검증",
 };
 
@@ -60,6 +61,18 @@ export const GROWTH_LABEL: Record<keyof GrowthSignals, string> = {
  */
 export const GROWTH_FAMILIES: Array<Array<keyof GrowthSignals>> = [["revenue"], ["headcount", "hiring"], ["procurement"]];
 
+/** 지속가능성 하위 신호 — 재무 3비율. 자본잠식이면 부채비율·ROE 는 null 이다(수치가 나와도 뜻이 뒤집힌다). */
+export type StabilitySignals = {
+  debtRatio: number | null;
+  roe: number | null;
+  operatingMargin: number | null;
+};
+
+export const STABILITY_KEYS: Array<keyof StabilitySignals> = ["debtRatio", "roe", "operatingMargin"];
+export const STABILITY_LABEL: Record<keyof StabilitySignals, string> = { debtRatio: "부채비율", roe: "ROE", operatingMargin: "영업이익률" };
+/** 낮을수록 좋은 비율 — 정규화 뒤 방향을 뒤집는다. */
+const LOWER_IS_BETTER: ReadonlySet<keyof StabilitySignals> = new Set(["debtRatio"]);
+
 export type BenchmarkInput = {
   companyId: number;
   name: string;
@@ -74,6 +87,7 @@ export type BenchmarkInput = {
   /** 최신 국민연금 가입자 수. 없으면 재무 축은 결측이다 — 절대값으로 되돌아가지 않는다. */
   headcount?: number | null;
   growth: GrowthSignals;
+  stability: StabilitySignals;
   verification: "verified" | "needs_review" | null;
   confirmedRisks: number;
 };
@@ -104,6 +118,8 @@ function rawMetric(input: BenchmarkInput, key: MetricKey): number | null {
       return perHead(input.revenue ?? input.procurementTotal ?? null, input.headcount ?? null);
     case "growth":
       return mean(GROWTH_KEYS.map((key) => input.growth[key]));
+    case "stability":
+      return mean(STABILITY_KEYS.map((key) => input.stability[key]));
     case "verification":
       return input.verification === null ? null : input.verification === "verified" ? 1 : 0;
   }
@@ -158,6 +174,12 @@ export function rankCompanies(inputs: BenchmarkInput[], book: RubricBook, rubric
   columns.growth = inputs.map((_, index) =>
     mean(GROWTH_FAMILIES.map((family) => mean(family.map((key) => growthColumns[key][index])))),
   );
+  // 지속가능성도 비율마다 따로 편다. 부채비율은 낮을수록 좋으니 뒤집는다.
+  const stabilityColumns = STABILITY_KEYS.map((key) => {
+    const column = normalise(inputs.map((input) => input.stability[key]));
+    return LOWER_IS_BETTER.has(key) ? column.map((value) => (value === null ? null : 1 - value)) : column;
+  });
+  columns.stability = inputs.map((_, index) => mean(stabilityColumns.map((column) => column[index])));
 
   const rows: BenchmarkRow[] = inputs.map((input, index) => {
     const rubric = forced ?? resolveRubric(input.industry, book);

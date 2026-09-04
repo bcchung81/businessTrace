@@ -1,10 +1,10 @@
 {
-  "formulaVersion": "rank-v2",
+  "formulaVersion": "rank-v3",
   "default": {
     "id": "default",
     "name": "기본",
     "industries": [],
-    "weights": { "sentiment": 0.25, "award": 0.15, "investment": 0.15, "finance": 0.12, "growth": 0.23, "verification": 0.1 },
+    "weights": { "sentiment": 0.22, "award": 0.13, "investment": 0.13, "finance": 0.1, "growth": 0.2, "stability": 0.12, "verification": 0.1 },
     "riskPenalty": 0.15
   },
   "rubrics": [
@@ -12,21 +12,21 @@
       "id": "ict",
       "name": "ICT",
       "industries": ["SW", "데이터", "클라우드", "사이버보안", "블록체인", "양자", "IoT", "AI", "미디어콘텐츠", "응용 소프트웨어 개발 및 공급업", "시스템 소프트웨어 개발 및 공급업", "컴퓨터시스템 통합 자문 및 구축 서비스업"],
-      "weights": { "sentiment": 0.2, "award": 0.15, "investment": 0.2, "finance": 0.08, "growth": 0.22, "verification": 0.15 },
+      "weights": { "sentiment": 0.18, "award": 0.13, "investment": 0.18, "finance": 0.07, "growth": 0.19, "stability": 0.1, "verification": 0.15 },
       "riskPenalty": 0.15
     },
     {
       "id": "manufacturing",
       "name": "제조",
       "industries": ["첨단로봇", "첨단모빌리티", "반도체", "제조"],
-      "weights": { "sentiment": 0.15, "award": 0.12, "investment": 0.13, "finance": 0.18, "growth": 0.27, "verification": 0.15 },
+      "weights": { "sentiment": 0.13, "award": 0.1, "investment": 0.11, "finance": 0.15, "growth": 0.24, "stability": 0.12, "verification": 0.15 },
       "riskPenalty": 0.2
     },
     {
       "id": "bio",
       "name": "바이오",
       "industries": ["의료/헬스케어", "바이오", "디지털헬스"],
-      "weights": { "sentiment": 0.17, "award": 0.22, "investment": 0.26, "finance": 0.05, "growth": 0.15, "verification": 0.15 },
+      "weights": { "sentiment": 0.15, "award": 0.2, "investment": 0.24, "finance": 0.04, "growth": 0.13, "stability": 0.09, "verification": 0.15 },
       "riskPenalty": 0.2
     }
   ]

@@ -1,4 +1,4 @@
-import type { AnalysisResult, NewsAnalysis } from "@/lib/services/analyzer";
+import { ROUND_LABEL, eokLabel, type AnalysisResult, type NewsAnalysis } from "@/lib/services/analyzer";
 import { diceSimilarity } from "@/lib/services/textSimilarity";
 import type { PensionPoint } from "@/lib/repositories/pensionSnapshot";
 import type { StoredSnapshot } from "@/lib/repositories/sourceSnapshot";
@@ -102,7 +102,12 @@ export function extractAnalysisEvents(input: { companyId: number; runId: number;
       events.push(articleEvent(input.companyId, input.runId, input.trust, analysis, kind, severity, title, label));
 
     if (analysis.award.is_award_related === "Y") make("award", "positive", `수상 — ${analysis.award.award_name}`, analysis.award.award_name);
-    if (analysis.investment.is_investment_related === "Y") make("investment", "positive", `투자 — ${analysis.investment.investment_name}`, analysis.investment.investment_name);
+    if (analysis.investment.is_investment_related === "Y") {
+      const { investment_name: name, investment_round: round, investment_amount_krw: amount } = analysis.investment;
+      // 라운드·금액이 기사에 있었으면 제목에 적는다 — "투자" 만으로는 시드와 IPO 를 가를 수 없다.
+      const detail = [ROUND_LABEL[round ?? "none"], eokLabel(amount)].filter(Boolean).join(" ");
+      make("investment", "positive", `투자 — ${detail || name}`, name);
+    }
     if (analysis.trend.sentiment_score >= POSITIVE_PRESS_MIN) make("positive_press", "positive", `긍정 보도 — ${analysis.news.title}`, analysis.news.title);
     if (analysis.trend.sentiment_score <= NEGATIVE_PRESS_MAX) {
       const kind = NEGATIVE_ALERT_KINDS[analysis.trend.negative_kind ?? "none"];

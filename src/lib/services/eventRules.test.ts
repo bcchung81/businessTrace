@@ -86,6 +86,34 @@ describe("extractAnalysisEvents", () => {
   });
 });
 
+describe("extractAnalysisEvents — 투자 제목에 라운드와 금액", () => {
+  const result = (items: NewsAnalysis[]): AnalysisResult => ({ companyName: "가", model: "m", analyses: items, comprehensiveOpinion: "", stats: { totalNews: items.length, scoredNews: items.length, excludedNews: 0, averageSentiment: 0, positiveCount: 0, negativeCount: 0, neutralCount: 0, awardCount: 0, investmentCount: items.length }, usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 }, fallbacks: 0 });
+  const invested = (extra: Record<string, unknown>) => {
+    const base = analysis({ link: "https://n/1", investment: "시리즈A" });
+    return { ...base, investment: { ...base.investment, ...extra } };
+  };
+
+  it("names the round and the amount in 억 when the article gave them", () => {
+    const [event] = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([invested({ investment_round: "series_a", investment_amount_krw: 12_000_000_000 })]) });
+
+    expect(event.title).toBe("투자 — 시리즈A 120억");
+  });
+
+  it("keeps the plain name when neither round nor amount is known", () => {
+    const [event] = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([invested({})]) });
+
+    expect(event.title).toBe("투자 — 시리즈A");
+  });
+
+  it("shows a fraction of 억 for smaller rounds and drops a trailing .0", () => {
+    const [small] = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([invested({ investment_round: "seed", investment_amount_krw: 350_000_000 })]) });
+    const [round] = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([invested({ investment_round: "ipo", investment_amount_krw: 30_000_000_000 })]) });
+
+    expect(small.title).toBe("투자 — 시드 3.5억");
+    expect(round.title).toBe("투자 — IPO 300억");
+  });
+});
+
 describe("extractAnalysisEvents — 부정 보도의 종류", () => {
   const result = (items: NewsAnalysis[]): AnalysisResult => ({ companyName: "가", model: "m", analyses: items, comprehensiveOpinion: "", stats: { totalNews: items.length, scoredNews: items.length, excludedNews: 0, averageSentiment: 0, positiveCount: 0, negativeCount: items.length, neutralCount: 0, awardCount: 0, investmentCount: 0 }, usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 }, fallbacks: 0 });
 

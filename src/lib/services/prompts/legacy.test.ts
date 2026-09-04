@@ -78,6 +78,13 @@ describe("trendPrompt", () => {
     for (const kind of ["lawsuit", "recall", "sanction", "none"]) expect(prompt).toContain(kind);
   });
 
+  it("asks for growth facts stated in the article, as the article puts them", () => {
+    const prompt = trendPrompt("넷록스");
+
+    expect(prompt).toContain("growth_signals");
+    expect(prompt).toMatch(/기사에 (적힌|명시된)/);
+  });
+
   it("asks whether the article is about the company before scoring it", () => {
     const prompt = trendPrompt("넷록스");
 
@@ -142,5 +149,34 @@ describe("opinionPrompt", () => {
 describe("SYSTEM_NEWS", () => {
   it("keeps the legacy system persona", () => {
     expect(SYSTEM_NEWS).toContain("당신은 뉴스 분석 전문가입니다. 정확하고 객관적으로 뉴스를 분석해주세요.");
+  });
+});
+
+describe("investmentPrompt — 라운드와 금액", () => {
+  it("asks for the round and the amount in won, and forbids guessing", () => {
+    const prompt = investmentPrompt("넷록스");
+
+    expect(prompt).toContain("investment_round");
+    for (const round of ["seed", "series_a", "series_b", "series_c_plus", "ipo", "other", "none"]) expect(prompt).toContain(round);
+    expect(prompt).toContain("investment_amount_krw");
+    expect(prompt).toMatch(/추정하지/);
+  });
+});
+
+describe("opinionPrompt — 공식 원천 사실", () => {
+  const stats = { totalNews: 3, scoredNews: 3, averageSentiment: 5, positiveCount: 2, negativeCount: 0, neutralCount: 1, awardCount: 0, investmentCount: 1 };
+
+  it("hands over code-computed public facts and tells the model to cite only those", () => {
+    const prompt = opinionPrompt("넷록스", stats, ["국민연금 가입자 52명 — 국민연금", "2025년 매출 12억 (전년 대비 +40%) — DART"]);
+
+    expect(prompt).toContain("공식 원천 사실");
+    expect(prompt).toContain("국민연금 가입자 52명 — 국민연금");
+    expect(prompt).toMatch(/수치.*(만|만을|만으로).*(인용|근거)/);
+  });
+
+  it("omits the block entirely when there are no facts — 'none' would become a talking point", () => {
+    const prompt = opinionPrompt("넷록스", stats, []);
+
+    expect(prompt).not.toContain("공식 원천 사실");
   });
 });
