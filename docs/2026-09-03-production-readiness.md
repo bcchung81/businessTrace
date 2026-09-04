@@ -102,7 +102,11 @@
 > - 보안 헤더 7종(`securityHeaders.ts` → `next.config.ts`). **CSP 는 `frame-ancestors`·`base-uri`·`form-action`·`object-src` 까지만** 넣었다 — `script-src`/`default-src` 는 Next 가 스스로 넣는 인라인 스크립트 때문에 nonce 배포와 브라우저 확인이 함께 필요하고, 그것 없이 켜면 화면이 조용히 죽는다. 「테마 스크립트가 상수라 해시로 가능」은 Next 자체 인라인을 빼고 본 판단이다. 테스트가 그 네 지시어만 있도록 강제한다.
 > - `src/app/(app)/` 라우트 그룹을 만들어 레이아웃에서 `auth()` 를 한 번 더 확인한다. 로그인 화면은 셸 밖으로 나왔다(§3-1 의 같은 작업). URL 은 그대로다.
 > - `/api/health` 는 상태 코드와 `{status,database}` 만 준다. 예외 원문은 컨테이너 로그에.
-> - `DEV_AUTOFILL` 분기와 `defaultEmail`/`defaultPassword` prop 을 지웠다. 소스에 다시 들어오면 테스트가 잡는다.
+> - `DEV_AUTOFILL` 분기와 `defaultEmail`/`defaultPassword` prop 을 지웠다.
+>   **2026-09-04 되돌림 — 테스트 편의를 위해 자동채움을 다시 넣었다.** 대신 판정을 서버(`devAutofill.ts`)로 옮겨
+>   `NODE_ENV=production` 이면 값이 설정돼 있어도 `null` 을 내고, 폼은 받은 값만 그린다(`process.env` 를 읽지 않는다).
+>   프로덕션 빌드를 `DEV_AUTOFILL_*` 를 채운 채 띄워 **비밀번호·이메일·알림이 모두 0회 렌더**되는 것을 확인했다.
+>   그래도 이건 유일한 비인증 페이지에 평문 비밀번호를 그리는 코드다 — 배포 전 `.env` 에서 비우는 편이 낫다.
 
 ### 2-B. 운영
 

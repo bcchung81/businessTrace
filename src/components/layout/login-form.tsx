@@ -8,9 +8,11 @@ type LoginFormProps = {
   error?: string;
   retryAfterSec?: number;
   action?: (formData: FormData) => void | Promise<void>;
+  /** 테스트 기간 자동채움. 서버가 프로덕션 여부를 판정해 넘긴다 — 폼은 받은 값만 그린다. */
+  prefill?: { email: string; password: string };
 };
 
-export function LoginForm({ callbackUrl, error, retryAfterSec, action }: LoginFormProps) {
+export function LoginForm({ callbackUrl, error, retryAfterSec, action, prefill }: LoginFormProps) {
   const message =
     error === "TooManyAttempts"
       ? `시도가 너무 잦습니다. ${retryAfterSec ?? 300}초 뒤에 다시 시도해주세요.`
@@ -47,16 +49,25 @@ export function LoginForm({ callbackUrl, error, retryAfterSec, action }: LoginFo
           <Label htmlFor="email" className="text-[13px]">
             이메일
           </Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <Input id="email" name="email" type="email" autoComplete="email" defaultValue={prefill?.email ?? ""} required />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password" className="text-[13px]">
             비밀번호
           </Label>
-          <Input id="password" name="password" type="password" autoComplete="current-password" required />
+          <Input id="password" name="password" type="password" autoComplete="current-password" defaultValue={prefill?.password ?? ""} required />
         </div>
       </div>
+
+      {prefill ? (
+        <p
+          data-testid="autofill-notice"
+          className="border-l-2 border-review bg-review-surface px-3 py-2 text-[12px] leading-relaxed text-review"
+        >
+          테스트 기간 동안 계정이 자동으로 입력됩니다. 배포 전 <span className="font-mono">DEV_AUTOFILL_*</span> 를 지우세요.
+        </p>
+      ) : null}
 
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
       <Button type="submit" className="h-10">

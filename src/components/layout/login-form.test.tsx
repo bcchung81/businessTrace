@@ -32,8 +32,28 @@ describe("LoginForm", () => {
   });
 });
 
-describe("LoginForm has no test-period autofill", () => {
-  it("leaves both fields empty — the only unauthenticated page never renders a password", () => {
+describe("LoginForm test-period prefill", () => {
+  it("fills both fields when the server handed over a prefill", () => {
+    render(<LoginForm callbackUrl="/" prefill={{ email: "admin@kca.kr", password: "Passw0rd!Long1" }} />);
+
+    expect(screen.getByLabelText("이메일")).toHaveValue("admin@kca.kr");
+    expect(screen.getByLabelText("비밀번호")).toHaveValue("Passw0rd!Long1");
+  });
+
+  it("says on screen that the prefill is temporary — nobody should forget it is on", () => {
+    render(<LoginForm callbackUrl="/" prefill={{ email: "admin@kca.kr", password: "Passw0rd!Long1" }} />);
+
+    expect(screen.getByTestId("autofill-notice")).toHaveTextContent("테스트 기간");
+  });
+
+  it("fills only the email when that is all the server sent", () => {
+    render(<LoginForm callbackUrl="/" prefill={{ email: "admin@kca.kr", password: "" }} />);
+
+    expect(screen.getByLabelText("이메일")).toHaveValue("admin@kca.kr");
+    expect(screen.getByLabelText("비밀번호")).toHaveValue("");
+  });
+
+  it("leaves both fields empty and shows no notice without a prefill", () => {
     render(<LoginForm callbackUrl="/" />);
 
     expect(screen.getByLabelText("이메일")).toHaveValue("");
@@ -41,10 +61,17 @@ describe("LoginForm has no test-period autofill", () => {
     expect(screen.queryByTestId("autofill-notice")).toBeNull();
   });
 
-  it("carries no prefill props at all", () => {
+  it("keeps browser password managers working — the fields keep their autocomplete hints", () => {
+    render(<LoginForm callbackUrl="/" />);
+
+    expect(screen.getByLabelText("이메일")).toHaveAttribute("autocomplete", "email");
+    expect(screen.getByLabelText("비밀번호")).toHaveAttribute("autocomplete", "current-password");
+  });
+
+  it("takes the prefill from the server only — the page must never read env vars itself", () => {
     const source = readFileSync(resolve(process.cwd(), "src/components/layout/login-form.tsx"), "utf8");
 
-    expect(source).not.toMatch(/defaultEmail|defaultPassword|DEV_AUTOFILL/);
+    expect(source).not.toMatch(/process\.env/);
   });
 
   it("shows how long to wait when the attempt was throttled", () => {

@@ -5,6 +5,7 @@ import { signIn } from "@/auth";
 import { LoginForm } from "@/components/layout/login-form";
 import { checkLoginAttempt } from "@/lib/services/loginThrottle";
 import { clientAddress } from "@/lib/services/clientAddress";
+import { devAutofill } from "@/lib/services/devAutofill";
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
@@ -39,7 +40,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-surface p-6">
-      <LoginForm callbackUrl={callbackUrl} error={error} retryAfterSec={retryAfterSec} action={submit} />
+      <LoginForm callbackUrl={callbackUrl} error={error} retryAfterSec={retryAfterSec} action={submit} prefill={devAutofill() ?? undefined} />
     </div>
   );
 }
