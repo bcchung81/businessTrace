@@ -163,8 +163,17 @@ export function EventTable({
       ) : (
         <>
           <div className="min-h-0 flex-1 overflow-x-auto">
-            <table className="w-full text-[12px]">
+            <table className="w-full min-w-[760px] table-fixed text-[12px]">
               <caption className="sr-only">최근 이슈</caption>
+              <colgroup>
+                <col className="w-[60px]" />
+                <col className="w-[132px]" />
+                <col className="w-[104px]" />
+                <col className="w-[68px]" />
+                <col />
+                <col className="w-[180px]" />
+                <col className="w-[60px]" />
+              </colgroup>
               <thead>
                 <tr className="border-b-2 border-ink text-[11px] font-bold tracking-[0.06em] text-foreground">
                   <th scope="col" className="px-2 py-2 text-left font-semibold">날짜</th>
@@ -181,7 +190,7 @@ export function EventTable({
                   row.type === "event" ? (
                     <tr key={`event-${row.event.id}`} className="border-b border-hairline align-middle last:border-0">
                       <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">{kstDateShort(row.event.occurredAt, now)}</td>
-                      <td className="px-2 py-1.5">
+                      <td className="truncate whitespace-nowrap px-2 py-1.5" title={row.event.companyName}>
                         <Link href={`/companies/${row.event.companyId}`} className="font-semibold hover:underline">
                           {row.event.companyName}
                         </Link>
@@ -193,12 +202,12 @@ export function EventTable({
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{KIND_LABEL[row.event.kind]}</td>
-                      <td className="min-w-[240px] max-w-[420px] break-keep px-2 py-1.5">
+                      <td className="truncate whitespace-nowrap px-2 py-1.5" title={row.event.title}>
                         <Link href={`/companies/${row.event.companyId}#event-${row.event.id}`} className="hover:underline">
                           {row.event.title}
                         </Link>
                       </td>
-                      <td className="max-w-[220px] truncate whitespace-nowrap px-2 py-1.5" title={row.event.evidence.map((item) => item.label).join(" · ")}>
+                      <td className="truncate whitespace-nowrap px-2 py-1.5" title={row.event.evidence.map((item) => item.label).join(" · ")}>
                         {row.event.evidence.length === 0 ? (
                           <span className="text-muted-foreground/45">—</span>
                         ) : (
@@ -226,7 +235,7 @@ export function EventTable({
                   ) : (
                     <tr key={`silence-${row.companyId}`} className="border-b border-hairline align-middle text-muted-foreground last:border-0">
                       <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[11px] tabular-nums">{row.latest ? kstDateShort(row.latest, now) : "—"}</td>
-                      <td className="px-2 py-1.5">
+                      <td className="truncate whitespace-nowrap px-2 py-1.5" title={row.companyName}>
                         <Link href={`/companies/${row.companyId}`} className="font-semibold text-foreground hover:underline">
                           {row.companyName}
                         </Link>
@@ -235,7 +244,7 @@ export function EventTable({
                         <SeverityMark severity="info" />
                       </td>
                       <td className="whitespace-nowrap px-2 py-1.5">{KIND_LABEL.silence}</td>
-                      <td className="max-w-[280px] truncate whitespace-nowrap px-2 py-1.5" colSpan={2}>
+                      <td className="truncate whitespace-nowrap px-2 py-1.5" colSpan={2}>
                         {`무보도 — 최근 보도 ${row.latest ? kstDateShort(row.latest, now) : "없음"}`}
                       </td>
                       <td className="px-2 py-1.5" />

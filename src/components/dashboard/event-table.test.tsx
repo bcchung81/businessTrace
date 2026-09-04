@@ -148,19 +148,27 @@ describe("EventTable", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
-  test("wraps long event titles instead of truncating, but keeps evidence on one line with the full text on hover", () => {
+  test("keeps every cell on one line — long titles, company names and evidence truncate and carry the full text on hover", () => {
     const long = "부정 보도 — 한국첨단소재 유증 흥행에도 씁쓸한 뒷맛, 소액공모 틈새 노렸나 하는 아주 긴 제목";
     render(<EventTable events={[row({ title: long, evidence: [{ label: long, link: "https://n/1" }] })]} silence={[]} now={NOW} />);
 
+    const table = screen.getByRole("table");
+    expect(table.className).toContain("table-fixed");
+    expect(table.querySelectorAll("colgroup col")).toHaveLength(7);
+
     const links = screen.getAllByRole("link", { name: long });
     const titleCell = links.find((link) => link.getAttribute("href")?.startsWith("/companies/"))!.closest("td")!;
-    expect(titleCell.className).toContain("min-w-[240px]");
-    expect(titleCell.className).toContain("max-w-[420px]");
-    expect(titleCell.className).toContain("break-keep");
-    expect(titleCell).not.toHaveAttribute("title");
+    expect(titleCell.className).toContain("truncate");
+    expect(titleCell.className).toContain("whitespace-nowrap");
+    expect(titleCell).toHaveAttribute("title", long);
 
     const evidenceCell = links.find((link) => link.getAttribute("href") === "https://n/1")!.closest("td")!;
     expect(evidenceCell.className).toContain("truncate");
+    expect(evidenceCell).toHaveAttribute("title", long);
+
+    const companyCell = screen.getByRole("link", { name: "딥노이드" }).closest("td")!;
+    expect(companyCell.className).toContain("truncate");
+    expect(companyCell).toHaveAttribute("title", "딥노이드");
   });
 
   test("shows twenty rows per page by default", () => {
