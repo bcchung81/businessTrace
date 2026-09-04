@@ -1,7 +1,7 @@
 import { listCompanies, listYears } from "@/lib/repositories/companyRepository";
 import { listSelections } from "@/lib/repositories/selectionRecord";
-import { periodEndYm, periodLabel } from "@/lib/services/periods";
-import { compareRanks, fallingRanks, formulaDrift, MIN_TOTAL_DELTA } from "@/lib/services/rising";
+import { periodEndYm } from "@/lib/services/periods";
+import { compareRanks, fallingRanks } from "@/lib/services/rising";
 import { listBenchmarkInputs } from "@/lib/repositories/benchmarkInputs";
 import { loadRubrics, rankCompanies } from "@/lib/services/benchmarking";
 import { RisingCompanies } from "@/components/dashboard/rising-companies";
@@ -87,14 +87,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const baseline = basePeriod ? selections.filter((record) => record.period === basePeriod) : [];
   const rising = basePeriod ? compareRanks(liveRanked, baseline, 10) : [];
   const falling = basePeriod ? fallingRanks(liveRanked, baseline, 10) : [];
-  const rubrics = loadRubrics();
-  const drift = formulaDrift(baseline[0]?.formulaVersion ?? null, rubrics.formulaVersion);
-  const moveLabel = (rows: unknown[]) =>
-    basePeriod && rows.length > 0
-      ? `실시간 랭킹 · ${periodLabel(basePeriod)} 확정 대비 · 총점 ${MIN_TOTAL_DELTA.toFixed(2)} 이상 움직인 것만${drift ? ` · ${drift}` : ""}`
-      : null;
-  const risingLabel = moveLabel(rising);
-  const fallingLabel = moveLabel(falling);
 
   const [collection, cells, fullRefreshAt, review] = await Promise.all([
     summariseCollection(year),
@@ -148,10 +140,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       <div className="grid items-start gap-8 lg:grid-cols-2">
         <Panel index="01" title="추이 상승 TOP 10" tag="실시간" tone="fresh" note="시상 후보 검토용">
-          <RisingCompanies rows={rising} periodLabelText={risingLabel} />
+          <RisingCompanies rows={rising} periodLabelText={null} />
         </Panel>
         <Panel index="02" title="추이 하락 TOP 10" tag="실시간" tone="review" note="리스크 검토용">
-          <RisingCompanies rows={falling} periodLabelText={fallingLabel} direction="down" />
+          <RisingCompanies rows={falling} periodLabelText={null} direction="down" />
         </Panel>
       </div>
 
