@@ -13,12 +13,22 @@ import {
 
 const yesNo = z.union([z.literal("Y"), z.literal("N")]);
 
+export const NEGATIVE_KINDS = ["lawsuit", "recall", "sanction", "none"] as const;
+export type NegativeKind = (typeof NEGATIVE_KINDS)[number];
+
+/** 이 아래면 모델이 "그 회사" 라고 했어도 집계에서 뺀다 — 동명 타사(옥타코) 기사가 평균을 흔들었다. */
+export const ABOUT_CONFIDENCE_MIN = 0.7;
+
 const trendSchema = z.object({
   trend_analysis: z.object({
     is_about_company: yesNo,
+    /** 없으면 1 로 본다 — 예전 프롬프트는 묻지 않았다. */
+    about_confidence: z.number().min(0).max(1).optional(),
     news_trend_summary: z.string(),
     sentiment_score: z.number().int().min(-10).max(10),
     sentiment_label: z.string(),
+    /** 없으면 "none" — 예전 프롬프트는 묻지 않았다. */
+    negative_kind: z.enum(NEGATIVE_KINDS).optional(),
   }),
 });
 
@@ -88,7 +98,16 @@ const NEUTRAL_TREND: Trend = {
   news_trend_summary: "동향실적 분석에 실패해 중립으로 처리했습니다.",
   sentiment_score: 0,
   sentiment_label: "중립",
+  negative_kind: "none",
 };
+
+/**
+ * 모델이 "그 회사" 라고 답했고 그 확신이 문턱 이상일 때만 집계에 넣는다.
+ * 확신도가 없으면(예전 결과) 1 로 본다.
+ */
+export function isAboutCompany(trend: Trend): boolean {
+  return trend.is_about_company === "Y" && (trend.about_confidence ?? 1) >= ABOUT_CONFIDENCE_MIN;
+}
 
 const NO_AWARD: Award = {
   is_award_related: "N",
@@ -207,17 +226,16 @@ export async function* analyzeCompany(
     const context = newsContext(companyName, item);
 
     queue.push({ type: "progress", step: "trend", current: position, total });
-    const trend = (
-      await ask(trendPrompt(companyName, item), trendSchema, { trend_analysis: NEUTRAL_TREND }, context)
-    ).trend_analysis;
+    const answered = (await ask(trendPrompt(companyName), trendSchema, { trend_analysis: NEUTRAL_TREND }, context)).trend_analysis;
+    const trend: Trend = { ...answered, negative_kind: answered.negative_kind ?? "none" };
 
     queue.push({ type: "progress", step: "award", current: position, total });
     const [award, investment] = await Promise.all([
-      ask(awardPrompt(companyName, item), awardSchema, { award_analysis: NO_AWARD }, context).then(
+      ask(awardPrompt(companyName), awardSchema, { award_analysis: NO_AWARD }, context).then(
         (answer) => answer.award_analysis,
       ),
       ask(
-        investmentPrompt(companyName, item),
+        investmentPrompt(companyName),
         investmentSchema,
         { investment_analysis: NO_INVESTMENT },
         context,
@@ -226,7 +244,7 @@ export async function* analyzeCompany(
 
     const analysis: NewsAnalysis = {
       news: item,
-      isAboutCompany: trend.is_about_company === "Y",
+      isAboutCompany: isAboutCompany(trend),
       trend,
       award,
       investment,

@@ -313,3 +313,57 @@ describe("analyzeCompany when the LLM keeps failing", () => {
     expect(error?.type === "error" && error.message).toMatch(/LLM/);
   });
 });
+
+describe("analyzeCompany — 확신도와 부정 사건 종류", () => {
+  type Extra = { about_confidence?: number; negative_kind?: string };
+  function llmWith(extra: Extra): LlmClient {
+    const base = fakeLlm();
+    return {
+      json: (async (request: { prompt: string }) => {
+        const answer = await base.json(request as never);
+        if (request.prompt.includes("동향실적을 분석해주세요")) {
+          return { ...answer, data: { trend_analysis: { ...(answer.data as { trend_analysis: object }).trend_analysis, ...extra } } };
+        }
+        return answer;
+      }) as LlmClient["json"],
+    };
+  }
+  async function complete(llm: LlmClient) {
+    const events: AnalyzeEvent[] = [];
+    for await (const event of analyzeCompany("넷록스", [news()], { llm })) events.push(event);
+    const done = events.find((event) => event.type === "complete");
+    if (done?.type !== "complete") throw new Error("no complete");
+    return done.result;
+  }
+
+  it("treats a low-confidence 'yes' as not about the company — the 옥타코 case", async () => {
+    const result = await complete(llmWith({ about_confidence: 0.4 }));
+
+    expect(result.analyses[0].isAboutCompany).toBe(false);
+    expect(result.stats.scoredNews).toBe(0);
+  });
+
+  it("keeps a confident 'yes'", async () => {
+    const result = await complete(llmWith({ about_confidence: 0.9 }));
+
+    expect(result.analyses[0].isAboutCompany).toBe(true);
+  });
+
+  it("assumes full confidence when the model left it out — older prompts never asked", async () => {
+    const result = await complete(llmWith({}));
+
+    expect(result.analyses[0].isAboutCompany).toBe(true);
+  });
+
+  it("carries the kind of bad news through", async () => {
+    const result = await complete(llmWith({ negative_kind: "lawsuit" }));
+
+    expect(result.analyses[0].trend.negative_kind).toBe("lawsuit");
+  });
+
+  it("defaults the kind to none when the model left it out", async () => {
+    const result = await complete(llmWith({}));
+
+    expect(result.analyses[0].trend.negative_kind).toBe("none");
+  });
+});

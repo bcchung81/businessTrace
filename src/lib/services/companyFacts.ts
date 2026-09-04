@@ -12,6 +12,8 @@ import type { Certification } from "@/lib/services/ventureCertification";
 export type FactValue = { value: string; sources: string[]; agreement: "single" | "match" | "mismatch"; alternatives?: string[] };
 export type EmployeeCount = { source: "nps" | "narajangteo" | "fsc"; label: string; count: number };
 export type CompanyFacts = {
+  /** 설립 후 만 몇 년인지 — 성장률을 읽을 때의 분모다. 설립일이 없으면 null. */
+  ageYears: number | null;
   ceo: FactValue | null;
   founded: FactValue | null;
   address: FactValue | null;
@@ -81,6 +83,15 @@ function amount(value: number | null) {
   return value === null ? "—" : value.toLocaleString("en-US");
 }
 
+/** YYYY-MM-DD 부터 지난 만 년수. 생일이 아직 안 왔으면 한 해를 뺀다. */
+function fullYearsSince(date: string | null, now: Date): number | null {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const [year, month, day] = date.split("-").map(Number);
+  let years = now.getUTCFullYear() - year;
+  if (now.getUTCMonth() + 1 < month || (now.getUTCMonth() + 1 === month && now.getUTCDate() < day)) years -= 1;
+  return years < 0 ? null : years;
+}
+
 function growthOf(current: number | null, previous: number | null | undefined) {
   if (current === null || previous === null || previous === undefined || previous <= 0) return null;
   return Math.round(((current - previous) / previous) * 100) / 100;
@@ -96,7 +107,7 @@ function pct(growth: number | null) {
  * 저장된 원천 payload 만으로 기업 기본 정보를 조립한다 — 재조회 없이, 원천끼리의 일치 여부를 함께 낸다.
  * 인건비는 고지금액에서 나온 추정치라 화면이 "추정" 으로 표시해야 한다.
  */
-export function buildCompanyFacts(input: { businessNo: string | null; snapshots: StoredSnapshot[] }): CompanyFacts {
+export function buildCompanyFacts(input: { businessNo: string | null; snapshots: StoredSnapshot[]; now?: Date }): CompanyFacts {
   const dart = payloadOf<CompanyProfile>(input.snapshots, "dart");
   const finance = payloadOf<FinancialSummary>(input.snapshots, "dartFinance");
   const fsc = payloadOf<CorpOutline>(input.snapshots, "fsc");
@@ -129,9 +140,12 @@ export function buildCompanyFacts(input: { businessNo: string | null; snapshots:
     nps: nps ? [typeof nps.subscribers === "number" ? `가입자 ${nps.subscribers}명` : "", nps.workplaceCount ? `사업장 ${nps.workplaceCount}곳` : "", nps.registeredAt ? `등록 ${normaliseDate(nps.registeredAt)}` : "", nps.withdrawnAt ? `탈퇴 ${normaliseDate(nps.withdrawnAt)}` : ""].filter(Boolean) : [],
   };
 
+  const founded = merge([[SOURCE_NAME.narajangteo, normaliseDate(nara?.openedAt)], [SOURCE_NAME.fsc, normaliseDate(fsc?.establishedAt)]]);
+
   return {
+    ageYears: fullYearsSince(founded?.value ?? null, input.now ?? new Date()),
     ceo: merge([[SOURCE_NAME.dart, dart?.ceoName ?? null], [SOURCE_NAME.narajangteo, nara?.ceoName ?? null]]),
-    founded: merge([[SOURCE_NAME.narajangteo, normaliseDate(nara?.openedAt)], [SOURCE_NAME.fsc, normaliseDate(fsc?.establishedAt)]]),
+    founded,
     address: merge([[SOURCE_NAME.narajangteo, normaliseAddress(nara?.address)], [SOURCE_NAME.fsc, normaliseAddress(fsc?.address)]]),
     corporateNo: merge([[SOURCE_NAME.dart, dart?.corporateNo ?? null], [SOURCE_NAME.fsc, fsc?.corporateNo ?? null]]),
     employees,

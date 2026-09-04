@@ -77,3 +77,92 @@ describe("listBenchmarkInputs", () => {
     expect(await listBenchmarkInputs(YEAR)).toEqual([]);
   });
 });
+
+describe("listBenchmarkInputs — 성장 신호", () => {
+  beforeEach(resetDatabase);
+
+  const snapshot = (companyId: number, source: string, payload: unknown) =>
+    prisma.sourceSnapshot.create({
+      data: { companyId, source, status: "found", summary: source, payload: JSON.stringify(payload), fetchedAt: new Date("2026-08-01") },
+    });
+
+  test("매출 증가율을 DART 재무의 전년 대비로 낸다", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+    await snapshot(company.id, "dartFinance", { revenue: 1400, previous: { revenue: 1000 } });
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.growth.revenue).toBe(0.4);
+  });
+
+  test("전년 매출이 없으면 결측이다 — 0 이 아니다", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+    await snapshot(company.id, "dartFinance", { revenue: 1400 });
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.growth.revenue).toBeNull();
+  });
+
+  test("고용 증감을 국민연금 12개월 추이로 낸다", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+    for (const [ym, subscribers] of [["202508", 50], ["202608", 65]] as const) {
+      await prisma.pensionSnapshot.create({ data: { companyId: company.id, ym, subscribers } });
+    }
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.growth.headcount).toBe(0.3);
+  });
+
+  test("입·퇴사 순증을 국민연금 월별 흐름으로 낸다", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+    for (let month = 1; month <= 12; month += 1) {
+      await prisma.pensionSnapshot.create({
+        data: { companyId: company.id, ym: `2026${String(month).padStart(2, "0")}`, subscribers: 100, hired: 3, departed: 1 },
+      });
+    }
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.growth.hiring).toBe(0.24);
+  });
+
+  test("조달 수주 추이를 최근 2년 대 직전 2년으로 낸다", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+    await snapshot(company.id, "procurement", {
+      count: 4, total: 500, candidates: 0,
+      years: [{ year: 2026, count: 1, total: 100 }, { year: 2025, count: 1, total: 200 }, { year: 2024, count: 1, total: 150 }, { year: 2023, count: 1, total: 50 }],
+    });
+
+    const [row] = await listBenchmarkInputs(YEAR, new Date("2026-09-04T00:00:00Z"));
+    expect(row.growth.procurement).toBe(0.5);
+  });
+
+  test("원천이 하나도 없으면 세 신호가 전부 결측이다", async () => {
+    await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.growth).toEqual({ revenue: null, headcount: null, hiring: null, procurement: null });
+  });
+});
+
+describe("listBenchmarkInputs — 1인당 재무의 재료", () => {
+  beforeEach(resetDatabase);
+
+  test("최신 달의 가입자 수를 인원으로 낸다", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+    for (const [ym, subscribers] of [["202605", 40], ["202607", 52], ["202606", 45]] as const) {
+      await prisma.pensionSnapshot.create({ data: { companyId: company.id, ym, subscribers } });
+    }
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.headcount).toBe(52);
+  });
+
+  test("조달 수주 합계를 대리지표 재료로 낸다", async () => {
+    const company = await prisma.company.create({ data: { name: "㈜가", year: YEAR } });
+    await prisma.sourceSnapshot.create({
+      data: { companyId: company.id, source: "procurement", status: "found", summary: "낙찰", payload: JSON.stringify({ count: 2, total: 3_000, candidates: 1, years: [] }), fetchedAt: new Date("2026-08-01") },
+    });
+
+    const [row] = await listBenchmarkInputs(YEAR);
+    expect(row.procurementTotal).toBe(3_000);
+  });
+});

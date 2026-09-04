@@ -35,9 +35,9 @@ function row(overrides: Partial<RankingRow> & { companyId: number; name: string 
 function rows(): RankingRow[] {
   const ranked = rankCompanies(
     [
-      { companyId: 1, name: "㈜가", industry: "SW", sentiment: 8, awards: 1, investments: 1, revenue: 100, verification: "verified", confirmedRisks: 0 },
-      { companyId: 2, name: "㈜나", industry: "의료/헬스케어", sentiment: 2, awards: 0, investments: 0, revenue: null, verification: "needs_review", confirmedRisks: 1 },
-      { companyId: 3, name: "㈜다", industry: null, sentiment: null, awards: null, investments: null, revenue: null, verification: null, confirmedRisks: 0 },
+      { companyId: 1, name: "㈜가", industry: "SW", sentiment: 8, awards: 1, investments: 1, revenue: 100, verification: "verified", growth: { revenue: null, headcount: null, hiring: null, procurement: null }, confirmedRisks: 0 },
+      { companyId: 2, name: "㈜나", industry: "의료/헬스케어", sentiment: 2, awards: 0, investments: 0, revenue: null, verification: "needs_review", growth: { revenue: null, headcount: null, hiring: null, procurement: null }, confirmedRisks: 1 },
+      { companyId: 3, name: "㈜다", industry: null, sentiment: null, awards: null, investments: null, revenue: null, verification: null, growth: { revenue: null, headcount: null, hiring: null, procurement: null }, confirmedRisks: 0 },
     ],
     loadRubrics(),
   );
@@ -53,7 +53,7 @@ describe("RankingTable", () => {
     const many = rankCompanies(
       Array.from({ length: 25 }, (_, index) => ({
         companyId: index + 1, name: `기업${String(index + 1).padStart(2, "0")}`, industry: "SW",
-        sentiment: index, awards: 0, investments: 0, revenue: null, verification: "verified" as const, confirmedRisks: 0,
+        sentiment: index, awards: 0, investments: 0, revenue: null, verification: "verified" as const, growth: { revenue: null, headcount: null, hiring: null, procurement: null }, confirmedRisks: 0,
       })),
       loadRubrics(),
     ).map((row) => ({ ...row, businessNo: "1234567890", verdict: "verified" as const }));
@@ -69,10 +69,10 @@ describe("RankingTable", () => {
     expect(screen.getAllByRole("row")).toHaveLength(6);
   });
 
-  test("shows the eleven columns in the brief's order", () => {
+  test("shows the twelve columns in the brief's order", () => {
     render(<RankingTable rows={rows()} industries={["SW", "의료/헬스케어"]} />);
     const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
-    expect(headers).toEqual(["순위", "기업", "판정", "총점", "감성", "수상", "투자", "재무", "검증", "리스크 감점", "산업"]);
+    expect(headers).toEqual(["순위", "기업", "판정", "총점", "감성", "수상", "투자", "재무", "성장", "검증", "리스크 감점", "산업"]);
   });
 
   test("marks a missing metric with — and the hatch, never 0", () => {
@@ -117,8 +117,8 @@ describe("RankingTable", () => {
 
   test("prints the penalty as a negative number only when a risk was confirmed", () => {
     render(<RankingTable rows={rows()} industries={[]} />);
-    expect(within(screen.getByRole("row", { name: /㈜나/ })).getAllByRole("cell")[9]).toHaveTextContent("-0.20");
-    expect(within(screen.getByRole("row", { name: /㈜가/ })).getAllByRole("cell")[9]).toHaveTextContent("0");
+    expect(within(screen.getByRole("row", { name: /㈜나/ })).getAllByRole("cell")[10]).toHaveTextContent("-0.20");
+    expect(within(screen.getByRole("row", { name: /㈜가/ })).getAllByRole("cell")[10]).toHaveTextContent("0");
   });
 
   test("filters rows by the search box", () => {
@@ -160,7 +160,7 @@ describe("RankingTable", () => {
     const many = rankCompanies(
       Array.from({ length: 25 }, (_, index) => ({
         companyId: index + 1, name: `기업${String(index + 1).padStart(2, "0")}`, industry: "SW",
-        sentiment: index, awards: 0, investments: 0, revenue: null, verification: "verified" as const, confirmedRisks: 0,
+        sentiment: index, awards: 0, investments: 0, revenue: null, verification: "verified" as const, growth: { revenue: null, headcount: null, hiring: null, procurement: null }, confirmedRisks: 0,
       })),
       loadRubrics(),
     ).map((row) => ({ ...row, businessNo: "1234567890", verdict: "verified" as const }));

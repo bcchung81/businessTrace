@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareRanks, fallingRanks, risingCompanies } from "@/lib/services/rising";
+import { compareRanks, fallingRanks, formulaDrift, risingCompanies } from "@/lib/services/rising";
 
 describe("fallingRanks", () => {
   it("ranks live standings that dropped against the confirmed baseline", () => {
@@ -144,5 +144,23 @@ describe("risingCompanies", () => {
 
   it("is empty when the previous period has no records", () => {
     expect(risingCompanies([record(1, "가", "2026", 1, 0.7)], "2026", 10)).toEqual([]);
+  });
+});
+
+describe("formulaDrift", () => {
+  it("says nothing when the baseline was frozen under the same formula", () => {
+    expect(formulaDrift("rank-v2", "rank-v2")).toBeNull();
+  });
+
+  it("warns when the live ranking uses a different formula than the frozen baseline", () => {
+    const note = formulaDrift("rank-v1", "rank-v2");
+
+    expect(note).toContain("rank-v1");
+    expect(note).toContain("rank-v2");
+    expect(note).toMatch(/산식/);
+  });
+
+  it("says nothing when there is no baseline to compare against", () => {
+    expect(formulaDrift(null, "rank-v2")).toBeNull();
   });
 });

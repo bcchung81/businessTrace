@@ -51,7 +51,7 @@ describe("SYSTEM_NEWS", () => {
 
 describe("trendPrompt", () => {
   it("keeps the legacy scoring rubric so scores stay comparable", () => {
-    const prompt = trendPrompt("넷록스", item);
+    const prompt = trendPrompt("넷록스");
 
     expect(prompt).toContain("동향실적을 분석해주세요");
     expect(prompt).toContain("8~10: 매우 긍정적");
@@ -59,8 +59,27 @@ describe("trendPrompt", () => {
     expect(prompt).toContain("반드시!!! 다음 JSON 형식으로 응답해주세요.");
   });
 
+  it("keeps awards and investments out of the sentiment score — they are scored on their own axes", () => {
+    const prompt = trendPrompt("넷록스");
+
+    expect(prompt).not.toMatch(/4~7:.*(수상|투자 유치)/);
+    expect(prompt).not.toMatch(/8~10:.*(수상|투자 유치)/);
+    expect(prompt).toMatch(/수상.*투자.*감성 점수에 반영하지/);
+  });
+
+  it("asks how sure the model is that the article is about the company", () => {
+    expect(trendPrompt("넷록스")).toContain("about_confidence");
+  });
+
+  it("asks what kind of bad news it is — a lawsuit is not the same as a slow quarter", () => {
+    const prompt = trendPrompt("넷록스");
+
+    expect(prompt).toContain("negative_kind");
+    for (const kind of ["lawsuit", "recall", "sanction", "none"]) expect(prompt).toContain(kind);
+  });
+
   it("asks whether the article is about the company before scoring it", () => {
-    const prompt = trendPrompt("넷록스", item);
+    const prompt = trendPrompt("넷록스");
 
     expect(prompt).toContain("is_about_company");
     expect(prompt).toContain("'넷록스' 회사에 관한 기사인지 먼저 판단");
@@ -69,7 +88,7 @@ describe("trendPrompt", () => {
 
 describe("awardPrompt", () => {
   it("keeps the legacy guard that the company must have won it directly", () => {
-    const prompt = awardPrompt("넷록스", item);
+    const prompt = awardPrompt("넷록스");
 
     expect(prompt).toContain("반드시 '넷록스' 회사가 직접 받은");
     expect(prompt).toContain("is_award_related");
@@ -78,7 +97,7 @@ describe("awardPrompt", () => {
 
 describe("investmentPrompt", () => {
   it("keeps the legacy guard that the investment must be the company's own", () => {
-    const prompt = investmentPrompt("넷록스", item);
+    const prompt = investmentPrompt("넷록스");
 
     expect(prompt).toContain("반드시 '넷록스' 회사가 직접 받거나 포함되어 받은 투자여야 합니다");
     expect(prompt).toContain("is_investment_related");

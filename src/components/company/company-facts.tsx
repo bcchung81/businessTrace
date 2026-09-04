@@ -88,7 +88,9 @@ export function FactsTable({ facts, businessNo, industry }: { facts: CompanyFact
     },
     industry ? { key: "industry", label: "업종", value: industry, chars: industry.length } : null,
     factCell("대표", facts.ceo),
-    factCell("설립", facts.founded),
+    facts.founded && facts.ageYears !== null
+      ? { ...factCell("설립", facts.founded)!, value: `${facts.founded.value} · ${facts.ageYears}년차`, chars: facts.founded.value.length + 8 }
+      : factCell("설립", facts.founded),
     factCell("주소", facts.address),
     factCell("법인번호", facts.corporateNo),
     facts.listing ? { key: "listing", label: "상장", value: facts.listing.label, chars: facts.listing.label.length } : null,

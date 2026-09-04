@@ -62,7 +62,7 @@ describe("buildExplanation", () => {
     const { company, run } = await seed();
     const explanation = (await buildExplanation(company.id))!;
     expect(explanation.runId).toBe(run.id);
-    expect(explanation.contributions).toHaveLength(5);
+    expect(explanation.contributions).toHaveLength(6);
     expect(explanation.total).not.toBeNull();
     expect(explanation.evidence.headlines[0].title).toBe("㈜가 120억 유치");
     expect(explanation.evidence.finance?.revenue).toBe(1000);

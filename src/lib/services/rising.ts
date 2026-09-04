@@ -122,3 +122,12 @@ export function risingCompanies(records: RisingInput[], targetPeriod: string, li
     limit,
   );
 }
+
+/**
+ * 확정 기준과 실시간 랭킹이 다른 산식으로 계산됐는지 알린다.
+ * 산식이 바뀌면 순위 변동의 일부는 기업이 아니라 계산식이 움직인 것이다 — 그걸 성장으로 읽으면 안 된다.
+ */
+export function formulaDrift(baseline: string | null, current: string): string | null {
+  if (!baseline || baseline === current) return null;
+  return `산식이 ${baseline} → ${current} 로 바뀌어 변동에 계산식 변경이 섞여 있다`;
+}

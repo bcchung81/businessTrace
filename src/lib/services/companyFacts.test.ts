@@ -27,6 +27,15 @@ describe("buildCompanyFacts", () => {
     expect(facts.corporateNo).toEqual({ value: "110111-1234567", sources: ["DART"], agreement: "single" });
   });
 
+  test("counts full years since founding — the denominator for reading any growth rate", () => {
+    expect(buildCompanyFacts({ businessNo: null, snapshots: SNAPSHOTS, now: new Date("2026-09-04T00:00:00Z") }).ageYears).toBe(7);
+    expect(buildCompanyFacts({ businessNo: null, snapshots: SNAPSHOTS, now: new Date("2026-02-28T00:00:00Z") }).ageYears).toBe(6);
+  });
+
+  test("has no age when no source gave a founding date", () => {
+    expect(buildCompanyFacts({ businessNo: null, snapshots: [SNAPSHOTS[0]] }).ageYears).toBeNull();
+  });
+
   test("strips html entities that leaked in from a source — 금융위 주소에 &nbsp 가 섞여 온다", () => {
     const dirty = buildCompanyFacts({
       businessNo: null,

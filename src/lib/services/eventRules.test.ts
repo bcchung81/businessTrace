@@ -9,11 +9,11 @@ import {
 
 const NOW = new Date("2026-08-30T00:00:00.000Z");
 
-function analysis(over: { link: string; about?: boolean; score?: number; award?: string; investment?: string; title?: string }): NewsAnalysis {
+function analysis(over: { link: string; about?: boolean; score?: number; award?: string; investment?: string; title?: string; negativeKind?: "lawsuit" | "recall" | "sanction" | "none" }): NewsAnalysis {
   return {
     news: { title: over.title ?? "기사", link: over.link, description: "", content: "본문", published: "2026-08-26T00:00:00.000Z", source: "전자신문", provider: "naver", titleMatch: true, mentions: 2, relevance: "primary" },
     isAboutCompany: over.about ?? true,
-    trend: { is_about_company: over.about === false ? "N" : "Y", news_trend_summary: "요약", sentiment_score: over.score ?? 0, sentiment_label: "중립" },
+    trend: { is_about_company: over.about === false ? "N" : "Y", news_trend_summary: "요약", sentiment_score: over.score ?? 0, sentiment_label: "중립", ...(over.negativeKind ? { negative_kind: over.negativeKind } : {}) },
     award: { is_award_related: over.award ? "Y" : "N", award_name: over.award ?? "", award_reason: "" },
     investment: { is_investment_related: over.investment ? "Y" : "N", investment_name: over.investment ?? "", investment_reason: "" },
   };
@@ -86,6 +86,34 @@ describe("extractAnalysisEvents", () => {
   });
 });
 
+describe("extractAnalysisEvents — 부정 보도의 종류", () => {
+  const result = (items: NewsAnalysis[]): AnalysisResult => ({ companyName: "가", model: "m", analyses: items, comprehensiveOpinion: "", stats: { totalNews: items.length, scoredNews: items.length, excludedNews: 0, averageSentiment: 0, positiveCount: 0, negativeCount: items.length, neutralCount: 0, awardCount: 0, investmentCount: 0 }, usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 }, fallbacks: 0 });
+
+  it.each([
+    ["lawsuit", "lawsuit", "소송"],
+    ["recall", "recall", "리콜"],
+    ["sanction", "sanction", "규제 제재"],
+  ] as const)("raises %s as an alert in its own kind", (negativeKind, kind, label) => {
+    const events = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([analysis({ link: "https://n/9", score: -6, title: "제목", negativeKind })]) });
+
+    expect(events).toEqual([expect.objectContaining({ kind, severity: "alert", title: `${label} — 제목` })]);
+  });
+
+  it("keeps ordinary bad news as a notice when the kind is none or missing", () => {
+    const none = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([analysis({ link: "https://n/9", score: -6, negativeKind: "none" })]) });
+    const missing = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([analysis({ link: "https://n/8", score: -6 })]) });
+
+    expect(none.map((e) => [e.kind, e.severity])).toEqual([["negative_press", "notice"]]);
+    expect(missing.map((e) => [e.kind, e.severity])).toEqual([["negative_press", "notice"]]);
+  });
+
+  it("does not raise a lawsuit from a positive article — the kind only matters when the tone is negative", () => {
+    const events = extractAnalysisEvents({ companyId: 1, runId: 1, trust: "verified", result: result([analysis({ link: "https://n/9", score: 5, negativeKind: "lawsuit" })]) });
+
+    expect(events.map((e) => e.kind)).not.toContain("lawsuit");
+  });
+});
+
 describe("extractPensionEvents", () => {
   const point = (ym: string, subscribers: number | null) => ({ ym, subscribers, noticeAmount: null, hired: null, departed: null });
 
@@ -151,6 +179,33 @@ describe("extractSourceEvents", () => {
     const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("nps", "found", "가입자 12명 · 625870", { subscribers: 12 })] });
 
     expect(events).toEqual([]);
+  });
+
+  it("marks a turn to operating profit as a positive event", () => {
+    const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("dartFinance", "found", "2025 매출 12억", { fiscalYear: 2025, operatingIncome: 300, previous: { operatingIncome: -150 } })] });
+
+    expect(events).toEqual([expect.objectContaining({ kind: "profit_turn", severity: "positive", title: "흑자 전환 — 2025 영업이익", evidenceKey: "dartFinance:profit_turn:2025" })]);
+    expect(events[0].evidence[0]).toEqual({ label: "영업이익 -150 → 300", source: "dartFinance" });
+  });
+
+  it("does not call a profit that was already a profit a turn", () => {
+    const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("dartFinance", "found", "x", { fiscalYear: 2025, operatingIncome: 300, previous: { operatingIncome: 100 } })] });
+
+    expect(events).toEqual([]);
+  });
+
+  it("does not raise a turn without a prior year to compare — missing is not a loss", () => {
+    const events = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("dartFinance", "found", "x", { fiscalYear: 2025, operatingIncome: 300 })] });
+
+    expect(events).toEqual([]);
+  });
+
+  it("stays quiet on a loss that deepened or a loss that merely shrank", () => {
+    const deeper = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("dartFinance", "found", "x", { fiscalYear: 2025, operatingIncome: -300, previous: { operatingIncome: -100 } })] });
+    const shrank = extractSourceEvents({ companyId: 1, now: NOW, snapshots: [snap("dartFinance", "found", "x", { fiscalYear: 2025, operatingIncome: -50, previous: { operatingIncome: -100 } })] });
+
+    expect(deeper).toEqual([]);
+    expect(shrank).toEqual([]);
   });
 
   it("notices a same-name conflict on source stages only", () => {

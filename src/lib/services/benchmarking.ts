@@ -1,16 +1,17 @@
 import rubricsJson from "@/lib/services/rubrics.json";
 
-export type MetricKey = "sentiment" | "award" | "investment" | "finance" | "verification";
+export type MetricKey = "sentiment" | "award" | "investment" | "finance" | "growth" | "verification";
 export type Weights = Record<MetricKey, number>;
 export type Rubric = { id: string; name: string; industries: string[]; weights: Weights; riskPenalty: number };
 export type RubricBook = { formulaVersion: string; default: Rubric; rubrics: Rubric[] };
 
-export const METRIC_KEYS: MetricKey[] = ["sentiment", "award", "investment", "finance", "verification"];
+export const METRIC_KEYS: MetricKey[] = ["sentiment", "award", "investment", "finance", "growth", "verification"];
 export const METRIC_LABEL: Record<MetricKey, string> = {
   sentiment: "감성",
   award: "수상",
   investment: "투자",
   finance: "재무",
+  growth: "성장",
   verification: "검증",
 };
 
@@ -37,6 +38,28 @@ export function weightLabel(rubric: Rubric): string {
   return `${parts.join(" · ")} · 리스크 감점`;
 }
 
+/** 성장 하위 신호 — 전부 증가율이고, 못 잰 것은 0 이 아니라 null 이다. */
+export type GrowthSignals = {
+  revenue: number | null;
+  headcount: number | null;
+  hiring: number | null;
+  procurement: number | null;
+};
+
+export const GROWTH_KEYS: Array<keyof GrowthSignals> = ["revenue", "headcount", "hiring", "procurement"];
+export const GROWTH_LABEL: Record<keyof GrowthSignals, string> = {
+  revenue: "매출 증가율",
+  headcount: "고용 증감",
+  hiring: "입·퇴사 순증",
+  procurement: "조달 수주 추이",
+};
+
+/**
+ * 같은 것을 다른 각도로 재는 신호는 한 묶음이다 — 고용 증감(잔고)과 입·퇴사 순증(흐름).
+ * 묶지 않으면 고용이 매출·조달의 두 배 가중을 받는다. 수상 기사 하나가 세 지표를 움직이던 것과 같은 실수다.
+ */
+export const GROWTH_FAMILIES: Array<Array<keyof GrowthSignals>> = [["revenue"], ["headcount", "hiring"], ["procurement"]];
+
 export type BenchmarkInput = {
   companyId: number;
   name: string;
@@ -44,7 +67,13 @@ export type BenchmarkInput = {
   sentiment: number | null;
   awards: number | null;
   investments: number | null;
+  /** 매출 절대값. 재무 축은 이것을 인원으로 나눈 1인당 값을 쓴다 — 절대값이면 큰 기업이 자동으로 이긴다. */
   revenue: number | null;
+  /** 재무제표가 없을 때의 대리지표 — 공공조달 수주 합계(사업자번호 확정분만). */
+  procurementTotal?: number | null;
+  /** 최신 국민연금 가입자 수. 없으면 재무 축은 결측이다 — 절대값으로 되돌아가지 않는다. */
+  headcount?: number | null;
+  growth: GrowthSignals;
   verification: "verified" | "needs_review" | null;
   confirmedRisks: number;
 };
@@ -72,10 +101,25 @@ function rawMetric(input: BenchmarkInput, key: MetricKey): number | null {
     case "investment":
       return input.investments;
     case "finance":
-      return input.revenue;
+      return perHead(input.revenue ?? input.procurementTotal ?? null, input.headcount ?? null);
+    case "growth":
+      return mean(GROWTH_KEYS.map((key) => input.growth[key]));
     case "verification":
       return input.verification === null ? null : input.verification === "verified" ? 1 : 0;
   }
+}
+
+/** 인원당 값. 분모가 없거나 0 이하면 결측이다 — 절대값을 대신 쓰면 규모가 다시 점수가 된다. */
+function perHead(amount: number | null, headcount: number | null): number | null {
+  if (amount === null || headcount === null || headcount <= 0) return null;
+  return amount / headcount;
+}
+
+/** 관측된 값만 평균한다. 하나도 없으면 결측이다. */
+function mean(values: Array<number | null>): number | null {
+  const present = values.filter((value): value is number => value !== null);
+  if (present.length === 0) return null;
+  return present.reduce((acc, value) => acc + value, 0) / present.length;
 }
 
 /**
@@ -106,6 +150,14 @@ export function rankCompanies(inputs: BenchmarkInput[], book: RubricBook, rubric
   const columns = Object.fromEntries(
     METRIC_KEYS.map((key) => [key, normalise(inputs.map((input) => rawMetric(input, key)))]),
   ) as Record<MetricKey, Array<number | null>>;
+  // 성장은 하위 신호마다 단위와 분산이 달라 먼저 각각 편 뒤, 묶음 안에서 평균하고, 묶음끼리 다시 평균한다.
+  // 원시 증가율을 그대로 평균하면 변동폭이 큰 신호 하나가 축 전체를 끌고 간다.
+  const growthColumns = Object.fromEntries(
+    GROWTH_KEYS.map((key) => [key, normalise(inputs.map((input) => input.growth[key]))]),
+  ) as Record<keyof GrowthSignals, Array<number | null>>;
+  columns.growth = inputs.map((_, index) =>
+    mean(GROWTH_FAMILIES.map((family) => mean(family.map((key) => growthColumns[key][index])))),
+  );
 
   const rows: BenchmarkRow[] = inputs.map((input, index) => {
     const rubric = forced ?? resolveRubric(input.industry, book);

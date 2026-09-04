@@ -8,8 +8,8 @@ describe("ranking workbook", () => {
     const book = loadRubrics();
     const rows = rankCompanies(
       [
-        { companyId: 1, name: "㈜가", industry: "SW", sentiment: 5, awards: 1, investments: 0, revenue: null, verification: "verified", confirmedRisks: 0 },
-        { companyId: 2, name: "㈜나", industry: null, sentiment: null, awards: null, investments: null, revenue: null, verification: null, confirmedRisks: 0 },
+        { companyId: 1, name: "㈜가", industry: "SW", sentiment: 5, awards: 1, investments: 0, revenue: null, verification: "verified", growth: { revenue: null, headcount: null, hiring: null, procurement: null }, confirmedRisks: 0 },
+        { companyId: 2, name: "㈜나", industry: null, sentiment: null, awards: null, investments: null, revenue: null, verification: null, growth: { revenue: null, headcount: null, hiring: null, procurement: null }, confirmedRisks: 0 },
       ],
       book,
     );
@@ -18,8 +18,8 @@ describe("ranking workbook", () => {
     await workbook.xlsx.load(buffer as never);
     const sheet = workbook.getWorksheet("벤치마킹 랭킹")!;
 
-    expect(String(sheet.getCell("A2").value)).toContain("감성 0.3 · 수상 0.2");
-    expect(sheet.getRow(4).values).toEqual([undefined, "순위", "기업", "판정", "총점", "감성", "수상", "투자", "재무", "검증", "리스크 감점", "산업", "루브릭"]);
+    expect(String(sheet.getCell("A2").value)).toContain("감성 0.25 · 수상 0.15");
+    expect(sheet.getRow(4).values).toEqual([undefined, "순위", "기업", "판정", "총점", "감성", "수상", "투자", "재무", "성장", "검증", "리스크 감점", "산업", "루브릭"]);
     expect(sheet.getCell("B5").value).toBe("㈜가");
     expect(sheet.getCell("H5").value).toBe("—");
     expect(sheet.getCell("A6").value).toBe("—");
@@ -30,8 +30,8 @@ describe("ranking workbook", () => {
     const book = loadRubrics();
     const rows = rankCompanies(
       [
-        { companyId: 1, name: "㈜충돌", industry: "SW", sentiment: 5, awards: 1, investments: 0, revenue: null, verification: "verified", confirmedRisks: 0 },
-        { companyId: 2, name: "㈜통과", industry: "SW", sentiment: 9, awards: 3, investments: 1, revenue: null, verification: "verified", confirmedRisks: 0 },
+        { companyId: 1, name: "㈜충돌", industry: "SW", sentiment: 5, awards: 1, investments: 0, revenue: null, verification: "verified", growth: { revenue: null, headcount: null, hiring: null, procurement: null }, confirmedRisks: 0 },
+        { companyId: 2, name: "㈜통과", industry: "SW", sentiment: 9, awards: 3, investments: 1, revenue: null, verification: "verified", growth: { revenue: null, headcount: null, hiring: null, procurement: null }, confirmedRisks: 0 },
       ],
       book,
     );

@@ -7,7 +7,8 @@ import { CONFLICT_STAGES, MATRIX_STAGES } from "@/lib/services/pipelineMatrix";
 
 export type EventKind =
   | "award" | "investment" | "positive_press" | "negative_press"
-  | "headcount_up" | "headcount_down" | "closure" | "venture_expiry" | "source_conflict" | "silence";
+  | "headcount_up" | "headcount_down" | "closure" | "venture_expiry" | "source_conflict" | "silence" | "profit_turn"
+  | "lawsuit" | "recall" | "sanction";
 export type Severity = "alert" | "notice" | "positive" | "info";
 export type Trust = "verified" | "needs_review" | null;
 export type Evidence = { label: string; link?: string; ym?: [string, string]; source?: string };
@@ -27,13 +28,17 @@ export const SEVERITY_LABEL: Record<Severity, string> = { alert: "경보", notic
 export const KIND_LABEL: Record<EventKind, string> = {
   award: "수상", investment: "투자", positive_press: "긍정 보도", negative_press: "부정 보도",
   headcount_up: "인원 증가", headcount_down: "인원 감소", closure: "휴·폐업", venture_expiry: "벤처확인 만료",
-  source_conflict: "동명 타사 충돌", silence: "무보도",
+  source_conflict: "동명 타사 충돌", silence: "무보도", profit_turn: "흑자 전환",
+  lawsuit: "소송", recall: "리콜", sanction: "규제 제재",
 };
 
 const DAY_MS = 86_400_000;
 const STAGE_SHORT = new Map(MATRIX_STAGES.map((stage) => [stage.key, stage.short]));
 
-export const NEWS_EVENT_KINDS: EventKind[] = ["award", "investment", "positive_press", "negative_press"];
+export const NEWS_EVENT_KINDS: EventKind[] = ["award", "investment", "positive_press", "negative_press", "lawsuit", "recall", "sanction"];
+
+/** 부정 기사 중 따로 경보로 올릴 종류 — 실적 부진과 소송은 같은 칸에 둘 수 없다. */
+const NEGATIVE_ALERT_KINDS: Partial<Record<string, EventKind>> = { lawsuit: "lawsuit", recall: "recall", sanction: "sanction" };
 export const STORY_WINDOW_DAYS = 7;
 export const STORY_SIMILARITY = 0.4;
 
@@ -99,7 +104,11 @@ export function extractAnalysisEvents(input: { companyId: number; runId: number;
     if (analysis.award.is_award_related === "Y") make("award", "positive", `수상 — ${analysis.award.award_name}`, analysis.award.award_name);
     if (analysis.investment.is_investment_related === "Y") make("investment", "positive", `투자 — ${analysis.investment.investment_name}`, analysis.investment.investment_name);
     if (analysis.trend.sentiment_score >= POSITIVE_PRESS_MIN) make("positive_press", "positive", `긍정 보도 — ${analysis.news.title}`, analysis.news.title);
-    if (analysis.trend.sentiment_score <= NEGATIVE_PRESS_MAX) make("negative_press", "notice", `부정 보도 — ${analysis.news.title}`, analysis.news.title);
+    if (analysis.trend.sentiment_score <= NEGATIVE_PRESS_MAX) {
+      const kind = NEGATIVE_ALERT_KINDS[analysis.trend.negative_kind ?? "none"];
+      if (kind) make(kind, "alert", `${KIND_LABEL[kind]} — ${analysis.news.title}`, analysis.news.title);
+      else make("negative_press", "notice", `부정 보도 — ${analysis.news.title}`, analysis.news.title);
+    }
   }
   return events;
 }
@@ -140,7 +149,7 @@ function dateFromYmd(raw: string | undefined): Date | null {
 }
 
 /**
- * 원천 스냅샷에서 휴·폐업, 벤처확인 만료, 동명 타사 충돌을 뽑는다.
+ * 원천 스냅샷에서 휴·폐업, 벤처확인 만료, 흑자 전환, 동명 타사 충돌을 뽑는다.
  * 사건 날짜는 원천이 준 날짜(폐업일)를 우선하고, 없으면 조회 시각이다 — 조회일로 적으면 오래된 폐업이 새 사건처럼 보인다.
  */
 export function extractSourceEvents(input: { companyId: number; snapshots: StoredSnapshot[]; now: Date }): NewEvent[] {
@@ -169,6 +178,17 @@ export function extractSourceEvents(input: { companyId: number; snapshots: Store
           const title = daysLeft < 0 ? `벤처확인 만료 — ${validUntil}` : `벤처확인 만료 임박 — ${validUntil} 까지`;
           events.push({ ...base, kind: "venture_expiry", severity: "notice", title, evidenceKey: `venture:${validUntil}`, evidence: [{ label: `유효기간 ${validUntil} 까지`, source: "venture" }] });
         }
+      }
+    }
+
+    if (snap.source === "dartFinance" && snap.status === "found") {
+      const finance = snap.payload as { fiscalYear?: number; operatingIncome?: number | null; previous?: { operatingIncome?: number | null } } | null;
+      const current = finance?.operatingIncome ?? null;
+      const previous = finance?.previous?.operatingIncome ?? null;
+      // 전년이 없으면 조용히 넘긴다 — 결측은 손실이 아니다. 손실이 줄어든 것도 전환이 아니다.
+      if (current !== null && previous !== null && previous < 0 && current > 0) {
+        const year = finance?.fiscalYear ?? snap.fetchedAt.getUTCFullYear();
+        events.push({ ...base, kind: "profit_turn", severity: "positive", title: `흑자 전환 — ${year} 영업이익`, evidenceKey: `dartFinance:profit_turn:${year}`, evidence: [{ label: `영업이익 ${previous} → ${current}`, source: "dartFinance" }] });
       }
     }
 

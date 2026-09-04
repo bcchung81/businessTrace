@@ -4,6 +4,7 @@ import { FactsTable, FinanceTable, ProcurementTable, SourceDetails } from "@/com
 import type { CompanyFacts } from "@/lib/services/companyFacts";
 
 const facts: CompanyFacts = {
+  ageYears: null,
   ceo: { value: "김한빛", sources: ["DART", "나라장터"], agreement: "match" },
   founded: { value: "2019-03-01", sources: ["나라장터", "금융위"], agreement: "mismatch", alternatives: ["금융위 2019-04-01"] },
   address: { value: "서울특별시 금천구 가산디지털1로 1", sources: ["나라장터"], agreement: "single" },
@@ -56,6 +57,22 @@ describe("FactsTable", () => {
     for (const label of ["사업자번호", "업종", "대표", "설립", "주소", "국민연금 가입자", "조달 종업원", "인건비 추정", "12개월 입·퇴사"]) {
       expect(within(table).getByRole("rowheader", { name: label })).toBeInTheDocument();
     }
+  });
+
+  test("puts the company's age beside the founding date — a growth rate needs a denominator", () => {
+    render(<FactsTable facts={{ ...facts, ageYears: 7 }} businessNo="1234567890" industry={null} />);
+
+    const table = screen.getByRole("table", { name: "기업 기본" });
+    const row = within(table).getByRole("rowheader", { name: "설립" }).closest("tr")!;
+    expect(row).toHaveTextContent("7년차");
+  });
+
+  test("shows only the date when the age is unknown", () => {
+    render(<FactsTable facts={{ ...facts, ageYears: null }} businessNo="1234567890" industry={null} />);
+
+    const table = screen.getByRole("table", { name: "기업 기본" });
+    const row = within(table).getByRole("rowheader", { name: "설립" }).closest("tr")!;
+    expect(row).not.toHaveTextContent("년차");
   });
 
   test("warns in the 사업자번호 cell when the number is missing", () => {
