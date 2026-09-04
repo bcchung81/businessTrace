@@ -26,6 +26,7 @@ import { RefreshSources } from "@/components/company/refresh-sources";
 import { HeadcountInline } from "@/components/dashboard/headcount-trend";
 import { Panel } from "@/components/dashboard/panel";
 import { NeighbourNav, type Queue } from "@/components/company/neighbour-nav";
+import { DetailToolbar } from "@/components/company/detail-toolbar";
 
 function formatBusinessNo(businessNo: string | null) {
   if (!businessNo) return null;
@@ -64,8 +65,8 @@ export default async function CompanyDetailPage({ params, searchParams }: PagePr
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-3">
+        <header className="flex flex-col gap-1.5">
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
             {company.year}년 평가
           </p>
@@ -73,23 +74,33 @@ export default async function CompanyDetailPage({ params, searchParams }: PagePr
             <h1 className="font-display text-[36px] font-black leading-none tracking-[-0.04em]">{company.name}</h1>
             <HeadcountInline facet={summary.facets.find((facet) => facet.companyId === company.id) ?? summary.facets[0] ?? null} />
           </div>
-          <FactsTable facts={facts} businessNo={businessNo} industry={company.industry} />
-        </div>
-        <div className="flex items-center gap-3">
-          <NeighbourNav prev={neighbours.prev} next={neighbours.next} position={neighbours.position} total={neighbours.total} queue={queue} />
-          <Link
-            href={`/companies?year=${company.year}`}
-            className="text-[12px] text-muted-foreground underline-offset-2 hover:underline"
-          >
-            목록으로
-          </Link>
-          <EditCompanyDialog
-            company={{ id: company.id, year: company.year, name: company.name, industry: company.industry, businessNo: company.businessNo, aliases: parseAliases(company.aliases), isActive: company.isActive }}
-            actions={{ edit: editCompanyAction, setActive: setCompanyActiveAction }}
-          />
-          <RefreshSources companyId={company.id} />
-        </div>
-      </header>
+        </header>
+
+        <DetailToolbar
+          nav={
+            <>
+              <NeighbourNav prev={neighbours.prev} next={neighbours.next} position={neighbours.position} total={neighbours.total} queue={queue} />
+              <Link
+                href={`/companies?year=${company.year}`}
+                className="text-[12px] text-muted-foreground underline-offset-2 hover:underline"
+              >
+                목록으로
+              </Link>
+            </>
+          }
+          actions={
+            <>
+              <EditCompanyDialog
+                company={{ id: company.id, year: company.year, name: company.name, industry: company.industry, businessNo: company.businessNo, aliases: parseAliases(company.aliases), isActive: company.isActive }}
+                actions={{ edit: editCompanyAction, setActive: setCompanyActiveAction }}
+              />
+              <RefreshSources companyId={company.id} />
+            </>
+          }
+        />
+
+        <FactsTable facts={facts} businessNo={businessNo} industry={company.industry} />
+      </div>
 
       {review ? (
         <ReviewBlock

@@ -12,6 +12,7 @@ const SCREENS = [
   "src/app/(app)/companies/page.tsx",
   "src/app/(app)/companies/[id]/page.tsx",
   "src/components/analysis/analysis-runner.tsx",
+  "src/components/company/detail-toolbar.tsx",
   "src/components/company/evidence-grid.tsx",
   "src/components/company/event-timeline.tsx",
   "src/components/company/register-dialog.tsx",

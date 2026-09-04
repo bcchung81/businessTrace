@@ -141,6 +141,27 @@
     .thr span b { display: block; font-size: 15px; margin: 2px 0 4px; }
     .thr span i { display: block; font-style: normal; font-size: 9.5px; font-weight: 500; line-height: 1.35;
                   opacity: 0.85; }
+    .thr span b.q { font-size: 15px; box-shadow: inset 0 -0.4em 0 rgba(255,255,255,0.22); display: inline-block; }
+    .thr span i b.n { display: inline; font-size: 10.5px; margin: 0; }
+    .flow.hero { flex: 1; min-height: 0; gap: 10px; }
+    .flow.hero .step { padding: 18px 20px 16px; gap: 9px; justify-content: center; }
+    .flow.hero .step-no { font-size: 11px; }
+    .flow.hero .step-nm { font-size: 23px; }
+    .flow.hero .step ul.kj li { font-size: 13.5px; line-height: 1.55; padding-left: 12px; margin-bottom: 4px; }
+    .flow.hero .step ul.kj li::before { font-size: 14px; }
+    .flow.hero .sn { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--hair); font-size: 30px; font-weight: 700;
+                     letter-spacing: -0.02em; line-height: 1; }
+    .flow.hero .sn small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 5px; }
+    .flow.hero .step.core { border-top-color: var(--alert); }
+    .flow.hero .step.core .step-no { color: var(--alert); }
+    .flow.hero .arrow { font-size: 16px; }
+    .ax { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+    .ax span { border: 1px solid var(--navy); padding: 7px 4px 6px; text-align: center; font-size: 13px;
+               font-weight: 700; color: var(--navy); line-height: 1.2; }
+    .ax span i { display: block; font-style: normal; font-size: 9.5px; font-weight: 500; color: var(--muted);
+                 margin-top: 3px; }
+    .ax span.on { background: var(--navy); color: #fff; }
+    .ax span.on i { color: rgba(255,255,255,0.8); }
     .thr span em { display: block; font-style: normal; font-size: 9px; letter-spacing: 0.08em; opacity: 0.7;
                    margin-bottom: 2px; }
 
@@ -219,6 +240,9 @@
 
     .fill { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .fill .gate, .fill .demo, .fill .tlr { flex: 1; min-height: 0; }
+    .tiles.fill { justify-content: flex-start; gap: 12px; }
+    .tiles.fill .tile { padding: 12px 15px 12px; }
+    .tiles.fill .tile .tv { font-size: 24px; }
     .gal.strip { flex: none; height: 200px; grid-template-rows: 1fr; }
     .cov.fill { display: grid; grid-auto-rows: 1fr; }
     .tiles.fill { justify-content: space-between; }
@@ -375,62 +399,52 @@
     </div>
   </div>
   <div class="body">
-    <div>
-      <div class="sub"><span class="mark"></span><h3>처리 흐름</h3><span class="line"></span><span class="aside">전 구간 단일 애플리케이션</span></div>
-      <div class="flow">
+    <div class="fill">
+      <div class="sub"><span class="mark"></span><h3>처리 흐름</h3><span class="line"></span><span class="aside">전 구간 단일 애플리케이션 — 수집부터 산출까지</span></div>
+      <div class="flow hero">
         <div class="step"><span class="step-no">STEP 1</span><h4 class="step-nm">수집</h4>
-          <ul class="kj"><li><span class="k">뉴스 2종 · 공공데이터 9종</span></li><li>기업별 기간 창</li></ul></div>
-        <span class="arrow">&#9654;</span><div class="step"><span class="step-no">STEP 2</span><h4 class="step-nm">정제</h4>
-          <ul class="kj"><li>본문 자동 추출</li><li><span class="k">중복 제거</span> · 관련도 3등급</li></ul></div>
-        <span class="arrow">&#9654;</span><div class="step"><span class="step-no">STEP 3</span><h4 class="step-nm">분석</h4>
-          <ul class="kj"><li><span class="k">LLM 다차원 분석</span></li><li>항목별 근거 문장 인용</li></ul></div>
-        <span class="arrow">&#9654;</span><div class="step"><span class="step-no">STEP 4</span><h4 class="step-nm">검증</h4>
-          <ul class="kj"><li><span class="k">원문 · 공식 출처 대조</span></li><li>검증완료 / 검토필요</li></ul></div>
-        <span class="arrow">&#9654;</span><div class="step"><span class="step-no">STEP 5</span><h4 class="step-nm">산출</h4>
-          <ul class="kj"><li><span class="k">엑셀 3시트</span> · 대시보드</li><li>월간 문서 · 랭킹</li></ul></div>
+          <ul class="kj"><li><span class="k">뉴스 2종 · 공공데이터 9종</span></li><li>기업별 기간 창 단위</li></ul>
+          <div class="sn">56<small>개사</small></div></div>
+        <span class="arrow">&#9654;</span>
+        <div class="step"><span class="step-no">STEP 2</span><h4 class="step-nm">정제</h4>
+          <ul class="kj"><li>본문 자동 추출</li><li><span class="k">중복 제거</span> · 관련도 3등급</li></ul>
+          <div class="sn">435<small>건 중복 제거</small></div></div>
+        <span class="arrow">&#9654;</span>
+        <div class="step"><span class="step-no">STEP 3</span><h4 class="step-nm">분석</h4>
+          <ul class="kj"><li><span class="k">LLM 다차원 분석</span></li><li>항목별 근거 문장 인용</li></ul>
+          <div class="sn">235<small>회 실행</small></div></div>
+        <span class="arrow">&#9654;</span>
+        <div class="step core"><span class="step-no">STEP 4 &#183; 핵심</span><h4 class="step-nm">검증</h4>
+          <ul class="kj"><li><span class="k">3중 임계값 게이트</span></li><li>원문 · 공식 출처 대조</li></ul>
+          <div class="sn">119<small>건 판정</small></div></div>
+        <span class="arrow">&#9654;</span>
+        <div class="step"><span class="step-no">STEP 5</span><h4 class="step-nm">산출</h4>
+          <ul class="kj"><li><span class="k">엑셀 3시트</span> · 대시보드</li><li>월간 문서 · 랭킹</li></ul>
+          <div class="sn">330<small>건 사건 적립</small></div></div>
       </div>
     </div>
 
-    <div class="fill">
-      <div class="sub"><span class="mark"></span><h3>검증 게이트</h3><span class="line"></span><span class="aside">AI 환각 방지 — 핵심 요구사항 · 판정은 코드가 수행</span></div>
+    <div>
+      <div class="sub"><span class="mark"></span><h3>검증 게이트 — 3중 임계값</h3><span class="line"></span><span class="aside">셋 다 넘어야 통과 · 하나라도 미달이면 검토 필요 · 판정은 코드가 수행</span></div>
       <div class="gate">
-        <div class="gnode">
-          <div class="gv">235<small>회</small></div>
-          <div class="gl"><span class="k">분석 실행</span> — LLM 이 만든 기업별 분석 결과 · 56개사</div>
-        </div>
-        <span class="garrow">&#9654;</span>
-        <div class="gnode">
+        <div class="gnode" style="flex: 0.75">
           <div class="gv">119<small>건</small></div>
           <div class="gl"><span class="k">검증 판정</span> — 분석과 별도로 기사 원문만 보고 채점</div>
         </div>
         <span class="garrow">&#9654;</span>
-        <div class="gnode navy">
-          <div class="gv" style="font-size: 16px">3중 임계값 &#8212; 셋 모두 넘어야 통과 <small>(0~1 점수 · 1 에 가까울수록 원문과 일치)</small></div>
-          <div class="thr">
-            <span><em>① 출처 인용</em>출처 커버리지<b>&#8805; 0.5</b><i>분석 항목 중 기사 링크가 달린 비율</i></span>
-            <span><em>② 사실 부합</em>근거 충실도<b>&#8805; 0.85</b><i>주장이 기사 내용과 맞는 정도 — LLM 심사</i></span>
-            <span><em>③ 원문 실재</em>근거 일치도<b>&#8805; 0.5</b><i>인용한 문장이 기사 본문에 실제로 있는 비율</i></span>
+        <div class="gnode navy" style="flex: 2.6">
+          <div class="thr" style="margin-top: 0">
+            <span><em>① 출처 인용</em><b class="q">링크가 있는가</b><i>출처 커버리지 <b class="n">&#8805; 0.5</b> — 분석 항목 중 기사 링크가 달린 비율</i></span>
+            <span><em>② 사실 부합</em><b class="q">기사와 맞는가</b><i>근거 충실도 <b class="n">&#8805; 0.85</b> — 주장과 기사 내용의 부합, LLM 심사</i></span>
+            <span><em>③ 원문 실재</em><b class="q">인용문이 실제 있는가</b><i>근거 일치도 <b class="n">&#8805; 0.5</b> — 인용 문장이 본문에 있는 비율</i></span>
           </div>
-          <div class="gl">조회 실패 · 오류 · 판정 불가 &#8594; 예외 없이 검토 필요 (실패를 통과로 처리하지 않음)</div>
         </div>
         <span class="garrow">&#9654;</span>
         <div class="gout">
-          <div class="gnode">
-            <div class="gv">103<small>건 · 86.6%</small></div>
-            <div class="gl"><span class="k">검증 완료</span> — 세 조건 모두 충족</div>
-          </div>
-          <div class="gnode alert">
-            <div class="gv">16<small>건 · 13.4%</small></div>
-            <div class="gl"><span class="k">검토 필요</span> — 하나라도 미달 → 항목별 점수 + 반증 사유 → 담당자 확인</div>
-          </div>
+          <div class="gnode"><div class="gv">103<small>건 · 86.6%</small></div><div class="gl"><span class="k">검증 완료</span> — 세 조건 모두 충족</div></div>
+          <div class="gnode alert"><div class="gv">16<small>건 · 13.4%</small></div><div class="gl"><span class="k">검토 필요</span> — 점수 + 반증 사유 → 담당자</div></div>
         </div>
       </div>
-    </div>
-
-    <div class="stats" style="grid-template-columns: repeat(3, minmax(0, 1fr))">
-      <div class="stat"><div class="stat-v">330<span class="stat-u">건</span></div><div class="stat-l"><span class="k">사건 자동 적립</span> · 수상 · 투자 · 리스크</div></div>
-      <div class="stat"><div class="stat-v">9.1<span class="stat-u">만 토큰</span></div><div class="stat-l"><span class="k">분석 1회 비용</span> · 56개사 누적 1,345만 토큰</div></div>
-      <div class="stat"><div class="stat-v">2<span class="stat-u">공급자</span></div><div class="stat-l"><span class="k">Anthropic ↔ OpenAI</span> 전환 가능 · 종속 없음</div></div>
     </div>
   </div>
 </div>
@@ -463,6 +477,13 @@
       <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
         <div class="sub"><span class="mark"></span><h3>왜 이 조합인가</h3><span class="line"></span></div>
         <div class="tiles fill">
+          <div class="tile axes">
+            <div class="tv" style="font-size: 16px">랭킹 6축<small>가중합 · 업종별 가중치 · 확정 리스크 감점</small></div>
+            <div class="ax">
+              <span>감성<i>뉴스 논조</i></span><span>수상<i>표창 · 인증</i></span><span>투자<i>투자 유치</i></span>
+              <span>재무<i>1인당 매출</i></span><span class="on">성장<i>신설 · 4신호</i></span><span>검증<i>게이트 통과</i></span>
+            </div>
+          </div>
           <div class="tile">
             <div class="tv">0<small>원 · 구독료</small></div>
             <div class="tl"><span class="k">공공데이터 9종 전량 무료 개방 API</span> — 상용 기업정보 연 5천만원 이상 대체</div>
@@ -481,7 +502,6 @@
       </div>
     </div>
     <div class="kline">
-      <span><span class="k">랭킹 6축</span> — 감성 · 수상 · 투자 · 재무 · 성장 · 검증</span>
       <span><span class="k">재무는 1인당 매출</span> — 큰 기업이 자동으로 이기지 않음</span>
       <span><span class="k">업종별 가중치</span> — ICT · 제조 · 바이오</span>
       <span><span class="k">못 잰 값은 결측</span> — 0 으로 적지 않음</span>
@@ -615,7 +635,7 @@
       <div class="q"><b class="qq">동명 기업을 잘못 잡을 위험은?</b>
         <p><span class="k">두 원천 이상 교차 일치</span>로만 사업자번호 확정 — 54 / 56 확보. 국민연금은 번호 앞 6자리만 주므로 상호 · 주소 · 업종 · 등록일 <span class="k">4중 대조</span>. 불일치는 확정하지 않고 &lsquo;확인 필요&rsquo;로 남김.</p></div>
       <div class="q"><b class="qq">비용은 얼마나 듭니까?</b>
-        <p>공공데이터 9종 <span class="k">구독료 0원</span> — 상용 기업정보(연 5천만원 이상) 대체. LLM 은 <span class="k">분석 1회 약 9.1만 토큰</span>, 56개사 누적 1,345만 토큰. 공급자는 Anthropic ↔ OpenAI 전환 가능해 단가 협상 여지 확보.</p></div>
+        <p>공공데이터 9종 <span class="k">구독료 0원</span> — 상용 기업정보(연 5천만원 이상) 대체. 분석 엔진은 <span class="k">Anthropic ↔ OpenAI 전환 가능</span>해 특정 공급자 종속 없이 단가를 관리.</p></div>
       <div class="q"><b class="qq">큰 기업이 유리하지 않습니까?</b>
         <p>재무 축은 절대값이 아니라 <span class="k">1인당 매출</span>, 성장 축은 <span class="k">증가율</span> — 규모 편향 제거. 업종별(ICT · 제조 · 바이오) 가중치를 달리 두고, 확정 리스크는 건당 감점.</p></div>
       <div class="q"><b class="qq">담당자 1인 개발의 운영 리스크는?</b>
