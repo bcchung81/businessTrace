@@ -1,0 +1,44 @@
+# 성과돋보기 웹 — /etc/systemd/system/seonggwa.service 로 복사한다.
+#   systemctl daemon-reload && systemctl enable --now seonggwa
+[Unit]
+Description=성과돋보기 (Next.js)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=seonggwa
+Group=seonggwa
+WorkingDirectory=/srv/seonggwa
+
+# 비밀은 여기 적지 않는다 — 유닛 파일 값은 systemctl show 로 누구나 읽는다.
+# /etc/seonggwa/env 는 root:seonggwa 0640 으로 둔다.
+EnvironmentFile=/etc/seonggwa/env
+Environment=NODE_ENV=production
+Environment=TZ=Asia/Seoul
+
+# 루프백에만 연다. TLS 와 공인 주소는 앞단 nginx 가 맡는다.
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3000
+
+Restart=on-failure
+RestartSec=5s
+# 기동 시 환경변수가 모자라면 프로세스가 스스로 exit 1 한다(src/instrumentation.ts).
+# 그 경우 재시작을 반복해도 소용없으므로 다섯 번 실패하면 멈추고 상태로 남긴다.
+StartLimitBurst=5
+StartLimitIntervalSec=120
+
+# 배치가 도는 중이면 마무리할 시간을 준다.
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=seonggwa
+
+[Install]
+WantedBy=multi-user.target

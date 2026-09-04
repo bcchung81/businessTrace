@@ -6,10 +6,15 @@
 
 품 표기: 「한 시간」「반나절」「하루 이상」.
 
+> **2026-09-04 — 배포 형태가 도커가 아니라 「서버에 Node 직접(systemd + nginx)」으로 정해졌다.**
+> §1 의 다섯 건 중 1-1·1-2·1-3 은 컨테이너 안에서만 생기던 문제라 도커 자산과 함께 지웠다(`deploy/Dockerfile.web`·
+> `docker-compose.prod.yml`·`entrypoint.sh`). 1-5(계정 발급)도 `docker cp` 절차가 사라져 문제 자체가 없어졌다.
+> **1-4(`.env.example` 추적)만 배포 방식과 무관하게 유효해서 남았다.** §2 는 전부 그대로 유효하다.
+> 새 배포 자산은 `deploy/{seonggwa.service,nginx.conf,deploy.sh,run.sh,backup.sh}` 이고, 앱이 프록시·유닛에
+> 요구하는 것(XFF·SSE 버퍼링·타임아웃·비루트·마이그레이션 순서)은 `src/lib/deployConfig.test.ts` 가 계속 강제한다.
+>
 > **2026-09-03 반영 — §1·§2 전부 처리했다.** 각 절 끝의 `→ 처리` 줄에 무엇을 했고 무엇으로 확인했는지 적었다.
 > 남은 것은 §3(디자인·사용성 정리)·§4(PostgreSQL) 다.
-> **Docker 데몬이 없는 환경이라 이미지 빌드·compose 기동은 여전히 미검증이다.** 대신 `.dockerignore`·볼륨 경로·
-> 마이그레이션 실행 경로의 정합성을 `src/lib/deployConfig.test.ts` 가 강제하고, standalone 부팅은 실제로 띄워 확인했다.
 
 ---
 
@@ -281,11 +286,15 @@
 
 | 무엇 | 어디 |
 |---|---|
-| **이미지 빌드·compose 기동 실측** | Docker 데몬이 있는 곳에서 `docker compose -f deploy/docker-compose.prod.yml up -d --build` 한 번. 특히 `better-sqlite3` 네이티브 모듈과 `migrate` → `web` 순서 |
+| **서버 실기동** | `systemctl status seonggwa` 와 `nginx -t`. `better-sqlite3` 는 네이티브 모듈이라 서버에서 `npm ci` 해야 한다 |
 | **CSP 의 `script-src`** | nonce 를 `proxy.ts` 에서 배포하고 브라우저로 확인해야 켤 수 있다. 지금은 프레이밍·베이스태그·폼만 막는다 |
 | §3 디자인·사용성 정리 | 죽은 컴포넌트 11개, 표·페이저·입력 문법 통일 등 |
 | §3-3 판단 | `gate-funnel`·`source-coverage-bars` 를 되살릴지 지울지 |
 | §4 PostgreSQL | 규모가 커질 때 |
 
-`next build` 가 `.env` 를 `.next/standalone/.env` 로 복사한다는 것도 알아 뒀다(§1-4). 도커 경로는 `.dockerignore` 가 막지만,
-도커 밖에서 standalone 을 직접 배포한다면 그 파일을 지우고 환경변수로만 넘겨야 한다.
+`output: "standalone"` 은 걷어냈다 — `next start` 로 도는데 쓰지 않는 출력이었고, 빌드마다 저장소의 `.env` 를
+`.next/standalone/.env` 로 복사해 두는 위험만 남겼다.
+
+**저장소의 `.env` 는 서버에 두지 않는다.** Next 가 작업 디렉터리의 `.env` 를 읽어 `EnvironmentFile` 에 없는 키를
+조용히 채우고, 그러면 §2-B-4 의 기동 게이트가 잡아야 할 누락을 통과시킨다 — 실제로 로컬 검증 중에 이것 때문에
+게이트가 안 걸리는 것을 보고 알았다. `deploy.sh` 가 `.env*` 를 발견하면 배포를 멈춘다.

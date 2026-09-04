@@ -1,58 +1,86 @@
 # 배포
 
-웹 1컨테이너 + 마이그레이션·스크립트를 돌리는 CLI 이미지 구성이다.
+**서버에서 Node 를 직접 돌린다.** systemd 가 프로세스를, nginx 가 TLS 를 맡는다. 컨테이너는 쓰지 않는다.
 
-| 서비스 | 언제 도는가 | 무엇이 들어 있나 |
-|---|---|---|
-| `migrate` | `up` 할 때마다 한 번, web 보다 먼저 | 전체 `node_modules`(prisma CLI·tsx) + 저장소 |
-| `web` | 상시 | `.next/standalone` 만. **prisma CLI 없음** |
-| `cli` | 손으로 부를 때만 (`--profile tools`) | `migrate` 와 같은 이미지 |
-
-`web` 이미지에 prisma CLI 를 선별 복사하는 길은 닫혀 있다 — CLI 가 최상위로 호이스트된
-`effect`·`c12`·`deepmerge-ts`… 를 줄줄이 require 해서 하나씩 채워도 끝나지 않는다.
-그래서 마이그레이션과 스크립트는 전부 `migrate`/`cli` 이미지에서 돈다.
-
-## 준비
-
-```bash
-cp .env.example .env.production     # 값 채우기
+```
+[nginx :443] ──proxy──> [node :3000 (systemd: seonggwa)] ──> prisma/prod.db
 ```
 
-`.env.production` 에 반드시 있어야 하는 것:
+| 파일 | 어디로 |
+|---|---|
+| `seonggwa.service` | `/etc/systemd/system/seonggwa.service` |
+| `nginx.conf` | `/etc/nginx/sites-available/seonggwa` (+ `sites-enabled` 링크) |
+| `deploy.sh` | 저장소 안에서 그대로 실행 |
+| `run.sh` | 서비스와 같은 환경변수로 스크립트 한 번 돌리기 |
+| `backup.sh` | 호스트 cron |
+
+저장소 전체를 서버에 둔다. `.next/standalone` 을 따로 만들지 않는다 —
+**prisma CLI 는 마이그레이션에, `tsx` 는 정기 수집 스크립트에 필요**하고 둘 다 `node_modules` 에 있어야 한다.
+빼서 얻는 것(이미지 몇백 MB)보다 잃는 것(마이그레이션·스크립트 실행 경로)이 크다.
+
+## 처음 한 번
+
+```bash
+sudo useradd --system --create-home --home-dir /srv/seonggwa seonggwa
+sudo -u seonggwa git clone <저장소> /srv/seonggwa
+sudo -u seonggwa mkdir -p /srv/seonggwa/data
+
+# 환경변수 — 유닛 파일에 적지 않는다. systemctl show 로 전부 읽힌다.
+sudo mkdir -p /etc/seonggwa
+sudo cp /srv/seonggwa/.env.example /etc/seonggwa/env      # 값 채우기
+sudo chown root:seonggwa /etc/seonggwa/env && sudo chmod 640 /etc/seonggwa/env
+
+sudo cp /srv/seonggwa/deploy/seonggwa.service /etc/systemd/system/
+sudo cp /srv/seonggwa/deploy/nginx.conf /etc/nginx/sites-available/seonggwa
+sudo ln -s /etc/nginx/sites-available/seonggwa /etc/nginx/sites-enabled/
+sudo systemctl daemon-reload && sudo systemctl enable seonggwa
+sudo -u seonggwa /srv/seonggwa/deploy/deploy.sh
+sudo certbot --nginx        # 인증서 발급 후 nginx -t && systemctl reload nginx
+```
+
+`/etc/seonggwa/env` 에 반드시 있어야 하는 것:
 
 | 키 | 비고 |
 |---|---|
-| `AUTH_SECRET` | `openssl rand -base64 32` |
-| `AUTH_TRUST_HOST` | compose 가 `true` 로 넣는다. 직접 `docker run` 할 때는 손으로 넣어야 한다 |
-| `DATABASE_URL` | compose 가 `file:/app/db/prod.db` 로 넣는다 |
-| `ANTHROPIC_API_KEY` | 분석·검증 |
+| `AUTH_SECRET` | `openssl rand -base64 32` — 32자 미만이면 기동하지 않는다 |
+| `AUTH_TRUST_HOST` | `true`. 프록시 뒤에서 없으면 Auth.js 가 세션 요청을 전부 막는다 |
+| `DATABASE_URL` | `file:/srv/seonggwa/prisma/prod.db` |
+| `ANTHROPIC_API_KEY` | 분석·검증 (`LLM_PROVIDER=openai` 면 `OPENAI_API_KEY`) |
 | `NCP_APIGW_API_KEY_ID` · `NCP_APIGW_API_KEY` | 네이버 뉴스 API HUB |
 | `DART_API_KEY` · `NTS_SERVICE_KEY` | DART · 국세청/나라장터 공용 |
 
-없거나 형식이 틀리면 **기동하지 않고 무엇이 빠졌는지 적고 죽는다**(`src/lib/env.ts`).
+**없거나 형식이 틀리면 무엇이 빠졌는지 전부 적고 죽는다**(`src/lib/env.ts` → `src/instrumentation.ts`).
 조용히 기본값으로 떨어지지 않는다 — 옛날에 `DATABASE_URL` 이 빠지면 개발용 DB 로 붙었다.
+그 경우 systemd 가 다섯 번 재시도하고 멈추므로 `systemctl status seonggwa` 가 실패로 남는다.
 
-## 기동
+> **`/srv/seonggwa/.env` 는 두지 않는다.** Next 는 작업 디렉터리의 `.env` 를 읽는다 — 하나 놓여 있으면
+> `EnvironmentFile` 에 없는 키를 조용히 채워 위 게이트를 통과시킨다. `DATABASE_URL` 이 거기 있으면
+> 엉뚱한 DB 에 붙고도 정상으로 보인다. `deploy.sh` 가 `.env*` 를 발견하면 배포를 멈춘다.
+
+## 갱신
 
 ```bash
-docker compose -f deploy/docker-compose.prod.yml up -d --build
-docker compose -f deploy/docker-compose.prod.yml logs -f web
+sudo -u seonggwa /srv/seonggwa/deploy/deploy.sh
 ```
 
-`migrate` 가 완주해야 `web` 이 뜬다(`service_completed_successfully`).
-마이그레이션이 실패하면 web 은 시작조차 하지 않는다.
+`git pull → npm ci → npm run build → **중단** → migrate → 기동 → 헬스체크` 순이다.
+**마이그레이션 앞뒤로 멈췄다 켠다** — 낡은 코드가 새 스키마 위에서 도는 창을 만들지 않는다.
+빌드는 서버가 도는 동안 해도 된다(정적 프리렌더 페이지 0개라 DB·API 키를 보지 않는다).
 
-**볼륨은 `/app/db`(DB) 와 `/app/data`(산출물) 둘뿐이다.** `/app/prisma` 는 마운트하지 않는다 —
-named volume 은 최초 생성 때만 이미지 내용을 복사하므로, 스키마 디렉터리를 덮으면 다음 배포부터
-새 마이그레이션이 조용히 무시되고 코드만 새 스키마를 기대한 채 뜬다.
+`deploy.sh` 는 `sudo systemctl` 을 부른다. 암호 없이 되게 하려면:
+
+```
+# /etc/sudoers.d/seonggwa
+seonggwa ALL=(root) NOPASSWD: /usr/bin/systemctl stop seonggwa, /usr/bin/systemctl start seonggwa
+```
 
 ## 관리자 계정
 
-공개 회원가입이 없다. CLI 이미지에서 발급한다 — 동작 중인 DB 를 건드리지 않는다.
+공개 회원가입이 없다.
 
 ```bash
-docker compose -f deploy/docker-compose.prod.yml --profile tools run --rm \
-  -e ADMIN_PASSWORD='...' cli npx tsx scripts/create-admin.ts you@example.com
+sudo -u seonggwa ADMIN_PASSWORD='...' /srv/seonggwa/deploy/run.sh \
+  npx tsx scripts/create-admin.ts you@example.com
 ```
 
 비밀번호는 12자 이상, 영문·숫자·특수문자 중 2가지 이상 조합이어야 한다.
@@ -62,9 +90,11 @@ docker compose -f deploy/docker-compose.prod.yml --profile tools run --rm \
 같은 자리에서 돈다. 주기와 거를 때의 대가는 아래와 같다.
 
 ```bash
-docker compose -f deploy/docker-compose.prod.yml --profile tools run --rm cli \
-  npx tsx scripts/collect-pension.ts 2026
+sudo -u seonggwa /srv/seonggwa/deploy/run.sh npx tsx scripts/collect-pension.ts 2026
 ```
+
+`run.sh` 가 `/etc/seonggwa/env` 를 얹고 저장소로 옮겨 준다. 환경변수를 명령줄에 늘어놓으면 `ps` 에 그대로 보인다.
+그 파일의 값에 공백이 있으면 따옴표로 감싼다 — 셸이 읽는다.
 
 | 무엇 | 주기 | 거르면 |
 |---|---|---|
@@ -76,48 +106,46 @@ docker compose -f deploy/docker-compose.prod.yml --profile tools run --rm cli \
 ## 상태 확인
 
 ```bash
+systemctl status seonggwa
+journalctl -u seonggwa -f                      # 한 줄 JSON 로그가 여기로 간다
+journalctl -u seonggwa | grep '"level":"error"'
 curl -fsS http://127.0.0.1:3000/api/health     # {"status":"ok","database":"up"}
 ```
 
-헬스체크는 인증 없이 열려 있고 DB 왕복까지 본다. compose 의 healthcheck 가 이것을 쓴다.
-비인증 응답이므로 실패해도 `{"status":"degraded"}` 와 503 만 준다 — 예외 원문은 컨테이너 로그에 있다.
+헬스체크는 인증 없이 열려 있고 DB 왕복까지 본다. 비인증 응답이므로 실패해도
+`{"status":"degraded"}` 와 503 만 준다 — 예외 원문은 journal 에 있다.
 
 ## 백업
 
-DB 는 `db` 볼륨, 업로드·리포트는 `files` 볼륨에 있다.
-**`cat prod.db > backup.db` 는 쓰지 않는다** — 쓰기 중인 파일을 그대로 복사하면 깨진 스냅샷이 나온다.
-
 ```bash
-deploy/backup.sh /srv/backup       # DB(VACUUM INTO) + files tar, 7일 롤링
+deploy/backup.sh /srv/backup       # DB(VACUUM INTO) + data/ tar, 7일 롤링
 ```
 
-호스트 cron 에 건다.
+**`cat prod.db > backup.db` 는 쓰지 않는다** — 쓰기 중인 파일을 복사하면 깨진 스냅샷이 나온다.
+`backup.sh` 는 뜬 직후 `PRAGMA integrity_check` 로 열리는지 확인하고, 아니면 실패한다.
 
 ```cron
-17 4 * * * /srv/project1000/deploy/backup.sh /srv/backup >> /var/log/seonggwa-backup.log 2>&1
+17 4 * * * /srv/seonggwa/deploy/backup.sh /srv/backup >> /var/log/seonggwa-backup.log 2>&1
 ```
 
 복원은 **월 1회 리허설**한다. 리허설이 없는 백업은 백업이 아니다.
 
 ```bash
-docker compose -f deploy/docker-compose.prod.yml stop web
-docker compose -f deploy/docker-compose.prod.yml --profile tools run --rm \
-  -v /srv/backup:/restore cli sh -c 'cp /restore/db-2026-09-03.db /app/db/prod.db'
-docker compose -f deploy/docker-compose.prod.yml up -d web
+sudo systemctl stop seonggwa
+sudo -u seonggwa cp /srv/backup/db-2026-09-03.db /srv/seonggwa/prisma/prod.db
+sudo systemctl start seonggwa
 ```
 
-## 리버스 프록시
+## nginx 가 반드시 해야 하는 것
 
-컨테이너는 `127.0.0.1:3000` 에만 연다. 앞단은 nginx 로 TLS 를 끊고 넘긴다.
-`AUTH_TRUST_HOST=true` 가 없으면 Auth.js 가 `UntrustedHost` 로 세션 요청을 전부 막는다 —
-standalone 부팅 검증에서 실제로 걸렸던 지점이다.
+`nginx.conf` 의 세 줄은 취향이 아니라 앱이 기대는 것이다. `src/lib/deployConfig.test.ts` 가 강제한다.
 
-SSE(배치 진행률)를 쓰므로 프록시에서 버퍼링을 꺼야 한다.
-
-```nginx
-proxy_buffering off;
-proxy_read_timeout 3600s;
-```
+| 설정 | 없으면 |
+|---|---|
+| `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for` | 로그인 레이트리밋이 IP 를 못 가려 모든 시도가 한 바구니에 들어간다 |
+| `proxy_buffering off` | 배치 진행률(SSE)이 버퍼에 갇혀 화면이 멈춘 것처럼 보인다 |
+| `proxy_read_timeout 3600s` | 50개사 분석이 1분에 끊긴다 |
+| `proxy_set_header Host $host` | Auth.js 가 `UntrustedHost` 로 세션 요청을 전부 막는다 |
 
 ## PostgreSQL 로 옮길 때
 
@@ -126,8 +154,9 @@ proxy_read_timeout 3600s;
 
 ## 검증 상태
 
-- `next build` → `.next/standalone` 부팅, `/api/health` 200, `/login` 200 — **확인함**
-- `.dockerignore`·볼륨 경로·마이그레이션 실행 경로의 정합성 — `src/lib/deployConfig.test.ts` 가 강제한다
-- 이미지 빌드·compose 기동 — 이 저장소를 만든 환경에 Docker 데몬이 없어 **미검증**.
-  첫 배포 때 `docker compose build` 부터 확인할 것. 특히 `better-sqlite3` 네이티브 모듈은
-  빌드·실행 이미지를 같은 베이스(`node:24-slim`)로 맞춰 두었으나 실제 빌드로 확인해야 한다.
+- `next start` 부팅 → `/api/health` 200 · 보안 헤더 7종 · `/dashboard` → `/login` 307 — **확인함**
+- 환경변수를 빼고 띄우면 빠진 키를 전부 적고 뜨지 않음 — **확인함**
+- `nginx.conf`·`seonggwa.service`·`deploy.sh`·`backup.sh` 의 요구사항 — `src/lib/deployConfig.test.ts` 가 강제
+- **systemd·nginx 실기동은 서버가 있어야 확인된다.** 첫 배포에서 `systemctl status` 와
+  `nginx -t` 를 먼저 볼 것. `better-sqlite3` 는 네이티브 모듈이라 서버에서 `npm ci` 해야 한다 —
+  다른 기계에서 만든 `node_modules` 를 그대로 옮기면 런타임에 죽는다.
