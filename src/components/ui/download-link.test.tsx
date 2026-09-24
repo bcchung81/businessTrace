@@ -25,7 +25,7 @@ describe("DownloadLink", () => {
   });
 
   test("fetches the file, shows 생성 중, saves it under the server's filename", async () => {
-    const fetchImpl = vi.fn(async () => new Response(new Blob(["x"]), { headers: { "Content-Disposition": "attachment; filename*=UTF-8''%EC%9B%94%EA%B0%84.xlsx" } }));
+    const fetchImpl = vi.fn(async () => new Response("x", { headers: { "Content-Disposition": "attachment; filename*=UTF-8''%EC%9B%94%EA%B0%84.xlsx" } }));
     render(<DownloadLink href="/api/reports/monthly?year=2026&month=9" fetchImpl={fetchImpl}>엑셀</DownloadLink>);
     fireEvent.click(screen.getByRole("button", { name: "엑셀" }));
     expect(screen.getByRole("button")).toHaveTextContent("생성 중…");
@@ -38,7 +38,7 @@ describe("DownloadLink", () => {
   test("appends the anchor before clicking and revokes the object URL after a delay so Firefox/Safari can finish the save", async () => {
     vi.useFakeTimers();
     try {
-      const fetchImpl = vi.fn(async () => new Response(new Blob(["x"])));
+      const fetchImpl = vi.fn(async () => new Response("x"));
       render(<DownloadLink href="/x" fetchImpl={fetchImpl}>엑셀</DownloadLink>);
       fireEvent.click(screen.getByRole("button", { name: "엑셀" }));
       await vi.waitFor(() => expect(click).toHaveBeenCalled());
@@ -60,7 +60,7 @@ describe("DownloadLink", () => {
   });
 
   test("wraps in a block-level span so a full-width button class resolves", () => {
-    const fetchImpl = vi.fn(async () => new Response(new Blob(["x"])));
+    const fetchImpl = vi.fn(async () => new Response("x"));
     render(<DownloadLink href="/x" className="w-full" fetchImpl={fetchImpl}>엑셀</DownloadLink>);
     const wrapper = screen.getByRole("button", { name: "엑셀" }).parentElement;
     expect(wrapper).toHaveClass("flex");
