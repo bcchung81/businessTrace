@@ -24,6 +24,16 @@ describe("reduceBatch", () => {
     expect(state).toMatchObject({ phase: "done", done: 1, aborted: false });
   });
 
+  test("a company closed as aborted is not counted as done", () => {
+    const state = feed([
+      { type: "batch_start", total: 2, stage: "full" },
+      { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
+      { type: "company_done", companyId: 1, status: "rate_limited", message: "한도" },
+      { type: "company_done", companyId: 2, status: "aborted", message: "레이트리밋으로 중단" },
+    ]);
+    expect(state.done).toBe(1);
+  });
+
   test("writes a log line for skips, rate limits and verification scores", () => {
     const state = feed([
       { type: "batch_start", total: 2, stage: "full" },

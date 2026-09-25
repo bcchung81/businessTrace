@@ -12,6 +12,8 @@ export type BatchOptions = {
   force: boolean;
   naver: boolean;
   google: boolean;
+  /** 동시에 돌릴 기업 수. 없으면 1 — 한 기업의 수집 대기와 다른 기업의 LLM 대기를 겹칠 때 올린다. */
+  concurrency?: number;
 };
 export type CompanyStatus = PipelineOutcome["status"] | "skipped" | "collected" | "sources_done" | "rate_limited";
 export type BatchEvent =
@@ -32,7 +34,8 @@ export type BatchDeps = {
 };
 
 type StepTiming = { collectMs: number | null; pipelineMs: number | null };
-type Step = { events: BatchEvent[]; done: Extract<BatchEvent, { type: "company_done" }>; timing: StepTiming; rateLimited?: boolean };
+type Step = { done: Extract<BatchEvent, { type: "company_done" }>; timing: StepTiming; rateLimited?: boolean };
+type Emit = (event: BatchEvent) => void;
 
 /**
  * 비동기 작업 하나를 재고 걸린 밀리초를 기록한다. 던져도 기록은 남긴다 — 느리게 실패한 단계가 가장 궁금한 단계다.
@@ -56,12 +59,10 @@ function failed(target: BatchTarget, step: string, caught: unknown, done: (statu
   return done("failed", { message });
 }
 
-async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDeps, open: () => boolean): Promise<Step> {
-  const events: BatchEvent[] = [];
+async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDeps, open: () => boolean, emit: Emit): Promise<Step> {
   const timing: StepTiming = { collectMs: null, pipelineMs: null };
   const toPipeline = (ms: number) => void (timing.pipelineMs = ms);
   const done = (status: CompanyStatus, extra: { message?: string; articles?: number } = {}): Step => ({
-    events,
     done: { type: "company_done", companyId: target.id, status, ...extra },
     timing,
   });
@@ -108,7 +109,7 @@ async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDep
   const outcome = await timed(toPipeline, () =>
     runCompanyAnalysis(
       { company: { id: target.id, name: target.name }, userId: deps.userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved },
-      { ...deps.pipeline, onEvent: (event) => events.push({ type: "company_event", companyId: target.id, event }), isOpen: open },
+      { ...deps.pipeline, onEvent: (event) => emit({ type: "company_event", companyId: target.id, event }), isOpen: open },
     ),
   );
   return done(outcome.status, { articles: collected.items.length, ...(outcome.message ? { message: outcome.message } : {}) });
@@ -117,9 +118,9 @@ async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDep
 /**
  * 한 기업을 돌리고 단계별 소요를 `batch.company_timing` 로그로 남긴다.
  */
-async function runTimed(target: BatchTarget, options: BatchOptions, deps: BatchDeps, open: () => boolean): Promise<Step> {
+async function runTimed(target: BatchTarget, options: BatchOptions, deps: BatchDeps, open: () => boolean, emit: Emit): Promise<Step> {
   const started = performance.now();
-  const step = await runOne(target, options, deps, open);
+  const step = await runOne(target, options, deps, open, emit);
   logEvent("info", "batch.company_timing", {
     companyId: target.id,
     name: target.name,
@@ -132,16 +133,54 @@ async function runTimed(target: BatchTarget, options: BatchOptions, deps: BatchD
 }
 
 /**
- * 기업을 순서대로 하나씩 돌린다. 레이트리밋이 나면 남은 기업을 전부 중단으로 닫는다 — 한도는 계정 단위라 다음 기업도 실패한다.
- * 연결이 끊기면 현재 기업까지만 마치고 멈춘다. 진행 상태는 레지스트리에 적어 헤더 배지가 읽게 한다.
+ * 여러 생산자가 밀어 넣은 이벤트를 한 소비자가 도착 순서대로 꺼낸다. 닫힌 뒤 남은 것까지 비우고 끝난다.
+ */
+function eventChannel<T>() {
+  const buffer: T[] = [];
+  let wake: (() => void) | null = null;
+  let closed = false;
+  const notify = () => {
+    wake?.();
+    wake = null;
+  };
+  return {
+    push(item: T) {
+      buffer.push(item);
+      notify();
+    },
+    close() {
+      closed = true;
+      notify();
+    },
+    async *drain(): AsyncGenerator<T> {
+      while (true) {
+        if (buffer.length > 0) {
+          yield buffer.shift() as T;
+          continue;
+        }
+        if (closed) return;
+        await new Promise<void>((resolve) => (wake = resolve));
+      }
+    },
+  };
+}
+
+/**
+ * 기업을 `concurrency` 개씩 겹쳐 돌리고, 기업별 이벤트를 생기는 즉시 흘린다(화면 리듀서는 companyId 로 합친다).
+ * 레이트리밋이 나면 새 기업을 시작하지 않고 남은 기업을 중단으로 닫는다 — 한도는 계정 단위라 다음 기업도 실패한다.
+ * 연결이 끊기면 진행 중인 기업까지만 마친다. `done` 은 실제로 돌린 기업만 센다 — 중단된 기업을 세면 「완료 56/56」이 거짓이 된다.
  */
 export async function* runBatch(targets: BatchTarget[], options: BatchOptions, deps: BatchDeps): AsyncGenerator<BatchEvent> {
   startBatch({ stage: options.stage, total: targets.length });
-  logEvent("info", "batch.start", { stage: options.stage, total: targets.length, userId: deps.userId });
+  logEvent("info", "batch.start", { stage: options.stage, total: targets.length, userId: deps.userId, concurrency: options.concurrency ?? 1 });
   const open = () => deps.isOpen?.() ?? true;
+  const channel = eventChannel<BatchEvent>();
+  const inFlight = new Map<number, string>();
+  const currentNames = () => [...inFlight.values()].join(" · ") || null;
   let done = 0;
   let aborted = false;
   let rateLimited = false;
+  let cursor = 0;
   try {
     yield { type: "batch_start", total: targets.length, stage: options.stage };
     try {
@@ -152,28 +191,39 @@ export async function* runBatch(targets: BatchTarget[], options: BatchOptions, d
       yield { type: "batch_done", done: 0, total: targets.length, aborted: true };
       return;
     }
-    for (const [index, target] of targets.entries()) {
-      if (!open()) {
-        aborted = true;
-        break;
-      }
-      if (rateLimited) {
-        yield { type: "company_done", companyId: target.id, status: "aborted", message: "레이트리밋으로 중단" };
+
+    const worker = async () => {
+      while (cursor < targets.length) {
+        if (!open()) {
+          aborted = true;
+          return;
+        }
+        const index = cursor;
+        cursor += 1;
+        const target = targets[index];
+        if (rateLimited) {
+          channel.push({ type: "company_done", companyId: target.id, status: "aborted", message: "레이트리밋으로 중단" });
+          continue;
+        }
+        inFlight.set(target.id, target.name);
+        advanceBatch({ current: currentNames() });
+        channel.push({ type: "company_start", companyId: target.id, name: target.name, index });
+        const step = await runTimed(target, options, deps, open, channel.push);
+        channel.push(step.done);
+        inFlight.delete(target.id);
         done += 1;
-        continue;
+        advanceBatch({ done, current: currentNames() });
+        if (step.rateLimited) {
+          rateLimited = true;
+          aborted = true;
+        }
       }
-      advanceBatch({ current: target.name });
-      yield { type: "company_start", companyId: target.id, name: target.name, index };
-      const step = await runTimed(target, options, deps, open);
-      for (const event of step.events) yield event;
-      yield step.done;
-      done += 1;
-      advanceBatch({ done });
-      if (step.rateLimited) {
-        rateLimited = true;
-        aborted = true;
-      }
-    }
+    };
+    const width = Math.max(1, Math.min(options.concurrency ?? 1, targets.length));
+    const workers = Promise.all(Array.from({ length: width }, worker)).finally(channel.close);
+    yield* channel.drain();
+    await workers;
+
     logEvent("info", "batch.done", { stage: options.stage, done, total: targets.length, aborted });
     yield { type: "batch_done", done, total: targets.length, aborted };
   } finally {

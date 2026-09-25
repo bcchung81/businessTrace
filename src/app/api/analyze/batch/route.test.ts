@@ -66,6 +66,17 @@ describe("POST /api/analyze/batch", () => {
     expect(vi.mocked(runBatch).mock.calls.at(-1)![0][0]).toMatchObject({ id: a.id, verified: false });
   });
 
+  test("runs two companies at a time unless the request says otherwise", async () => {
+    const a = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
+    await post({ companyIds: [a.id], stage: "full", limit: 20, force: false, naver: true, google: true });
+    await settle();
+    expect(vi.mocked(runBatch).mock.calls.at(-1)![1]).toMatchObject({ concurrency: 2 });
+
+    await post({ companyIds: [a.id], stage: "full", limit: 20, force: false, naver: true, google: true, concurrency: 1 });
+    await settle();
+    expect(vi.mocked(runBatch).mock.calls.at(-1)![1]).toMatchObject({ concurrency: 1 });
+  });
+
   test("accepts with 202 and runs the batch in the background, publishing its events", async () => {
     const a = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
     const b = await prisma.company.create({ data: { name: "㈜나", year: 2026, isActive: false } });

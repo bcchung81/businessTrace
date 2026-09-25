@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { finishBatch, readBatch } from "@/lib/services/batchRegistry";
+import { runCompanyAnalysis } from "@/lib/services/analysisPipeline";
 import { runBatch, type BatchDeps, type BatchEvent, type BatchTarget } from "@/lib/services/batchRun";
 import { NewsRateLimitError } from "@/lib/services/newsCollector";
 import type { NewsItem } from "@/lib/services/newsTypes";
@@ -83,7 +84,62 @@ describe("runBatch", () => {
     const events = await drain(runBatch(targets, { ...options, force: true }, d));
     expect(events).toContainEqual({ type: "company_done", companyId: 1, status: "rate_limited", message: "한도" });
     expect(events).toContainEqual({ type: "company_done", companyId: 2, status: "aborted", message: "레이트리밋으로 중단" });
-    expect(events.at(-1)).toMatchObject({ type: "batch_done", aborted: true });
+    expect(events.at(-1)).toEqual({ type: "batch_done", done: 1, total: 2, aborted: true });
+  });
+
+  test("with concurrency 2 the next company starts while the first is still collecting", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const d = deps({
+      collect: vi.fn(async () => {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        inFlight -= 1;
+        return collected();
+      }),
+    });
+    const events = await drain(runBatch(targets, { ...options, force: true, concurrency: 2 }, d));
+    expect(peak).toBe(2);
+    expect(events.filter((e) => e.type === "company_done")).toHaveLength(2);
+    expect(events.at(-1)).toEqual({ type: "batch_done", done: 2, total: 2, aborted: false });
+  });
+
+  test("streams a company's pipeline events while that company is still running", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    vi.mocked(runCompanyAnalysis).mockImplementationOnce(async (_input, pipelineDeps) => {
+      pipelineDeps.onEvent?.({ type: "progress", step: "trend", current: 1, total: 1 });
+      await gate;
+      return { runId: 11, status: "verified", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 } };
+    });
+    let releasedByTimer = false;
+    const timer = setTimeout(() => {
+      releasedByTimer = true;
+      release();
+    }, 200);
+    let arrivedWhileRunning = false;
+    for await (const event of runBatch([targets[0]], { ...options, force: true }, deps())) {
+      if (event.type === "company_event") {
+        arrivedWhileRunning = !releasedByTimer;
+        release();
+      }
+    }
+    clearTimeout(timer);
+    expect(arrivedWhileRunning).toBe(true);
+  });
+
+  test("while running, the registry names every company in flight", async () => {
+    const seen: (string | null)[] = [];
+    const d = deps({
+      collect: vi.fn(async () => {
+        seen.push(readBatch()?.current ?? null);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return collected();
+      }),
+    });
+    await drain(runBatch(targets, { ...options, force: true, concurrency: 2 }, d));
+    expect(seen).toContain("㈜가 · ㈜나");
   });
 
   test("stops after the current company when the client is gone", async () => {

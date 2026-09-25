@@ -69,7 +69,7 @@ function nameOf(state: BatchState, companyId: number) {
 
 /**
  * SSE 이벤트를 배치 화면 상태로 누적한다. 기업별 파이프라인 이벤트는 단일 러너의 리듀서를 그대로 쓴다.
- * 배치 전체가 죽은 error 이벤트도 접는다 — 서버가 끝을 알리는 유일한 통로다.
+ * 중단으로 닫힌 기업은 완료에 세지 않는다. 배치 전체가 죽은 error 이벤트도 접는다 — 서버가 끝을 알리는 유일한 통로다.
  */
 export function reduceBatch(state: BatchState, raw: unknown): BatchState {
   const event = raw as BatchEvent | { type: "error"; message: string };
@@ -103,7 +103,7 @@ export function reduceBatch(state: BatchState, raw: unknown): BatchState {
             ? "error"
             : "info";
       const tail = event.message ? ` — ${event.message}` : event.articles !== undefined ? ` · 기사 ${event.articles}건` : "";
-      return { ...log(next, level, `${name} · ${STATUS_TEXT[event.status]}${tail}`), done: state.done + 1 };
+      return { ...log(next, level, `${name} · ${STATUS_TEXT[event.status]}${tail}`), done: state.done + (event.status === "aborted" ? 0 : 1) };
     }
     case "batch_done":
       return { ...state, phase: "done", done: event.done, aborted: event.aborted };

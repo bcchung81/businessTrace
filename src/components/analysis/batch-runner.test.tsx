@@ -100,6 +100,24 @@ describe("BatchRunner", () => {
     expect(screen.getByRole("button", { name: "실행" })).toBeInTheDocument();
   });
 
+  test("shows how many companies are done while the batch is still running", async () => {
+    const fetchImpl = api(() => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          const encoder = new TextEncoder();
+          for (const event of [
+            { type: "batch_start", total: 2, stage: "full" },
+            { type: "company_start", companyId: 1, name: "㈜가", index: 0 },
+            { type: "company_done", companyId: 1, status: "verified", articles: 3 },
+          ]) controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        },
+      });
+      return new Response(body, { status: 200 });
+    });
+    render(<BatchRunner candidates={CANDIDATES} resume="running" fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("진행 1/2"));
+  });
+
   test("resumes a running batch on mount without a click", async () => {
     const fetchImpl = api([
       { type: "batch_start", total: 1, stage: "full" },

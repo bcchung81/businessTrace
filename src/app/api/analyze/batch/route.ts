@@ -20,6 +20,7 @@ const bodySchema = z.object({
   force: z.boolean().default(false),
   naver: z.boolean().default(true),
   google: z.boolean().default(true),
+  concurrency: z.number().int().min(1).max(4).default(2),
 });
 
 export async function POST(request: Request) {

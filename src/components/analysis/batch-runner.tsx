@@ -230,9 +230,9 @@ export function BatchRunner({
           <Button type="button" variant="signal" disabled={selected.size === 0} onClick={run}>실행</Button>
         )}
         {error ?? state.failure ? <p role="alert" className="text-[12px] font-medium text-risk">{error ?? state.failure}</p> : null}
-        {state.phase === "done" ? (
-          <p className="text-[12px] text-muted-foreground">
-            완료 <b className="font-mono text-foreground">{state.done}/{state.total}</b>
+        {state.phase !== "idle" ? (
+          <p role="status" className="text-[12px] text-muted-foreground">
+            {state.phase === "done" ? "완료" : "진행"} <b className="font-mono tabular-nums text-foreground">{state.done}/{state.total}</b>
             {state.aborted ? <span className="ml-2 font-semibold text-review">중단됨</span> : null}
           </p>
         ) : null}
