@@ -55,6 +55,7 @@ next-env.d.ts
 
 /data/*.xlsx
 /data/submissions/
+/data/jev-gate/
 /outcome/
 
 # python — scripts/
