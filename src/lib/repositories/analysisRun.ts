@@ -13,12 +13,14 @@ export async function createRun(input: {
   duplicatesRemoved?: number;
   periodStart?: Date;
   periodEnd?: Date;
+  formulaVersion?: string;
 }) {
   return prisma.analysisRun.create({
     data: {
       companyId: input.companyId,
       userId: input.userId,
       model: input.model,
+      ...(input.formulaVersion ? { formulaVersion: input.formulaVersion } : {}),
       newsJson: JSON.stringify(input.news),
       duplicatesRemoved: input.duplicatesRemoved ?? 0,
       periodStart: input.periodStart ?? null,

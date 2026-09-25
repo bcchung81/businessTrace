@@ -73,12 +73,23 @@ export type Trend = z.infer<typeof trendSchema>["trend_analysis"];
 export type Award = z.infer<typeof awardSchema>["award_analysis"];
 export type Investment = z.infer<typeof investmentSchema>["investment_analysis"];
 
+/** Jev 판정의 원확률 — 정책(문턱)을 바꿔도 다시 묻지 않고 재계산할 수 있게 남긴다. */
+export type JevTrace = {
+  sameEntity: number;
+  role: Record<string, number>;
+  articleType: string;
+  sentimentScore: number;
+};
+
 export type NewsAnalysis = {
   news: NewsItem;
   isAboutCompany: boolean;
   trend: Trend;
   award: Award;
   investment: Investment;
+  /** 주제 확신이 문턱 아래·하한 위라 사람이 가려야 하는 기사 — 집계에서 빠진다. */
+  held?: boolean;
+  jev?: JevTrace;
 };
 
 export type AnalysisStats = {
@@ -91,6 +102,8 @@ export type AnalysisStats = {
   neutralCount: number;
   awardCount: number;
   investmentCount: number;
+  /** 판정 보류 기사 수 — Jev 분석기만 채운다. */
+  heldNews?: number;
 };
 
 export type AnalysisResult = {
@@ -104,6 +117,8 @@ export type AnalysisResult = {
   fallbacks: number;
   /** 종합의견에 넘긴 공식 원천 사실. 검증이 같은 것을 judge 에게 보여 준다. */
   facts?: string[];
+  /** Jev 로 판정했으면 실제로 응답한 모델 버전과 입력 토큰. */
+  jev?: { model: string; inputTokens: number };
 };
 
 export type AnalyzeStep = "trend" | "award" | "investment" | "opinion";
@@ -157,7 +172,7 @@ function round(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-function summarise(analyses: NewsAnalysis[]): AnalysisStats {
+export function summarise(analyses: NewsAnalysis[]): AnalysisStats {
   const about = analyses.filter((analysis) => analysis.isAboutCompany);
   const scores = about.map((analysis) => analysis.trend.sentiment_score);
   const total = scores.reduce((sum, score) => sum + score, 0);

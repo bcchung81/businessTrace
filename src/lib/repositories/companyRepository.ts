@@ -161,3 +161,13 @@ export async function listNeighbours(companyId: number, within?: number[]) {
   if (index === -1) return { prev: null, next: rows[0] ?? null, position: null, total: rows.length };
   return { prev: rows[index - 1] ?? null, next: rows[index + 1] ?? null, position: index + 1, total: rows.length };
 }
+
+/**
+ * 기사 판정에 쓸 회사 식별 정보(정식명·업종·대표자·별칭 원문)를 읽는다. 없으면 null.
+ */
+export async function findCompanyIdentity(companyId: number) {
+  return prisma.company.findUnique({
+    where: { id: companyId },
+    select: { name: true, officialName: true, industry: true, ceoName: true, aliases: true },
+  });
+}

@@ -25,6 +25,14 @@ describe("AnalysisRun schema", () => {
     expect(run.status).toBe("running");
   });
 
+  it("records which analysis path produced the run", async () => {
+    const { company, user } = await seedCompanyAndUser();
+
+    const run = await createRun({ companyId: company.id, userId: user.id, model: "jev-latest+claude-sonnet-5", news: [], formulaVersion: "v3-jev" });
+
+    expect(run.formulaVersion).toBe("v3-jev");
+  });
+
   it("stores how many duplicates collection removed so the dashboard shows measured numbers", async () => {
     const { company, user } = await seedCompanyAndUser();
 

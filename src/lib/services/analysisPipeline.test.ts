@@ -4,7 +4,7 @@ import { resetDatabase } from "@/lib/test-support/db";
 import { findVerification } from "@/lib/repositories/verificationResult";
 import { listEvents } from "@/lib/repositories/eventRepository";
 import type { AnalysisResult, AnalyzeEvent } from "@/lib/services/analyzer";
-import { runCompanyAnalysis, type PipelineDeps } from "@/lib/services/analysisPipeline";
+import { analysisPath, runCompanyAnalysis, type PipelineDeps } from "@/lib/services/analysisPipeline";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import type { VerificationOutput } from "@/lib/services/verification";
 
@@ -41,6 +41,10 @@ function verification(status: "verified" | "needs_review" | "failed"): Verificat
 async function* completes(res: AnalysisResult): AsyncGenerator<AnalyzeEvent> {
   yield { type: "progress", step: "trend", current: 1, total: 1 };
   yield { type: "complete", runId: 0, result: res };
+}
+
+async function seedCompanyAndUser2() {
+  return seed();
 }
 
 async function seed() {
@@ -83,6 +87,27 @@ describe("runCompanyAnalysis", () => {
     expect(timing).toMatchObject({ companyId: company.id, runId: outcome.runId, status: "verified", articles: 1 });
     expect(typeof timing.analyzeMs).toBe("number");
     expect(typeof timing.verifyMs).toBe("number");
+  });
+
+  it("hands the company profile to the analyzer and stamps the run with the analysis path", async () => {
+    const { company, user } = await seedCompanyAndUser2();
+    let seen: unknown = null;
+
+    const outcome = await runCompanyAnalysis(
+      { company, userId: user.id, news: NEWS },
+      deps({
+        formulaVersion: "v3-jev",
+        loadProfile: async () => ({ name: "크립토랩", industry: "사이버보안", aliases: ["CryptoLab"] }),
+        analyze: (_name, _news, analyzeDeps) => {
+          seen = analyzeDeps.profile;
+          return completes(result());
+        },
+      }),
+    );
+
+    expect(seen).toEqual({ name: "크립토랩", industry: "사이버보안", aliases: ["CryptoLab"] });
+    const run = await prisma.analysisRun.findUniqueOrThrow({ where: { id: outcome.runId } });
+    expect(run.formulaVersion).toBe("v3-jev");
   });
 
   it("streams progress, complete, verifying and verified events in order", async () => {
@@ -312,5 +337,21 @@ describe("runCompanyAnalysis — 공식 원천 사실", () => {
     const outcome = await runCompanyAnalysis({ company, userId: user.id, news: NEWS }, deps());
 
     expect(outcome.status).toBe("verified");
+  });
+});
+
+describe("analysisPath", () => {
+  it("uses the LLM analyzer by default and stamps the provider", () => {
+    expect(analysisPath("claude-sonnet-5", {})).toEqual({ analyzer: "llm", model: "claude-sonnet-5", formulaVersion: "v2-anthropic" });
+    expect(analysisPath("gpt-5.6-terra", { LLM_PROVIDER: "openai" })).toMatchObject({ formulaVersion: "v2-openai" });
+  });
+
+  it("switches article judgments to Jev when ANALYZER=jev and records both models", () => {
+    expect(analysisPath("claude-sonnet-5", { ANALYZER: "jev", TYPESAFE_MODEL: "jev-1.13.0" })).toEqual({
+      analyzer: "jev",
+      model: "jev-1.13.0+claude-sonnet-5",
+      formulaVersion: "v3-jev",
+    });
+    expect(analysisPath("claude-sonnet-5", { ANALYZER: "jev" }).model).toBe("jev-latest+claude-sonnet-5");
   });
 });
