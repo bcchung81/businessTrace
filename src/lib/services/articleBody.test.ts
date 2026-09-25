@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { resolveGoogleNewsUrl, fetchArticleBody, enrichWithBodies, extractReadableText } from "@/lib/services/articleBody";
+import { resolveGoogleNewsUrl, fetchArticleBody, enrichWithBodies, extractReadableText, isBoilerplateBody } from "@/lib/services/articleBody";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import tokens from "./__fixtures__/google-tokens.json";
 import naverHtml from "./__fixtures__/article-naver.html?raw";
@@ -258,6 +258,16 @@ describe("extractReadableText", () => {
     expect(extractReadableText(ARTICLE, "https://n.example/1", dom)).toContain("동형암호");
   });
 
+  it("keeps a line break between blocks so a heading does not run into the next paragraph", () => {
+    const dom = fakeDom();
+    const page = `<article><h1>투자 ABC</h1>${"<p>프로메디우스가 215억원 규모의 투자를 유치했다고 밝혔다.</p>".repeat(6)}<h3>21억원 자금 조달</h3><p>바이오바이츠가 21억 원을 조달했다. 다기관 임상 데이터를 모은다.</p></article>`;
+
+    const text = extractReadableText(page, "https://n.example/2", dom);
+
+    expect(text).not.toContain("조달바이오바이츠가");
+    expect(text).toContain("21억원 자금 조달\n바이오바이츠가");
+  });
+
   it("closes the parsing window so a batch of articles does not pile up documents", () => {
     const dom = fakeDom();
 
@@ -283,3 +293,24 @@ describe("extractReadableText", () => {
     expect(closed).toBe(1);
   });
 })
+
+describe("isBoilerplateBody", () => {
+  const FOOTER =
+    "데이터투자 등록번호 : 서울,아54780 / 등록일자 : 2023년 04월 04일 / 발행일자 : 2023년 04월 04일 제호 : 데이터투자 / 발행인·편집인 : 주지숙 / 정보보호책임자 : 주지숙 / 고충처리인 : 주지숙 회사명 : 데이터미디어 / 대표이사 : 주지숙 / 사업자등록번호 : 312-86-79651 CONTACT 대표전화 : 070-4738-0165 본 사이트는 투자권유나 종목추천을 하지 않습니다.";
+
+  it("recognises a site footer scraped in place of the article", () => {
+    expect(isBoilerplateBody(FOOTER)).toBe(true);
+  });
+
+  it("keeps a real article that merely ends with a copyright line", () => {
+    const article = `${"동형암호 기업 크립토랩이 200억원 규모 투자를 유치했다. ".repeat(10)}ⓒ 전자신문 무단전재 및 재배포 금지`;
+    expect(isBoilerplateBody(article)).toBe(false);
+  });
+
+  it("drops a footer-only page so the snippet is used instead", async () => {
+    const html = `<html><body><div class="footer"><p>${FOOTER}</p></div></body></html>`;
+    const fetchImpl = vi.fn(async () => new Response(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } })) as unknown as typeof fetch;
+
+    expect(await fetchArticleBody("https://www.datatooza.com/news/1", { fetchImpl, lookup })).toBe("");
+  });
+});

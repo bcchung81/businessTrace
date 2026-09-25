@@ -139,11 +139,43 @@ export function extractReadableText(html: string, url: string, deps: DomFactory 
   const dom = (deps.createDom ?? ((source, at) => new JSDOM(source, { url: at })))(html, url);
 
   try {
-    const parsed = new Readability(dom.window.document).parse();
-    return (parsed?.textContent ?? "").replace(/\s+/g, " ").trim();
+    const document = dom.window.document;
+    const parsed = new Readability(document).parse();
+    if (!parsed?.content) return normaliseLines(parsed?.textContent ?? "");
+    const container = document.createElement("div");
+    container.innerHTML = parsed.content;
+    for (const block of container.querySelectorAll(BLOCK_SELECTOR)) {
+      block.before(document.createTextNode("\n"));
+      block.after(document.createTextNode("\n"));
+    }
+    return normaliseLines(container.textContent ?? "");
   } finally {
     dom.window.close();
   }
+}
+
+const BLOCK_SELECTOR = "p, div, br, li, h1, h2, h3, h4, h5, h6, blockquote, figcaption, section, article, header, footer, tr, dd, dt, pre, table";
+
+/**
+ * 줄 안의 공백은 하나로 접고 블록 경계의 줄바꿈은 하나만 남긴다.
+ * 블록을 공백 없이 붙이면 "자금 조달" 소제목과 "바이오바이츠가" 가 한 단어가 된다 — 기업명 경계 판정과 문장 분리가 함께 틀린다.
+ */
+function normaliseLines(text: string) {
+  return text
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/ *\n[\s]*/g, "\n")
+    .trim();
+}
+
+const FOOTER_MARKERS = ["등록번호", "등록일자", "발행인", "편집인", "제호", "사업자등록번호", "청소년보호책임자", "정보보호책임자", "고충처리인", "대표전화", "개인정보", "Copyright"];
+
+/**
+ * 본문 대신 사이트 푸터를 긁은 텍스트인지 가른다 — 발행 정보 표지가 넷 이상이고 기사라 보기엔 짧으면 푸터다.
+ * 푸터를 본문으로 넘기면 모델은 제목만 보고 판정한다. 버리면 수집기가 검색 요약문을 대신 쓴다.
+ */
+export function isBoilerplateBody(text: string) {
+  const markers = FOOTER_MARKERS.filter((marker) => text.includes(marker)).length;
+  return markers >= 4 && text.length < 1500;
 }
 
 /**
@@ -236,10 +268,10 @@ async function fetchBodyFromUrl(resolved: string, deps: FetchDeps & DomFactory =
     const html = decodeHtml(raw, hop.response.headers.get("content-type"));
 
     const article = extractReadableText(html, hop.href, deps);
-    if (article.length >= MIN_BODY_LENGTH) return article.slice(0, MAX_BODY_LENGTH);
+    if (article.length >= MIN_BODY_LENGTH && !isBoilerplateBody(article)) return article.slice(0, MAX_BODY_LENGTH);
 
     const naverBody = cheerio.load(html)("#dic_area").text().replace(/\s+/g, " ").trim();
-    if (naverBody.length >= MIN_BODY_LENGTH) return naverBody.slice(0, MAX_BODY_LENGTH);
+    if (naverBody.length >= MIN_BODY_LENGTH && !isBoilerplateBody(naverBody)) return naverBody.slice(0, MAX_BODY_LENGTH);
 
     return "";
   } catch {
