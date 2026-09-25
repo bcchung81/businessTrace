@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
 import { findVerification } from "@/lib/repositories/verificationResult";
@@ -70,6 +70,19 @@ describe("runCompanyAnalysis", () => {
     expect(run.status).toBe("completed");
     expect(run.verification?.status).toBe("verified");
     expect(outcome).toMatchObject({ status: "verified", usage: { inputTokens: 11, outputTokens: 6 } });
+  });
+
+  it("logs how long analysis and verification took", async () => {
+    const { company, user } = await seed();
+    const lines: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((line: unknown) => void lines.push(String(line)));
+    const outcome = await runCompanyAnalysis({ company, userId: user.id, news: NEWS }, deps());
+    spy.mockRestore();
+
+    const timing = lines.map((line) => JSON.parse(line)).find((entry) => entry.event === "analysis.timing");
+    expect(timing).toMatchObject({ companyId: company.id, runId: outcome.runId, status: "verified", articles: 1 });
+    expect(typeof timing.analyzeMs).toBe("number");
+    expect(typeof timing.verifyMs).toBe("number");
   });
 
   it("streams progress, complete, verifying and verified events in order", async () => {

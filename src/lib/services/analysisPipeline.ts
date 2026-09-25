@@ -72,13 +72,36 @@ function emptyResult(companyName: string, model: string, total: number): Analysi
   };
 }
 
+type Clock = { started: number; analyzed: number | null; verified: number | null };
+
+const elapsed = (from: number, to: number | null) => (to === null ? null : Math.round(to - from));
+
 /**
  * 수집된 뉴스 중 회사가 주제인 기사만 분석 → 검증 → 저장한다. SSE 라우트와 배치 스크립트가 같은 경로를 쓴다.
  * 스쳐 언급된 기사까지 LLM 에 넣으면 토큰만 태우고 동명 일반명사 기업의 판정을 흐린다.
+ * 끝나면 분석·검증 소요를 `analysis.timing` 로그로 남긴다 — 지연 개선의 기준선이다.
  */
 export async function runCompanyAnalysis(
   input: { company: { id: number; name: string }; userId: number; news: NewsItem[]; duplicatesRemoved?: number },
   deps: PipelineDeps,
+): Promise<PipelineOutcome> {
+  const clock: Clock = { started: performance.now(), analyzed: null, verified: null };
+  const outcome = await analyseAndVerify(input, deps, clock);
+  logEvent("info", "analysis.timing", {
+    companyId: input.company.id,
+    runId: outcome.runId,
+    status: outcome.status,
+    articles: input.news.filter((item) => item.relevance === "primary").length,
+    analyzeMs: elapsed(clock.started, clock.analyzed),
+    verifyMs: clock.analyzed === null ? null : elapsed(clock.analyzed, clock.verified),
+  });
+  return outcome;
+}
+
+async function analyseAndVerify(
+  input: { company: { id: number; name: string }; userId: number; news: NewsItem[]; duplicatesRemoved?: number },
+  deps: PipelineDeps,
+  clock: Clock,
 ): Promise<PipelineOutcome> {
   const run = await createRun({ companyId: input.company.id, userId: input.userId, model: deps.model, news: input.news, duplicatesRemoved: input.duplicatesRemoved });
   const emit = (event: PipelineEvent) => deps.onEvent?.(event);
@@ -109,6 +132,7 @@ export async function runCompanyAnalysis(
         continue;
       }
 
+      clock.analyzed = performance.now();
       await completeRun(run.id, event.result);
       usage = addUsage(usage, event.result.usage);
       const partial = event.result.fallbacks > 0 ? { message: `LLM 응답 실패 ${event.result.fallbacks}건을 기본값으로 메움` } : {};
@@ -122,6 +146,7 @@ export async function runCompanyAnalysis(
       let verification: VerificationOutput;
       try {
         verification = await deps.verify(event.result);
+        clock.verified = performance.now();
         await saveVerification(run.id, verification);
         usage = addUsage(usage, verification.usage);
       } catch (caught) {

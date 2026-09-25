@@ -31,7 +31,20 @@ export type BatchDeps = {
   isOpen?: () => boolean;
 };
 
-type Step = { events: BatchEvent[]; done: Extract<BatchEvent, { type: "company_done" }>; rateLimited?: boolean };
+type StepTiming = { collectMs: number | null; pipelineMs: number | null };
+type Step = { events: BatchEvent[]; done: Extract<BatchEvent, { type: "company_done" }>; timing: StepTiming; rateLimited?: boolean };
+
+/**
+ * 비동기 작업 하나를 재고 걸린 밀리초를 기록한다. 던져도 기록은 남긴다 — 느리게 실패한 단계가 가장 궁금한 단계다.
+ */
+async function timed<T>(record: (ms: number) => void, work: () => Promise<T>): Promise<T> {
+  const started = performance.now();
+  try {
+    return await work();
+  } finally {
+    record(Math.round(performance.now() - started));
+  }
+}
 
 /**
  * 한 기업의 한 단계가 던졌을 때 그 기업만 실패로 닫는다.
@@ -45,14 +58,17 @@ function failed(target: BatchTarget, step: string, caught: unknown, done: (statu
 
 async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDeps, open: () => boolean): Promise<Step> {
   const events: BatchEvent[] = [];
+  const timing: StepTiming = { collectMs: null, pipelineMs: null };
+  const toPipeline = (ms: number) => void (timing.pipelineMs = ms);
   const done = (status: CompanyStatus, extra: { message?: string; articles?: number } = {}): Step => ({
     events,
     done: { type: "company_done", companyId: target.id, status, ...extra },
+    timing,
   });
 
   if (options.stage === "sources") {
     try {
-      await deps.refreshSources(target);
+      await timed(toPipeline, () => deps.refreshSources(target));
     } catch (caught) {
       return failed(target, "sources", caught, done);
     }
@@ -62,32 +78,57 @@ async function runOne(target: BatchTarget, options: BatchOptions, deps: BatchDep
 
   let collected: CollectResult;
   try {
-    collected = await deps.collect({
-      query: target.name,
-      aliases: target.aliases,
-      startDate: options.startDate,
-      endDate: options.endDate,
-      limit: options.limit,
-      naver: options.naver,
-      google: options.google,
-    });
+    collected = await timed(
+      (ms) => void (timing.collectMs = ms),
+      () =>
+        deps.collect({
+          query: target.name,
+          aliases: target.aliases,
+          startDate: options.startDate,
+          endDate: options.endDate,
+          limit: options.limit,
+          naver: options.naver,
+          google: options.google,
+        }),
+    );
   } catch (caught) {
     if (caught instanceof NewsRateLimitError) return { ...done("rate_limited", { message: caught.message }), rateLimited: true };
     return done("failed", { message: caught instanceof Error ? caught.message : "수집 실패" });
   }
   if (options.stage === "news") {
     try {
-      await deps.collectOnly({ companyId: target.id, userId: deps.userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved });
+      await timed(toPipeline, () =>
+        deps.collectOnly({ companyId: target.id, userId: deps.userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved }),
+      );
     } catch (caught) {
       return failed(target, "store", caught, done);
     }
     return done("collected", { articles: collected.items.length });
   }
-  const outcome = await runCompanyAnalysis(
-    { company: { id: target.id, name: target.name }, userId: deps.userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved },
-    { ...deps.pipeline, onEvent: (event) => events.push({ type: "company_event", companyId: target.id, event }), isOpen: open },
+  const outcome = await timed(toPipeline, () =>
+    runCompanyAnalysis(
+      { company: { id: target.id, name: target.name }, userId: deps.userId, news: collected.items, duplicatesRemoved: collected.duplicatesRemoved },
+      { ...deps.pipeline, onEvent: (event) => events.push({ type: "company_event", companyId: target.id, event }), isOpen: open },
+    ),
   );
   return done(outcome.status, { articles: collected.items.length, ...(outcome.message ? { message: outcome.message } : {}) });
+}
+
+/**
+ * 한 기업을 돌리고 단계별 소요를 `batch.company_timing` 로그로 남긴다.
+ */
+async function runTimed(target: BatchTarget, options: BatchOptions, deps: BatchDeps, open: () => boolean): Promise<Step> {
+  const started = performance.now();
+  const step = await runOne(target, options, deps, open);
+  logEvent("info", "batch.company_timing", {
+    companyId: target.id,
+    name: target.name,
+    stage: options.stage,
+    status: step.done.status,
+    ...step.timing,
+    totalMs: Math.round(performance.now() - started),
+  });
+  return step;
 }
 
 /**
@@ -123,7 +164,7 @@ export async function* runBatch(targets: BatchTarget[], options: BatchOptions, d
       }
       advanceBatch({ current: target.name });
       yield { type: "company_start", companyId: target.id, name: target.name, index };
-      const step = await runOne(target, options, deps, open);
+      const step = await runTimed(target, options, deps, open);
       for (const event of step.events) yield event;
       yield step.done;
       done += 1;

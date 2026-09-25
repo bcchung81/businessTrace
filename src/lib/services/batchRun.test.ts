@@ -100,6 +100,20 @@ describe("runBatch", () => {
     expect(events.at(-1)).toMatchObject({ type: "batch_done", aborted: true, done: 1 });
   });
 
+  test("logs how long each company spent collecting and in the pipeline", async () => {
+    const lines: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((line: unknown) => void lines.push(String(line)));
+    await drain(runBatch(targets, { ...options, force: true }, deps()));
+    spy.mockRestore();
+
+    const timings = lines.map((line) => JSON.parse(line)).filter((entry) => entry.event === "batch.company_timing");
+    expect(timings.map((entry) => entry.companyId)).toEqual([1, 2]);
+    expect(timings[0]).toMatchObject({ name: "㈜가", stage: "full", status: "verified" });
+    for (const entry of timings) {
+      for (const key of ["collectMs", "pipelineMs", "totalMs"]) expect(typeof entry[key]).toBe("number");
+    }
+  });
+
   test("refuses to start while another batch runs", async () => {
     const first = runBatch(targets, options, deps());
     await first.next();
