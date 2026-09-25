@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { CompanyProfile } from "@/lib/services/jevAnalyzer";
 import type { LlmClient, Usage } from "@/lib/services/llm";
 import { resolveModel } from "@/lib/services/llm";
 import type { NewsItem } from "@/lib/services/newsTypes";
@@ -194,7 +195,7 @@ export function summarise(analyses: NewsAnalysis[]): AnalysisStats {
  * 뉴스별 3분석과 종합의견을 만들며 진행 상황을 흘린다.
  * 회사가 주제가 아닌 기사는 집계에서 빼되 결과에는 남긴다.
  */
-type Deps = { llm: LlmClient; model?: string; concurrency?: number; facts?: string[] };
+type Deps = { llm: LlmClient; model?: string; concurrency?: number; facts?: string[]; profile?: CompanyProfile };
 
 function eventQueue() {
   const buffer: AnalyzeEvent[] = [];
@@ -262,7 +263,7 @@ export async function* analyzeCompany(
   async function analyseOne(index: number) {
     const item = news[index];
     const position = index + 1;
-    const context = newsContext(companyName, item);
+    const context = newsContext(companyName, item, deps.profile);
 
     queue.push({ type: "progress", step: "trend", current: position, total });
     const answered = (await ask(trendPrompt(companyName), trendSchema, { trend_analysis: NEUTRAL_TREND }, context)).trend_analysis;

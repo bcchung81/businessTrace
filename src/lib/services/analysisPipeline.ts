@@ -79,7 +79,7 @@ export function defaultPipelineDeps(model = resolveModel()): PipelineDeps {
     analyze: (name, news, deps) =>
       jev
         ? analyzeCompanyWithJev(name, news, { jev, llm, model: deps.model, facts: deps.facts, profile: deps.profile })
-        : analyzeCompany(name, news, { llm, model: deps.model, facts: deps.facts }),
+        : analyzeCompany(name, news, { llm, model: deps.model, facts: deps.facts, profile: deps.profile }),
     verify: (result) => verifyAnalysis(result, { llm }),
     persistEvents: upsertEvents,
     loadFacts: async (companyId) => publicFactLines(buildCompanyFacts({ businessNo: null, snapshots: await listSourceSnapshots(companyId) })),

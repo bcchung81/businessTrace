@@ -185,6 +185,20 @@ describe("analyzeCompany — prompt caching", () => {
   });
 });
 
+describe("analyzeCompany — company profile", () => {
+  it("carries the company profile in every question's shared context", async () => {
+    const llm = fakeLlm();
+    const profile = { name: "누아", officialName: "주식회사 누아", industry: "클라우드", ceoName: "서덕진", aliases: [] };
+
+    for await (const _ of analyzeCompany("누아", [news()], { llm, model: "m", profile })) {
+      void _;
+    }
+
+    const contexts = (llm.json as ReturnType<typeof vi.fn>).mock.calls.slice(0, 3).map((call) => (call[0] as { context?: string }).context ?? "");
+    expect(contexts.every((context) => context.includes("업종 클라우드") && context.includes("대표 서덕진"))).toBe(true);
+  });
+});
+
 describe("analyzeCompany — parallelism", () => {
   type Gate = { resolve: () => void; promise: Promise<void> };
   function gate(): Gate {

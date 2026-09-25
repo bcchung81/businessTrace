@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   SYSTEM_NEWS,
+  newsContext,
   newsText,
   trendPrompt,
   awardPrompt,
@@ -178,5 +179,34 @@ describe("opinionPrompt — 공식 원천 사실", () => {
     const prompt = opinionPrompt("넷록스", stats, []);
 
     expect(prompt).not.toContain("공식 원천 사실");
+  });
+});
+
+describe("newsContext — 회사 프로필", () => {
+  const profile = { name: "누아", officialName: "주식회사 누아", industry: "클라우드", ceoName: "서덕진", aliases: ["NUA"] };
+
+  it("puts the company's official name, industry, CEO and aliases in front of the article so a namesake can be told apart", () => {
+    const context = newsContext("누아", item, profile);
+
+    expect(context).toContain("공식명 주식회사 누아");
+    expect(context).toContain("업종 클라우드");
+    expect(context).toContain("대표 서덕진");
+    expect(context).toContain("다른 이름 NUA");
+    expect(context.indexOf("서덕진")).toBeLessThan(context.indexOf('<article id="1">'));
+  });
+
+  it("leaves the profile line out when nothing beyond the name is known", () => {
+    expect(newsContext("누아", item)).not.toContain("회사 정보");
+    expect(newsContext("누아", item, { name: "누아", aliases: [] })).not.toContain("회사 정보");
+  });
+});
+
+describe("trendPrompt — 동명 대상", () => {
+  it("tells the model that a different organisation sharing or containing the name is not the company", () => {
+    const prompt = trendPrompt("누아");
+
+    expect(prompt).toContain("이름이 같거나 이름을 품은 다른 회사·브랜드·단체·인물");
+    expect(prompt).toContain("'누아엔터테인먼트'");
+    expect(prompt).toMatch(/회사 정보.*대조/);
   });
 });

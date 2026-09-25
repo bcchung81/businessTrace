@@ -1,3 +1,4 @@
+import type { CompanyProfile } from "@/lib/services/jevAnalyzer";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import { DATA_FENCE_RULE, fenceUntrusted } from "@/lib/services/prompts/untrusted";
 
@@ -23,12 +24,26 @@ export function newsText(item: NewsItem) {
 }
 
 /**
- * 기사 본문을 캐시 가능한 공유 컨텍스트로 낸다.
- * 동향·수상·투자 세 질문이 같은 본문을 앞에 두면 두 번째부터는 캐시에서 읽는다.
+ * 동명 대상을 가를 회사 식별 정보 한 줄. 이름 말고 아는 것이 없으면 싣지 않는다.
  */
-export function newsContext(companyName: string, item: NewsItem) {
+function profileLine(profile?: CompanyProfile) {
+  if (!profile) return "";
+  const parts = [
+    profile.officialName && `공식명 ${profile.officialName}`,
+    profile.industry && `업종 ${profile.industry}`,
+    profile.ceoName && `대표 ${profile.ceoName}`,
+    profile.aliases.length > 0 && `다른 이름 ${profile.aliases.join(", ")}`,
+  ].filter(Boolean);
+  return parts.length > 0 ? `회사 정보 | ${parts.join(" · ")}\n` : "";
+}
+
+/**
+ * 기사 본문을 캐시 가능한 공유 컨텍스트로 낸다.
+ * 동향·수상·투자 세 질문이 같은 본문을 앞에 두면 두 번째부터는 캐시에서 읽는다. 회사 정보는 회사마다 고정이라 캐시를 깨지 않는다.
+ */
+export function newsContext(companyName: string, item: NewsItem, profile?: CompanyProfile) {
   return `다음은 '${companyName}' 회사에 대한 뉴스입니다.
-${newsText(item)}`;
+${profileLine(profile)}${newsText(item)}`;
 }
 
 export function trendPrompt(companyName: string) {
@@ -37,6 +52,7 @@ export function trendPrompt(companyName: string) {
 
 분석 요구사항:
 0. 이 기사가 '${companyName}' 회사에 관한 기사인지 먼저 판단해주세요. 회사가 기사의 주제가 아니라 한두 번 언급되기만 했다면 is_about_company 를 "N" 으로 답해주세요.
+   회사 정보가 주어졌다면 기사 속 대상을 그 공식명·업종·대표와 대조하세요. 이름이 같거나 이름을 품은 다른 회사·브랜드·단체·인물(예: '${companyName}엔터테인먼트', '${companyName}건축사사무소')이면 is_about_company 를 "N" 으로, about_confidence 를 낮게 주세요.
 1. 뉴스의 내용을 요약
 2. 긍정/부정 점수 매기기 (-10: 매우 부정적, 0: 중립, 10: 매우 긍정적)
 - 긍정/부정 점수는 뉴스 내용의 전반적인 톤과 회사에 미치는 영향을 고려하여 판단해주세요.
