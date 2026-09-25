@@ -1,6 +1,8 @@
 # Jev 판정 경로·배치 지연·스케줄러 실행 플랜 (2026-09-25)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **진행(2026-09-25):** T1~T6 완료·커밋, T7~T9 남음 — `2026-09-25-next-session.md` 참고.
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 50개사 배치 완주 시간을 줄이고, 기사 판정을 TypeSafe **Jev**(System One 모델)로 옮길 경로를 완성하며, 사람이 누르지 않아도 정기 작업이 돌게 한다.
 
@@ -45,34 +47,34 @@ CLAUDE.md · docs                        T9     결정 갱신(스케줄러·Jev)
 ---
 
 ### T1. 단계별 소요 계측
-- [ ] 실패 테스트: `runBatch` 가 기업마다 `batch.company_timing` 로그(collectMs·pipelineMs·totalMs)를 남긴다 / `runCompanyAnalysis` 가 `analysis.timing`(analyzeMs·verifyMs)을 남긴다
-- [ ] 구현: `performance.now()` 로 구간을 재고 `logEvent("info", …)`
-- [ ] 커밋: `feat(batch): 기업마다 수집·분석·검증 소요를 구조화 로그로 남긴다`
+- [x] 실패 테스트: `runBatch` 가 기업마다 `batch.company_timing` 로그(collectMs·pipelineMs·totalMs)를 남긴다 / `runCompanyAnalysis` 가 `analysis.timing`(analyzeMs·verifyMs)을 남긴다
+- [x] 구현: `performance.now()` 로 구간을 재고 `logEvent("info", …)`
+- [x] 커밋: `feat(batch): 기업마다 수집·분석·검증 소요를 구조화 로그로 남긴다`
 
 ### T2. SQLite WAL
-- [ ] 실패 테스트: `enableWal(client)` 가 `PRAGMA journal_mode = WAL` 을 실행하고 결과 모드를 돌려준다
-- [ ] 구현: `db.ts` 에 `enableWal`, 서버 기동(instrumentation)과 CLI 스크립트에서 호출. busy timeout 은 better-sqlite3 기본 5초가 이미 있다
-- [ ] 커밋: `feat(db): 기동 때 SQLite 를 WAL 로 전환해 스케줄러와 웹이 서로를 막지 않게 한다`
+- [x] 실패 테스트: `enableWal(client)` 가 `PRAGMA journal_mode = WAL` 을 실행하고 결과 모드를 돌려준다
+- [x] 구현: `db.ts` 에 `enableWal`, 서버 기동(instrumentation)과 CLI 스크립트에서 호출. busy timeout 은 better-sqlite3 기본 5초가 이미 있다
+- [x] 커밋: `feat(db): 기동 때 SQLite 를 WAL 로 전환해 스케줄러와 웹이 서로를 막지 않게 한다`
 
 ### T3. 기업 동시 처리
-- [ ] 실패 테스트: `concurrency: 2` 면 두 기업이 겹쳐 돈다 / 레이트리밋이 나면 새 기업을 시작하지 않고 남은 기업은 `aborted` / `batch_done.done` 은 실제로 끝낸 기업만 센다
-- [ ] 구현: 워커 풀, 레지스트리 `current` 는 진행 중 기업 이름을 `·` 로 잇는다, 이벤트는 기업 단위로 흘린다(리듀서는 companyId 로 합친다)
-- [ ] 커밋: `feat(batch): 기업을 동시에 처리해 수집 대기와 LLM 대기를 겹친다`
+- [x] 실패 테스트: `concurrency: 2` 면 두 기업이 겹쳐 돈다 / 레이트리밋이 나면 새 기업을 시작하지 않고 남은 기업은 `aborted` / `batch_done.done` 은 실제로 끝낸 기업만 센다
+- [x] 구현: 워커 풀, 레지스트리 `current` 는 진행 중 기업 이름을 `·` 로 잇는다, 이벤트는 기업 단위로 흘린다(리듀서는 companyId 로 합친다)
+- [x] 커밋: `feat(batch): 기업을 동시에 처리해 수집 대기와 LLM 대기를 겹친다`
 
 ### T4. 본문 추출 품질
-- [ ] 실패 테스트: 블록 요소 사이에 줄바꿈이 들어간다(“조달\n바이오바이츠가”) / 사이트 푸터(등록번호·발행인·사업자등록번호 반복)만 있는 본문은 버리고 설명문으로 대신한다
-- [ ] 커밋: `fix(collector): 본문 블록을 붙이지 않고, 푸터만 긁힌 본문은 설명문으로 대신한다`
+- [x] 실패 테스트: 블록 요소 사이에 줄바꿈이 들어간다(“조달\n바이오바이츠가”) / 사이트 푸터(등록번호·발행인·사업자등록번호 반복)만 있는 본문은 버리고 설명문으로 대신한다
+- [x] 커밋: `fix(collector): 본문 블록을 붙이지 않고, 푸터만 긁힌 본문은 설명문으로 대신한다`
 
 ### T5. Jev 클라이언트와 게이트
-- [ ] 실패 테스트(mock fetch): 요청 모양·Bearer·타임아웃 / 429·529 재시도 / 422 는 던짐 / zod 로 answers 검증
-- [ ] `checkEnv`: `ANALYZER` 는 llm|jev, jev 면 `TYPESAFE_API_KEY` 필수
-- [ ] `api_smoke_test.py` 에 `check_typesafe`
-- [ ] 커밋: `feat(jev): TypeSafe Jev HTTP 클라이언트와 기동 게이트를 더한다`
+- [x] 실패 테스트(mock fetch): 요청 모양·Bearer·타임아웃 / 429·529 재시도 / 422 는 던짐 / zod 로 answers 검증
+- [x] `checkEnv`: `ANALYZER` 는 llm|jev, jev 면 `TYPESAFE_API_KEY` 필수
+- [x] `api_smoke_test.py` 에 `check_typesafe`
+- [x] 커밋: `feat(jev): TypeSafe Jev HTTP 클라이언트와 기동 게이트를 더한다`
 
 ### T6. Jev 분석기
-- [ ] 실패 테스트: 후보 추출(문장 분리·언급 창·‘N억원’ 금액·수상명·요약 후보) / 질문 묶음 / 정책(about = P(same)×(P(main)+P(party)) ≥ 0.7, 0.3~0.7 은 보류) / 감성 7단계 앵커 보간 / 결과가 `NewsAnalysis` 모양
-- [ ] `ANALYZER` 로 `defaultPipelineDeps` 의 analyze 를 고른다. `createRun` 이 분석기별 `formulaVersion`(`v2-llm`·`v3-jev`)을 기록한다
-- [ ] 커밋: `feat(jev): 기사 판정을 Jev 로 하는 대체 분석기 — 문장 항목은 원문에서 고른다`
+- [x] 실패 테스트: 후보 추출(문장 분리·언급 창·‘N억원’ 금액·수상명·요약 후보) / 질문 묶음 / 정책(about = P(same)×(P(main)+P(party)) ≥ 0.7, 0.3~0.7 은 보류) / 감성 7단계 앵커 보간 / 결과가 `NewsAnalysis` 모양
+- [x] `ANALYZER` 로 `defaultPipelineDeps` 의 analyze 를 고른다. `createRun` 이 분석기별 `formulaVersion`(`v2-llm`·`v3-jev`)을 기록한다
+- [x] 커밋: `feat(jev): 기사 판정을 Jev 로 하는 대체 분석기 — 문장 항목은 원문에서 고른다`
 
 ### T7. 저장소 평가 스크립트
 - [ ] `scripts/eval-jev-gate.ts` — `data/jev-gate/gold.json` 기사로 Jev 분석기를 돌려 주제·수상·투자·부정유형·감성(순위상관·사건 일치)을 채점. `data/jev-gate/human-labels.json` 이 있으면 사람 정답을 기준으로 삼는다
