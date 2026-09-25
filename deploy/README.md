@@ -9,6 +9,7 @@
 | 파일 | 어디로 |
 |---|---|
 | `seonggwa.service` | `/etc/systemd/system/seonggwa.service` |
+| `seonggwa-job@.service` · `seonggwa-*.timer` | `/etc/systemd/system/` — 정기 작업 |
 | `nginx.conf` | `/etc/nginx/sites-available/seonggwa` (+ `sites-enabled` 링크) |
 | `deploy.sh` | 저장소 안에서 그대로 실행 |
 | `run.sh` | 서비스와 같은 환경변수로 스크립트 한 번 돌리기 |
@@ -36,6 +37,11 @@ sudo ln -s /etc/nginx/sites-available/seonggwa /etc/nginx/sites-enabled/
 sudo systemctl daemon-reload && sudo systemctl enable seonggwa
 sudo -u seonggwa /srv/seonggwa/deploy/deploy.sh
 sudo certbot --nginx        # 인증서 발급 후 nginx -t && systemctl reload nginx
+
+# 정기 작업 — 첫 배포(마이그레이션)가 끝난 뒤에 켠다. JobLock 테이블이 있어야 한다
+sudo cp /srv/seonggwa/deploy/seonggwa-job@.service /srv/seonggwa/deploy/seonggwa-*.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now seonggwa-news.timer seonggwa-pension.timer seonggwa-procurement.timer seonggwa-venture.timer
 ```
 
 `/etc/seonggwa/env` 에 반드시 있어야 하는 것:
@@ -85,9 +91,32 @@ sudo -u seonggwa ADMIN_PASSWORD='...' /srv/seonggwa/deploy/run.sh \
 
 비밀번호는 12자 이상, 영문·숫자·특수문자 중 2가지 이상 조합이어야 한다.
 
-## 정기 스크립트
+## 정기 작업
 
-같은 자리에서 돈다. 주기와 거를 때의 대가는 아래와 같다.
+systemd timer 가 `scripts/scheduled.ts <작업>` 을 부른다 — 사람이 누르지 않아도 돈다.
+2026-09-25 에 "배치는 사람이 누른다" 결정을 바꿨다. 연금은 한 달을 거르면 영구 손실이라 사람 기억에 맡길 수 없다.
+
+| timer | 언제 (Asia/Seoul) | 하는 일 | 거르면 |
+|---|---|---|---|
+| `seonggwa-news` | 매일 03:30 | 활성 기업 전체 뉴스. 단계는 `SCHEDULE_NEWS_STAGE` — 기본 `news`(수집만), `full`(분석·검증까지, 검증된 기업도 다시), `off`(건너뜀) | 다음 날 다시 돈다 |
+| `seonggwa-pension` | 매월 16일 05:00 | `collect-pension.ts` 를 평가연도마다 | 원천이 12개월치만 유지하고 지운다. **그 달은 영영 복구 불가** |
+| `seonggwa-procurement` | 매월 2일 04:30 | `collect-procurement.ts 12` (약 40분) | 재무 결측 43개사의 유일한 매출 대리지표가 낡는다 |
+| `seonggwa-venture` | 1·4·7·10월 3일 05:30 | `collect-venture.ts` | 만료된 벤처확인이 계속 "유효" 로 표시된다 |
+| — | 분석 전 | 공식 원천 7종 | 화면 버튼·배치 `stage:"sources"` 로 커버됨 |
+
+- `Persistent=true` 라 서버가 꺼져 있던 동안 놓친 실행은 다음 기동 직후 한 번 돈다
+- 같은 작업이 이미 돌고 있으면 잠금(`JobLock`)을 못 잡고 `schedule.locked` 를 남기고 건너뛴다. **야간 뉴스는 웹 배치와 같은 잠금(`batch`)** 이다 —
+  웹 배치가 도는 밤에는 뉴스 작업이 건너뛰고, 정기 작업이 도는 동안 배치 버튼은 409 로 막힌다
+- 잠금은 10분 임대를 2분마다 늘린다. 프로세스가 죽으면 10분 뒤 풀리고, 웹 서버는 기동 때 자기(`web:`) 잠금을 푼다
+
+```bash
+systemctl list-timers 'seonggwa-*'
+journalctl -u 'seonggwa-job@*' --since today     # schedule.start · schedule.done · schedule.locked · schedule.failed
+sudo systemctl start seonggwa-job@pension         # 정기 작업을 손으로 한 번
+systemd-analyze calendar '*-01,04,07,10-03 05:30:00 Asia/Seoul'   # 일정 확인
+```
+
+스크립트 하나만 손으로 돌릴 때는 서비스와 같은 환경변수를 얹는다.
 
 ```bash
 sudo -u seonggwa /srv/seonggwa/deploy/run.sh npx tsx scripts/collect-pension.ts 2026
@@ -95,13 +124,6 @@ sudo -u seonggwa /srv/seonggwa/deploy/run.sh npx tsx scripts/collect-pension.ts 
 
 `run.sh` 가 `/etc/seonggwa/env` 를 얹고 저장소로 옮겨 준다. 환경변수를 명령줄에 늘어놓으면 `ps` 에 그대로 보인다.
 그 파일의 값에 공백이 있으면 따옴표로 감싼다 — 셸이 읽는다.
-
-| 무엇 | 주기 | 거르면 |
-|---|---|---|
-| `scripts/collect-pension.ts <연도>` | **매월 15일 이후 1회** | 원천이 12개월치만 유지하고 지운다. **그 달은 영영 복구 불가** |
-| `scripts/collect-procurement.ts 12` | 월 1회(약 40분) | 재무 결측 43개사의 유일한 매출 대리지표가 낡는다 |
-| `scripts/collect-venture.ts` | 분기 1회 | 만료된 벤처확인이 계속 "유효" 로 표시된다 |
-| 공식 원천 7종 | 분석 전 | 화면 버튼·배치 `stage:"sources"` 로 커버됨 |
 
 ## 상태 확인
 

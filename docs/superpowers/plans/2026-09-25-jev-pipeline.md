@@ -1,6 +1,6 @@
 # Jev 판정 경로·배치 지연·스케줄러 실행 플랜 (2026-09-25)
 
-> **진행(2026-09-25):** T1~T6 완료·커밋, T7~T9 남음 — `2026-09-25-next-session.md` 참고.
+> **진행(2026-09-25):** T1~T9 완료·커밋. 남은 것은 사람 정답셋 판정 → 게이트 재채점 — `2026-09-25-next-session.md` 참고.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
@@ -89,8 +89,8 @@ CLAUDE.md · docs                        T9     결정 갱신(스케줄러·Jev)
 - 잠금은 10분 임대 + 2분 갱신(`holdJobLock`). 웹 배치는 `web:<pid>`, 정기 작업은 `scheduled:<pid>` 로 잡고, 서버 기동 때 `web:` 잠금을 푼다. 수집 스크립트는 자식 프로세스(비동기)로 돈다 — spawnSync 는 갱신 타이머를 멈춘다
 
 ### T9. 문서
-- [ ] CLAUDE.md 의 "스케줄러 없음" 결정 갱신, Jev·ANALYZER 한 단락, 운영 작업표
-- [ ] 커밋: `docs: 스케줄러 도입과 Jev 판정 경로를 문서에 반영한다`
+- [x] CLAUDE.md 의 "스케줄러 없음" 결정 갱신, Jev·ANALYZER 한 단락, 운영 작업표(`deploy/README.md` 정기 작업 · `.env.example` `SCHEDULE_NEWS_STAGE`)
+- [x] 커밋: `docs: 스케줄러 도입과 Jev 판정 경로를 문서에 반영한다`
 
 ## 이 플랜 밖 (다음)
 - 사람 정답셋 판정 결과로 T7 게이트 재채점 → 통과 시 `ANALYZER=jev` 기본화

@@ -384,7 +384,7 @@ DART    : (주)올림플래닛 사업자번호=1208824298 대표=권재현
 
 #### Task C: 일괄 분석 실행 화면 — **완료 2026-08-30**
 - **파일**: `src/lib/services/{batchRegistry,batchRun,batchProgress}.ts`, `src/app/api/analyze/{batch,status}/route.ts`, `src/components/analysis/batch-runner.tsx`, `src/components/layout/batch-indicator.tsx`, 실행 플랜 `docs/superpowers/plans/2026-08-30-batch-runner.md`
-- **내용**: `/companies` 에서 다중 선택 → SSE 로 순차 실행 · 4단 스테퍼 · 헤더 진행 배지(프로세스 메모리 레지스트리, 인스턴스 1개 전제) · 등록 직후 실행 링크. 자동 스케줄은 두지 않았다(사용자 결정)
+- **내용**: `/companies` 에서 다중 선택 → SSE 로 순차 실행 · 4단 스테퍼 · 헤더 진행 배지(프로세스 메모리 레지스트리, 인스턴스 1개 전제) · 등록 직후 실행 링크. 자동 스케줄은 두지 않았다(사용자 결정 — 2026-09-25 번복, 정기 작업은 systemd timer: `2026-09-25-jev-pipeline.md` T8)
 
 ### Phase C: 검증 엔진 고도화
 
