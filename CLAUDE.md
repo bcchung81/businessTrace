@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 플랜은 두 층이다. **마스터 로드맵** `docs/superpowers/plans/2026-08-26-nextjs-rearchitecture.md` 가 결정·순서·리스크의 원천이고, **실행 플랜** `docs/superpowers/plans/2026-08-26-phase0-core-loop.md` 가 진행 중인 태스크의 파일·인터페이스·테스트를 담는다. 코드를 쓰기 전에 둘 다 읽는다.
 
+- **작업 브랜치는 main 이다.** 기능 브랜치·worktree 를 만들지 않고 main 에 바로 커밋한다 — `feat/nextjs-rearchitecture` 는 2026-09-25 에 main 으로 통합했다
 - 태스크 단위 커밋 — 메시지는 플랜에 명시돼 있다
 - 각 태스크는 **실패 테스트 → 구현 → 통과** 순서
 - **주석은 함수 설명 JSDoc 만 쓴다** — 아래 템플릿, 본문 3줄 이내. 줄 주석(`//`)으로 코드 흐름을 설명하지 않는다. 그건 이름과 구조로 대신한다
