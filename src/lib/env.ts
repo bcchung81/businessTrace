@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { resolveAnalyzer } from "@/lib/services/analyzerChoice";
 
 type Env = Record<string, string | undefined>;
 
@@ -42,6 +43,12 @@ export function checkEnv(env: Env = process.env): string[] {
   const key = PROVIDER_KEY[provider];
   if (!key) problems.push(`LLM_PROVIDER: anthropic 또는 openai 여야 합니다 (지금 "${env.LLM_PROVIDER}")`);
   else if (!env[key]) problems.push(`${key}: LLM_PROVIDER=${provider} 이면 필요합니다`);
+
+  try {
+    if (resolveAnalyzer(env) === "jev" && !env.TYPESAFE_API_KEY?.trim()) problems.push("TYPESAFE_API_KEY: ANALYZER=jev 이면 필요합니다");
+  } catch {
+    problems.push(`ANALYZER: llm 또는 jev 여야 합니다 (지금 "${env.ANALYZER}")`);
+  }
 
   return problems;
 }

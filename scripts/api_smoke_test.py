@@ -300,6 +300,33 @@ def test_anthropic():
         record("Anthropic", "-", False, f"호출 실패: {e}")
 
 
+def test_typesafe():
+    key = os.environ.get("TYPESAFE_API_KEY", "")
+    if not key:
+        record("TypeSafe Jev", "-", None, "TYPESAFE_API_KEY 없음")
+        return
+    model = os.environ.get("TYPESAFE_MODEL", "") or "jev-latest"
+    try:
+        r = requests.post(
+            "https://api.typesafe.ai/v1/systemone",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={
+                "model": model,
+                "state": {"company": "크립토랩", "article": "동형암호 기업 크립토랩이 200억원 규모 투자를 유치했다."},
+                "questions": {"raised": {"type": "noul", "instructions": "Does `article` say that `company` raised investment funding?"}},
+            },
+            timeout=30,
+        )
+        r.raise_for_status()
+        body = r.json()
+        noul = body["answers"]["raised"]["noul"]
+        record("TypeSafe Jev", body.get("model", model), noul >= 0.5, f"noul={noul} · 입력 {body['usage']['input_tokens']} 토큰")
+    except requests.HTTPError as e:
+        record("TypeSafe Jev", model, False, f"HTTP {e.response.status_code}: {e.response.text[:100]}")
+    except Exception as e:
+        record("TypeSafe Jev", model, False, f"호출 실패: {e}")
+
+
 def test_nps(company):
     """국민연금 가입 사업장 — 상호로 사업장을 찾고 가입자수·고지금액까지 이어지는지 본다."""
     key = os.environ.get("NTS_SERVICE_KEY", "")
@@ -420,6 +447,7 @@ if __name__ == "__main__":
     test_naver_news()
     test_tavily()
     test_anthropic()
+    test_typesafe()
     test_sgis()
     test_naver_maps()
     test_dart_disclosure(REF_LISTED)

@@ -38,6 +38,16 @@ describe("checkEnv in production", () => {
     expect(checkEnv({ ...complete, LLM_PROVIDER: "antropic" }).join(" ")).toContain("LLM_PROVIDER");
   });
 
+  it("rejects an unknown ANALYZER at boot", () => {
+    expect(checkEnv({ ...complete, ANALYZER: "jevv" }).join(" ")).toContain("ANALYZER");
+  });
+
+  it("asks for the TypeSafe key only when the Jev analyzer is selected", () => {
+    expect(checkEnv({ ...complete, ANALYZER: "jev" }).join(" ")).toContain("TYPESAFE_API_KEY");
+    expect(checkEnv({ ...complete, ANALYZER: "jev", TYPESAFE_API_KEY: "k" })).toEqual([]);
+    expect(checkEnv({ ...complete, ANALYZER: "llm" })).toEqual([]);
+  });
+
   it("asks for the key of the provider actually selected", () => {
     const openai = { ...complete, LLM_PROVIDER: "openai", ANTHROPIC_API_KEY: undefined };
 
