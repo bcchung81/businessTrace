@@ -77,8 +77,9 @@ CLAUDE.md · docs                        T9     결정 갱신(스케줄러·Jev)
 - [x] 커밋: `feat(jev): 기사 판정을 Jev 로 하는 대체 분석기 — 문장 항목은 원문에서 고른다`
 
 ### T7. 저장소 평가 스크립트
-- [ ] `scripts/eval-jev-gate.ts` — `data/jev-gate/gold.json` 기사로 Jev 분석기를 돌려 주제·수상·투자·부정유형·감성(순위상관·사건 일치)을 채점. `data/jev-gate/human-labels.json` 이 있으면 사람 정답을 기준으로 삼는다
-- [ ] 커밋: `feat(jev): 게이트 채점 스크립트를 저장소에 둔다`
+- [x] `scripts/eval-jev-gate.ts` — `data/jev-gate/gold.json` 기사로 Jev 분석기를 돌려 주제·수상·투자·부정유형·감성(순위상관·사건 일치)을 채점. `data/jev-gate/human-labels.json` 이 있으면 사람 정답을 기준으로 삼는다. 채점 함수는 `src/lib/services/jevGate.ts`(테스트 동반), 원답 캐시는 `data/jev-gate/results-v3.jsonl`(요청 해시가 바뀌면 다시 묻는다)
+- [x] 커밋: `feat(jev): 게이트 채점 스크립트를 저장소에 둔다`
+- 2026-09-25 실측(jev-1.13.0, Sonnet 기준 참고치): 주제 88.2% [83.9, 91.5] · AUC 0.921 · 보류 16건 · 수상 κ0.67 · 투자 κ0.63 · 부정유형 κ0.72 · 감성 ρ0.86 · p50 255ms · 입력 125만 토큰. 불일치 32건 다수가 설계상 '명시된 당사자'(길의료재단 협약 등)를 주제로 본 것 — 사람 정답 없이는 판정 불가
 
 ### T8. 스케줄러
 - [ ] 실패 테스트: `acquireJobLock` 이 만료 전 두 번째 보유자를 막고 만료 뒤엔 넘겨준다 / 웹 배치도 같은 잠금을 잡는다
