@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
-import { closeStaleRuns } from "@/lib/services/bootstrap";
+import { closeStaleRuns, releaseWebLocks } from "@/lib/services/bootstrap";
 
 async function seedRun(status: string) {
   const company = await prisma.company.create({ data: { name: `c-${status}-${Math.random()}`, year: 2026 } });
@@ -38,5 +38,21 @@ describe("closeStaleRuns", () => {
 
   it("says nothing and does nothing when the table is clean", async () => {
     expect(await closeStaleRuns()).toBe(0);
+  });
+});
+
+describe("releaseWebLocks", () => {
+  beforeEach(async () => {
+    await resetDatabase();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  it("frees the batch lock a previous web process held and leaves scheduled jobs' locks alone", async () => {
+    const future = new Date(Date.now() + 60_000);
+    await prisma.jobLock.create({ data: { name: "batch", holder: "web:41", expiresAt: future } });
+    await prisma.jobLock.create({ data: { name: "pension", holder: "scheduled:7", expiresAt: future } });
+
+    expect(await releaseWebLocks()).toBe(1);
+    expect((await prisma.jobLock.findMany()).map((row) => row.holder)).toEqual(["scheduled:7"]);
   });
 });

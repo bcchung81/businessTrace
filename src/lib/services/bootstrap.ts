@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { releaseJobLocksHeldBy } from "@/lib/repositories/jobLock";
 import { logEvent } from "@/lib/services/logger";
 
 const STALE_MESSAGE = "서버 재기동으로 중단된 실행입니다.";
@@ -13,5 +14,14 @@ export async function closeStaleRuns() {
     data: { status: "failed", resultJson: JSON.stringify({ error: STALE_MESSAGE }), completedAt: new Date() },
   });
   if (count > 0) logEvent("warn", "boot.stale_runs_closed", { count });
+  return count;
+}
+
+/**
+ * 이전 웹 프로세스가 쥐고 있던 작업 잠금을 푼다. 임대 만료(최대 10분)를 기다리면 그동안 배치 버튼이 "정기 작업 실행 중"으로 막힌다.
+ */
+export async function releaseWebLocks() {
+  const count = await releaseJobLocksHeldBy("web:");
+  if (count > 0) logEvent("warn", "boot.web_locks_released", { count });
   return count;
 }

@@ -1,6 +1,6 @@
 import { enableWal } from "@/lib/db";
 import { checkEnv } from "@/lib/env";
-import { closeStaleRuns } from "@/lib/services/bootstrap";
+import { closeStaleRuns, releaseWebLocks } from "@/lib/services/bootstrap";
 import { logEvent } from "@/lib/services/logger";
 
 /**
@@ -19,6 +19,11 @@ export async function bootNodeServer() {
     await closeStaleRuns();
   } catch (caught) {
     logEvent("error", "boot.stale_runs_failed", { error: caught });
+  }
+  try {
+    await releaseWebLocks();
+  } catch (caught) {
+    logEvent("error", "boot.web_locks_failed", { error: caught });
   }
   try {
     logEvent("info", "boot.journal_mode", { mode: await enableWal() });

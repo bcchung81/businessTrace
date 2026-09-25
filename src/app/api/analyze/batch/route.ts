@@ -5,6 +5,7 @@ import { createCollectionRun } from "@/lib/repositories/analysisRun";
 import { defaultPipelineDeps } from "@/lib/services/analysisPipeline";
 import { abortRequested, readBatch } from "@/lib/services/batchRegistry";
 import { launchBatch } from "@/lib/services/batchSession";
+import { holdJobLock } from "@/lib/services/jobLease";
 import { runBatch, type BatchTarget } from "@/lib/services/batchRun";
 import { refreshCorpCodes } from "@/lib/services/dartCorpCode";
 import { logEvent } from "@/lib/services/logger";
@@ -30,6 +31,8 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ message: "잘못된 요청입니다." }, { status: 400 });
   const running = readBatch();
   if (running) return Response.json({ message: `이미 실행 중입니다 · ${running.total}개사` }, { status: 409 });
+  const release = await holdJobLock("batch", `web:${process.pid}`);
+  if (!release) return Response.json({ message: "정기 작업이 실행 중입니다. 끝난 뒤 다시 시도해 주세요." }, { status: 409 });
 
   const companies = await prisma.company.findMany({
     where: { id: { in: parsed.data.companyIds }, isActive: true },
@@ -44,7 +47,10 @@ export async function POST(request: Request) {
     verified: company.analysisRuns.length > 0,
     aliases: company.aliases,
   }));
-  if (targets.length === 0) return Response.json({ message: "실행할 기업이 없습니다." }, { status: 400 });
+  if (targets.length === 0) {
+    await release();
+    return Response.json({ message: "실행할 기업이 없습니다." }, { status: 400 });
+  }
 
   const userId = Number(session.user.id);
   const events = runBatch(targets, parsed.data, {
@@ -59,10 +65,11 @@ export async function POST(request: Request) {
   });
   const first = await events.next();
   if (first.done) {
+    await release();
     logEvent("error", "route.batch_start_failed", { userId, companies: targets.length, stage: parsed.data.stage });
     return Response.json({ message: "배치를 시작하지 못했습니다." }, { status: 500 });
   }
-  void launchBatch(prepend(first.value, events));
+  void launchBatch(prepend(first.value, events)).finally(release);
   return Response.json({ batch: readBatch() }, { status: 202 });
 }
 

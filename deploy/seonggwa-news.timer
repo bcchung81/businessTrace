@@ -1,0 +1,12 @@
+# /etc/systemd/system/seonggwa-news.timer — systemctl enable --now seonggwa-news.timer
+# Persistent=true: 서버가 꺼져 있어 놓친 실행은 다음 기동 직후 한 번 돈다.
+[Unit]
+Description=성과돋보기 야간 뉴스 (SCHEDULE_NEWS_STAGE, 기본 수집만)
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Asia/Seoul
+Persistent=true
+Unit=seonggwa-job@news.service
+
+[Install]
+WantedBy=timers.target

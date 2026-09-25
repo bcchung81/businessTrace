@@ -1,0 +1,12 @@
+# /etc/systemd/system/seonggwa-pension.timer — systemctl enable --now seonggwa-pension.timer
+# Persistent=true: 서버가 꺼져 있어 놓친 실행은 다음 기동 직후 한 번 돈다.
+[Unit]
+Description=성과돋보기 국민연금 스냅샷 — 매월 16일 (15일 이후 제공, 거르면 그 달 영구 손실)
+
+[Timer]
+OnCalendar=*-*-16 05:00:00 Asia/Seoul
+Persistent=true
+Unit=seonggwa-job@pension.service
+
+[Install]
+WantedBy=timers.target

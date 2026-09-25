@@ -252,3 +252,10 @@ model ProcurementAward {
   @@unique([companyId, awardKey])
   @@index([companyId, awardedAt])
 }
+
+model JobLock {
+  name       String   @id
+  holder     String
+  acquiredAt DateTime @default(now())
+  expiresAt  DateTime
+}

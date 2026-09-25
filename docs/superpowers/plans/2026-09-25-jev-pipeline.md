@@ -82,10 +82,11 @@ CLAUDE.md · docs                        T9     결정 갱신(스케줄러·Jev)
 - 2026-09-25 실측(jev-1.13.0, Sonnet 기준 참고치): 주제 88.2% [83.9, 91.5] · AUC 0.921 · 보류 16건 · 수상 κ0.67 · 투자 κ0.63 · 부정유형 κ0.72 · 감성 ρ0.86 · p50 255ms · 입력 125만 토큰. 불일치 32건 다수가 설계상 '명시된 당사자'(길의료재단 협약 등)를 주제로 본 것 — 사람 정답 없이는 판정 불가
 
 ### T8. 스케줄러
-- [ ] 실패 테스트: `acquireJobLock` 이 만료 전 두 번째 보유자를 막고 만료 뒤엔 넘겨준다 / 웹 배치도 같은 잠금을 잡는다
-- [ ] `scripts/scheduled.ts news|pension|procurement|venture` + systemd timer(`Persistent=true`)
-- [ ] 야간 뉴스 작업의 단계는 `SCHEDULE_NEWS_STAGE`(기본 `news` — 기본 분석기가 llm 인 동안 LLM 비용을 매일 쓰지 않는다)
-- [ ] 커밋: `feat(schedule): systemd timer 로 야간 뉴스·월간 연금·조달·분기 벤처 작업을 돌린다`
+- [x] 실패 테스트: `acquireJobLock` 이 만료 전 두 번째 보유자를 막고 만료 뒤엔 넘겨준다 / 웹 배치도 같은 잠금을 잡는다
+- [x] `scripts/scheduled.ts news|pension|procurement|venture` + systemd timer(`Persistent=true`)
+- [x] 야간 뉴스 작업의 단계는 `SCHEDULE_NEWS_STAGE`(`off|news|full`, 기본 `news` — 기본 분석기가 llm 인 동안 LLM 비용을 매일 쓰지 않는다. `full` 은 검증된 기업도 다시 분석한다)
+- [x] 커밋: `feat(schedule): systemd timer 로 야간 뉴스·월간 연금·조달·분기 벤처 작업을 돌린다`
+- 잠금은 10분 임대 + 2분 갱신(`holdJobLock`). 웹 배치는 `web:<pid>`, 정기 작업은 `scheduled:<pid>` 로 잡고, 서버 기동 때 `web:` 잠금을 푼다. 수집 스크립트는 자식 프로세스(비동기)로 돈다 — spawnSync 는 갱신 타이머를 멈춘다
 
 ### T9. 문서
 - [ ] CLAUDE.md 의 "스케줄러 없음" 결정 갱신, Jev·ANALYZER 한 단락, 운영 작업표

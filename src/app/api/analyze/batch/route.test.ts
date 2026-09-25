@@ -50,6 +50,47 @@ describe("POST /api/analyze/batch", () => {
     expect((await busy.json()).message).toContain("2개사");
   });
 
+  test("409 while a scheduled job holds the batch lock — the web run and the nightly run must not overlap", async () => {
+    const a = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
+    await prisma.jobLock.create({ data: { name: "batch", holder: "scheduled:9", expiresAt: new Date(Date.now() + 60_000) } });
+    const runsBefore = vi.mocked(runBatch).mock.calls.length;
+
+    const busy = await post({ companyIds: [a.id], stage: "full", limit: 20, force: false, naver: true, google: true });
+
+    expect(busy.status).toBe(409);
+    expect((await busy.json()).message).toContain("정기 작업");
+    expect(vi.mocked(runBatch).mock.calls).toHaveLength(runsBefore);
+  });
+
+  test("holds the batch lock while running and lets go when the run ends", async () => {
+    const a = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });
+    let holderDuringRun: string | null = null;
+    vi.mocked(runBatch).mockImplementationOnce(async function* () {
+      startBatch({ stage: "full", total: 1 });
+      try {
+        yield { type: "batch_start", total: 1, stage: "full" };
+        holderDuringRun = (await prisma.jobLock.findUnique({ where: { name: "batch" } }))?.holder ?? null;
+        yield { type: "batch_done", done: 1, total: 1, aborted: false };
+      } finally {
+        finishBatch();
+      }
+    });
+
+    await post({ companyIds: [a.id], stage: "full", limit: 20, force: false, naver: true, google: true });
+    await settle();
+
+    expect(holderDuringRun).toMatch(/^web:/);
+
+    await vi.waitFor(async () => expect(await prisma.jobLock.count()).toBe(0));
+  });
+
+  test("lets go of the lock when there is nothing to run", async () => {
+    const b = await prisma.company.create({ data: { name: "㈜나", year: 2026, isActive: false } });
+
+    expect((await post({ companyIds: [b.id] })).status).toBe(400);
+    expect(await prisma.jobLock.count()).toBe(0);
+  });
+
   test("marks a company verified only when its verification actually passed", async () => {
     const user = await prisma.user.create({ data: { email: "b@example.com", passwordHash: "x" } });
     const a = await prisma.company.create({ data: { name: "㈜가", year: 2026 } });

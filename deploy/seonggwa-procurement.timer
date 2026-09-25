@@ -1,0 +1,12 @@
+# /etc/systemd/system/seonggwa-procurement.timer — systemctl enable --now seonggwa-procurement.timer
+# Persistent=true: 서버가 꺼져 있어 놓친 실행은 다음 기동 직후 한 번 돈다.
+[Unit]
+Description=성과돋보기 조달 낙찰 12개월 스캔 — 매월 2일
+
+[Timer]
+OnCalendar=*-*-02 04:30:00 Asia/Seoul
+Persistent=true
+Unit=seonggwa-job@procurement.service
+
+[Install]
+WantedBy=timers.target
