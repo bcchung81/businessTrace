@@ -61,17 +61,19 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+const TAIL_GUARD_MAX_LENGTH = 3;
+const NOT_A_WORD_TAIL = "(?:(?<![0-9A-Za-z가-힣])|(?<=주식회사))";
+
 /**
- * 기사에서 기업명이 몇 번 나오는지 센다. 띄어쓰기 차이를 무시한다.
- * 명단은 "코난 테크놀로지", 기사는 "코난테크놀로지"로 쓴다 - 그대로 세면 주제 기사가 0건이 된다.
- * 두 글자 이름은 어절을 건너뛰어 오탐할 수 있어 정확 일치만 센다.
+ * 기사에서 기업명이 몇 번 나오는지 센다. 띄어쓰기 차이를 무시하고, 두 글자 이름은 정확 일치만 센다.
+ * 세 글자 이하 이름이 한글·영숫자 뒤에 붙으면 다른 단어의 꼬리로 보고 세지 않는다 — "아누아" 가 "누아" 로, "르페어리" 가 "페어리" 로 잡혔다.
+ * 긴 이름은 막지 않는다. 본문 추출이 블록을 붙여 "조달바이오바이츠가" 같은 정상 언급이 생긴다.
  */
 function mentionPattern(needle: string) {
   const compact = (needle ?? "").replace(/\s+/g, "");
   if (compact.length === 0) return null;
-  return compact.length < FLEXIBLE_MIN_LENGTH
-    ? escapeRegExp(compact)
-    : [...compact].map(escapeRegExp).join("\\s*");
+  const body = compact.length < FLEXIBLE_MIN_LENGTH ? escapeRegExp(compact) : [...compact].map(escapeRegExp).join("\\s*");
+  return compact.length <= TAIL_GUARD_MAX_LENGTH ? `${NOT_A_WORD_TAIL}${body}` : body;
 }
 
 export function countCompanyMentions(haystack: string, needle: string) {
