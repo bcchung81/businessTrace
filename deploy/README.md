@@ -132,9 +132,13 @@ deploy/backup.sh /srv/backup       # DB(VACUUM INTO) + data/ tar, 7일 롤링
 
 ```bash
 sudo systemctl stop seonggwa
+sudo -u seonggwa rm -f /srv/seonggwa/prisma/prod.db-wal /srv/seonggwa/prisma/prod.db-shm
 sudo -u seonggwa cp /srv/backup/db-2026-09-03.db /srv/seonggwa/prisma/prod.db
 sudo systemctl start seonggwa
 ```
+
+DB 는 기동 때 WAL 로 바뀐다(`enableWal`). **복원 전에 `prod.db-wal`·`prod.db-shm` 을 지운다** — 남은 WAL 이
+복원한 파일 위에 다시 적용되면 옛 쓰기가 새 파일을 덮는다. 백업은 `VACUUM INTO` 라 WAL 까지 반영된 한 파일이다.
 
 ## nginx 가 반드시 해야 하는 것
 

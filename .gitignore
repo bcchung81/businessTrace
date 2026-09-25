@@ -48,6 +48,8 @@ next-env.d.ts
 # prisma
 /prisma/*.db
 /prisma/*.db-journal
+/prisma/*.db-wal
+/prisma/*.db-shm
 /src/generated
 
 # 외부 API 수집 원본 (재현 가능, 용량 큼)
