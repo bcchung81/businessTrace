@@ -3,10 +3,12 @@ import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { prisma } from "@/lib/db";
+import { listGateLabels } from "@/lib/repositories/articleJudgment";
 import { findCompanyIdentity } from "@/lib/repositories/companyRepository";
 import type { NewsAnalysis } from "@/lib/services/analyzer";
 import { parseAliases } from "@/lib/services/collectForCompany";
 import { buildArticleRequest, interpretAnswers, type CompanyProfile } from "@/lib/services/jevAnalyzer";
+import { GATE_SET_KEY } from "@/lib/services/judgments";
 import { cohenKappa, humanTruth, passesGate, scoreAbout, sentimentEvent, spearman, stratifiedAccuracy, wilson, GATE_MIN } from "@/lib/services/jevGate";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import { defaultJevClient, type JevAnswer } from "@/lib/services/typesafe";
@@ -15,7 +17,6 @@ config({ quiet: true });
 
 const DIR = join(process.cwd(), "data", "jev-gate");
 const CACHE = join(DIR, "results-v3.jsonl");
-const HUMAN = join(DIR, "human-labels.json");
 
 type Gold = {
   runId: number;
@@ -33,7 +34,6 @@ type Gold = {
   round: string;
 };
 type ReviewKey = { id: string; stratum: string; companyId: number; link: string; strataSizes: Record<string, number> };
-type HumanLabel = { about?: string | null };
 type Cached = { key: string; requestHash: string; model?: string; inputTokens?: number; ms?: number; answers?: Record<string, JevAnswer>; error?: string };
 type Scored = { gold: Gold; analysis: NewsAnalysis; sonnetSentiment: number | null };
 
@@ -171,18 +171,20 @@ function reportAgainstSonnet(rows: Scored[]) {
 }
 
 /**
- * 검토 페이지의 층화 표본(A 불일치·B 불확실 전수, C 확신 합의 표본)으로 전체 정확도를 추정한다. Sonnet 도 같은 잣대로 잰다.
+ * 06 판정에서 내린 게이트 표본 판정(층화 표본: A 불일치·B 불확실 전수, C 확신 합의 표본)으로 전체 정확도를 추정한다.
+ * Sonnet 도 같은 잣대로 잰다. 층 모집단 크기는 표본 설계라 review-key.json 에서 읽는다.
  */
-function reportAgainstHumans(rows: Scored[]) {
-  if (!existsSync(HUMAN)) {
-    console.log(`\n[사람 정답] ${HUMAN} 이 없다 — 검토 페이지 db labels 를 {"g001": {...}} 로 내려받아 두면 게이트를 판정한다.`);
+async function reportAgainstHumans(rows: Scored[]) {
+  const labels = await listGateLabels(GATE_SET_KEY);
+  if (labels.length === 0) {
+    console.log("\n[사람 정답] 게이트 표본이 판정 대기열에 없다 — npx tsx scripts/import-judgment-gate.ts 로 들인 뒤 06 판정에서 판정한다.");
     return;
   }
-  const labels = readJson<Record<string, HumanLabel>>(HUMAN);
+  const aboutByKey = new Map(labels.map((label) => [keyOf(label.companyId, label.link), label.about]));
   const keys = readJson<ReviewKey[]>(join(DIR, "review-key.json"));
   const byKey = new Map(rows.map((row) => [keyOf(row.gold.companyId, row.gold.link), row]));
   const judged = keys
-    .map((key) => ({ key, truth: humanTruth(labels[key.id]), row: byKey.get(keyOf(key.companyId, key.link)) }))
+    .map((key) => ({ key, truth: humanTruth({ about: aboutByKey.get(keyOf(key.companyId, key.link)) }), row: byKey.get(keyOf(key.companyId, key.link)) }))
     .filter((entry): entry is { key: ReviewKey; truth: boolean; row: Scored } => entry.truth !== null && entry.row !== undefined);
 
   const required = keys.filter((key) => key.stratum !== "C").length;
@@ -200,7 +202,7 @@ function reportAgainstHumans(rows: Scored[]) {
 }
 
 /**
- * Jev 분석기(분해 질문·회사 프로필)를 gold 272건에 돌려 채점한다. 사람 정답이 있으면 그것으로 게이트를 판정한다.
+ * Jev 분석기(분해 질문·회사 프로필)를 gold 272건에 돌려 채점한다. 06 판정의 게이트 판정이 있으면 그것으로 게이트를 판정한다.
  * 사용: npx tsx scripts/eval-jev-gate.ts [--concurrency=4] [--score-only]
  */
 async function main() {
@@ -227,7 +229,7 @@ async function main() {
   console.log(`  요청 p50 ${latencies[latencies.length >> 1]}ms · p95 ${latencies[Math.floor(latencies.length * 0.95)]}ms · 입력 ${tokens.toLocaleString()} 토큰`);
 
   reportAgainstSonnet(rows);
-  reportAgainstHumans(rows);
+  await reportAgainstHumans(rows);
 }
 
 main()
