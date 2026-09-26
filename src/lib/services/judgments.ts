@@ -7,7 +7,9 @@ export const GATE_SET_KEY = "jev-gate-2026-09";
 
 type QuestionOption = { value: string; label: string; hint?: string; key: string };
 
-export const JUDGMENT_QUESTIONS = {
+export type JudgmentField = "entity" | "role" | "form" | "about";
+
+export const JUDGMENT_QUESTIONS: Record<JudgmentField, QuestionOption[]> = {
   entity: [
     { value: "same", label: "예, 이 회사", key: "1" },
     { value: "other", label: "아니오, 다른 대상", hint: "동명 회사·브랜드·약어", key: "2" },
@@ -30,9 +32,7 @@ export const JUDGMENT_QUESTIONS = {
     { value: "no", label: "아니오", key: "N" },
     { value: "unsure", label: "모르겠음", key: "U" },
   ],
-} satisfies Record<"entity" | "role" | "form" | "about", QuestionOption[]>;
-
-export type JudgmentField = keyof typeof JUDGMENT_QUESTIONS;
+};
 
 const answerOf = (field: JudgmentField) => z.enum(JUDGMENT_QUESTIONS[field].map((option) => option.value) as [string, ...string[]]).nullable().optional();
 
