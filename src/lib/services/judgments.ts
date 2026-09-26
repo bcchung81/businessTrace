@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { EnqueueInput, JudgmentAnswer } from "@/lib/repositories/articleJudgment";
+import type { EnqueueInput, JudgmentAnswer, JudgmentOrigin, JudgmentRow } from "@/lib/repositories/articleJudgment";
 import type { NewsAnalysis } from "@/lib/services/analyzer";
 import type { NewsItem } from "@/lib/services/newsTypes";
 
@@ -167,4 +167,52 @@ export function gateEnqueueRows(items: GateItem[], keys: GateKey[]): EnqueueInpu
       },
     ];
   });
+}
+
+export type JudgmentView = {
+  id: number;
+  companyId: number;
+  companyName: string;
+  officialName: string | null;
+  industry: string | null;
+  ceoName: string | null;
+  aliases: string[];
+  title: string;
+  source: string;
+  published: string;
+  link: string;
+  body: string;
+  origin: JudgmentOrigin;
+  required: boolean;
+  stratum: string | null;
+  answer: JudgmentAnswer;
+  judged: boolean;
+  verdict: string | null;
+};
+
+/**
+ * 판정 화면에 보낼 모양으로 옮긴다. 분석기의 답(verdict)은 주제 판정이 있을 때만 싣는다 — 판정 전에는 페이로드에도 없다.
+ */
+export function toJudgmentView(row: JudgmentRow): JudgmentView {
+  const judged = row.about !== null;
+  return {
+    id: row.id,
+    companyId: row.companyId,
+    companyName: row.company.name,
+    officialName: row.company.officialName,
+    industry: row.company.industry,
+    ceoName: row.company.ceoName,
+    aliases: row.company.aliases,
+    title: row.title,
+    source: row.source,
+    published: row.published,
+    link: row.link,
+    body: row.body,
+    origin: row.origin,
+    required: row.required,
+    stratum: row.stratum,
+    answer: { entity: row.entity, role: row.role, form: row.form, about: row.about, note: row.note },
+    judged,
+    verdict: judged ? modelVerdict(row.modelJson) : null,
+  };
 }
