@@ -136,6 +136,32 @@ describe("createLlmClient", () => {
     );
   });
 
+  it("says the answer was cut off at the token cap instead of blaming the JSON", async () => {
+    const { sdk } = fakeSdk({ ...textMessage('```json\n{"claims": [{"claim": "첫 주장", "supported": true'), stop_reason: "max_tokens" });
+
+    const failure = createLlmClient(sdk).json({ system: "s", prompt: "p", schema });
+
+    await expect(failure).rejects.toBeInstanceOf(LlmParseError);
+    await expect(failure).rejects.toThrow(/잘렸습니다/);
+  });
+
+  it("gives the judge room — 8000 tokens cut 7 of 30 verifications short in the 2026-09-25 batch", async () => {
+    const { sdk, stream } = fakeSdk(textMessage('{"score":7}'));
+
+    await createLlmClient(sdk).json({ system: "s", prompt: "p", schema });
+
+    expect(stream.mock.calls[0][0].max_tokens).toBeGreaterThanOrEqual(32_000);
+  });
+
+  it("accepts paragraph breaks the model writes raw inside a JSON string", async () => {
+    const opinion = z.object({ comprehensive_opinion: z.string() });
+    const { sdk } = fakeSdk(textMessage('{\n  "comprehensive_opinion": "첫 문단입니다.\n\n둘째 문단\t끝."\n}'));
+
+    const result = await createLlmClient(sdk).json({ system: "s", prompt: "p", schema: opinion });
+
+    expect(result.data.comprehensive_opinion).toBe("첫 문단입니다.\n\n둘째 문단\t끝.");
+  });
+
   it("tolerates a fenced code block around the JSON", async () => {
     const { sdk } = fakeSdk(textMessage('```json\n{"score":3}\n```'));
 

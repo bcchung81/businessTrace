@@ -4,7 +4,8 @@ import type { z } from "zod";
 import { createOpenAiClient } from "@/lib/services/llmOpenai";
 import { resolveModel as resolveActiveModel, resolveProvider } from "@/lib/services/llmProvider";
 
-const MAX_TOKENS = 8000;
+/** 응답 상한. 8000 이면 judge 가 기사 여러 건의 주장을 되짚다 잘려 2026-09-25 배치 검증 30건 중 7건이 실패했다. */
+const MAX_TOKENS = 32_000;
 /** 한 호출 상한. SDK 기본(약 10분) × 재시도 3회면 기사 하나가 배치를 40분 붙잡는다. */
 const TIMEOUT_MS = 120_000;
 
@@ -46,6 +47,37 @@ type StreamingMessages = {
   messages: { stream(args: Record<string, unknown>): { finalMessage(): Promise<StreamMessage> } };
 };
 
+/**
+ * JSON 문자열 안에 날것으로 들어간 줄바꿈·탭 같은 제어문자를 이스케이프한다.
+ * 모델은 긴 서술(종합의견)에서 문단을 나누며 줄바꿈을 그대로 넣는다 — 같은 배치 종합의견 30건 중 11건이 이것으로 버려졌다.
+ */
+function escapeControlCharsInStrings(json: string) {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (const char of json) {
+    const code = char.charCodeAt(0);
+    if (!inString) {
+      inString = char === '"';
+      out += char;
+    } else if (escaped) {
+      escaped = false;
+      out += char;
+    } else if (char === "\\") {
+      escaped = true;
+      out += char;
+    } else if (char === '"') {
+      inString = false;
+      out += char;
+    } else if (code < 0x20) {
+      out += char === "\n" ? "\\n" : char === "\r" ? "\\r" : char === "\t" ? "\\t" : `\\u${code.toString(16).padStart(4, "0")}`;
+    } else {
+      out += char;
+    }
+  }
+  return out;
+}
+
 function extractJson(text: string) {
   const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text);
   const candidate = (fenced ? fenced[1] : text).trim();
@@ -54,7 +86,7 @@ function extractJson(text: string) {
   if (start === -1 || end <= start) throw new LlmParseError("모델 응답에서 JSON 을 찾지 못했습니다.");
 
   try {
-    return JSON.parse(candidate.slice(start, end + 1)) as unknown;
+    return JSON.parse(escapeControlCharsInStrings(candidate.slice(start, end + 1))) as unknown;
   } catch {
     throw new LlmParseError("모델 응답의 JSON 을 해석하지 못했습니다.");
   }
@@ -94,6 +126,9 @@ export function createLlmClient(sdk: StreamingMessages, model = resolveModel()):
 
       if (message.stop_reason === "refusal") {
         throw new LlmRefusalError("모델이 이 요청에 대한 응답을 거부했습니다.");
+      }
+      if (message.stop_reason === "max_tokens") {
+        throw new LlmParseError(`모델 응답이 출력 상한(${MAX_TOKENS} 토큰)에서 잘렸습니다.`);
       }
 
       const text = message.content
