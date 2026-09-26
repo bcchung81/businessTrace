@@ -70,7 +70,14 @@ export function JudgmentWorkbench({
     async (before: JudgmentView, patch: Partial<JudgmentAnswer>) => {
       setItems((all) => all.map((item) => (item.id === before.id ? withAnswer(item, patch) : item)));
       setSaveState("저장 중");
-      const result = await save({ id: before.id, ...patch });
+      let result: SaveResult;
+      try {
+        result = await save({ id: before.id, ...patch });
+      } catch (caught) {
+        replace(before);
+        setSaveState(`저장하지 못했습니다 — ${caught instanceof Error ? caught.message : "알 수 없는 오류"}`);
+        return;
+      }
       if (!result.ok) {
         replace(before);
         setSaveState(`저장하지 못했습니다 — ${result.message}`);
@@ -267,7 +274,7 @@ export function JudgmentWorkbench({
               <div className="flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-muted-foreground tabular-nums">
                 <span>
                   {items.findIndex((item) => item.id === current.id) + 1} / {items.length} · {originTag(current)}
-                  {current.stratum ? ` · 층 ${current.stratum}` : ""}
+                  {current.stratum && current.judged ? ` · 층 ${current.stratum}` : ""}
                 </span>
                 <span className="flex gap-1.5">
                   <Button type="button" variant="signal-outline" size="xs" onClick={() => go(-1)}>

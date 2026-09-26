@@ -138,6 +138,27 @@ describe("JudgmentWorkbench", () => {
     expect(await screen.findByText("이미 실행 중입니다 · 3개사")).toBeInTheDocument();
   });
 
+  test("rolls back and says so when saving throws instead of answering", async () => {
+    const save = vi.fn(async () => {
+      throw new Error("network down");
+    });
+    render(<JudgmentWorkbench items={[item(1)]} reflect={[]} save={save as never} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: /예, 주제 기사/ }));
+
+    expect(await screen.findByText(/저장하지 못했습니다/)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /예, 주제 기사/ })).toHaveAttribute("aria-checked", "false");
+  });
+
+  test("keeps the gate stratum hidden until the verdict is saved — it comes from the models' answers", () => {
+    renderBench([item(1, { origin: "gate", required: true, stratum: "A" }), item(2, { origin: "gate", required: true, stratum: "B", answer: { entity: null, role: null, form: null, about: "yes", note: null }, judged: true, verdict: "Sonnet: 주제(0.90) · Jev 1차 0.22" })]);
+
+    expect(screen.queryByText(/층 A/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "전체" }));
+    fireEvent.keyDown(window, { key: "j" });
+    expect(screen.getByText(/층 B/)).toBeInTheDocument();
+  });
+
   test("explains where articles come from when the queue is empty", () => {
     renderBench([]);
 

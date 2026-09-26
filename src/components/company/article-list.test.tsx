@@ -52,4 +52,16 @@ describe("ArticleList", () => {
 
     expect(await screen.findByText("그 실행에서 기사를 찾지 못했습니다.")).toBeInTheDocument();
   });
+
+  test("lets the button be pressed again when queuing throws", async () => {
+    const queue = vi.fn(async () => {
+      throw new Error("network down");
+    });
+    render(<ArticleList companyId={5} runId={40} articles={[row("https://n/1")]} queue={queue as never} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "판정 대기열에 올리기" }));
+
+    expect(await screen.findByText(/올리지 못했습니다/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "판정 대기열에 올리기" })).toBeEnabled();
+  });
 });

@@ -45,7 +45,14 @@ export function ArticleList({
   const add = async (link: string) => {
     setBusy(link);
     setMessage(null);
-    const result = await queue({ companyId, runId, link });
+    let result: QueueResult;
+    try {
+      result = await queue({ companyId, runId, link });
+    } catch (caught) {
+      setBusy(null);
+      setMessage(`대기열에 올리지 못했습니다 — ${caught instanceof Error ? caught.message : "알 수 없는 오류"}`);
+      return;
+    }
     setBusy(null);
     if (!result.ok) {
       setMessage(result.message);
