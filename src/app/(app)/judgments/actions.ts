@@ -19,6 +19,7 @@ function revalidate(companyId: number) {
 
 /**
  * 판정 한 건의 준 필드만 저장하고, 주제 판정이 있으면 그때 분석기의 답을 함께 돌려준다.
+ * 판정 화면은 다시 그리지 않는다 — 응답이 저장된 행을 싣고, 반영 대기는 화면이 주제 판정 때만 새로 읽는다.
  */
 export async function saveJudgmentAction(input: { id: number } & Partial<JudgmentAnswer>): Promise<{ ok: true; judgment: JudgmentView } | Failure> {
   const userId = await currentUserId();
@@ -31,7 +32,7 @@ export async function saveJudgmentAction(input: { id: number } & Partial<Judgmen
   if (!exists) return { ok: false, message: "판정할 기사를 찾지 못했습니다." };
 
   const row = await saveJudgment(id, patch, userId);
-  revalidate(row.companyId);
+  revalidatePath(`/companies/${row.companyId}`);
   return { ok: true, judgment: toJudgmentView(row) };
 }
 

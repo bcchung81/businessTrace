@@ -6,6 +6,7 @@ import { enqueueJudgments } from "@/lib/repositories/articleJudgment";
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 import { auth } from "@/auth";
+import { revalidatePath } from "next/cache";
 import { queueArticleAction, saveJudgmentAction } from "@/app/(app)/judgments/actions";
 
 async function queuedJudgment() {
@@ -61,6 +62,16 @@ describe("judgment actions", () => {
 
     expect(partial).toMatchObject({ ok: true, judgment: { judged: false, verdict: null, answer: { entity: "same", about: null } } });
     expect(decided).toMatchObject({ ok: true, judgment: { judged: true, verdict: "분석기: 보류 · 확신 0.45 · LLM · 실행 #312", answer: { entity: "same", about: "no" } } });
+  });
+
+  test("do not re-render the whole queue on every save — the answer already carries the saved row", async () => {
+    const { company, judgment } = await queuedJudgment();
+    vi.mocked(revalidatePath).mockClear();
+
+    await saveJudgmentAction({ id: judgment.id, note: "메모" });
+
+    expect(revalidatePath).not.toHaveBeenCalledWith("/judgments");
+    expect(revalidatePath).toHaveBeenCalledWith(`/companies/${company.id}`);
   });
 
   test("say so when the judgment is gone", async () => {
