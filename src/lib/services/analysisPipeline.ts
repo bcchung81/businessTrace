@@ -5,11 +5,11 @@ import { saveVerification } from "@/lib/repositories/verificationResult";
 import { analyzeCompany, type AnalysisResult, type AnalyzeEvent, type NewsAnalysis } from "@/lib/services/analyzer";
 import { applyJudgments, heldEnqueueRows } from "@/lib/services/judgments";
 import { extractAnalysisEvents, type NewEvent } from "@/lib/services/eventRules";
-import { defaultLlmClient, resolveModel, type Usage } from "@/lib/services/llm";
+import { defaultLlmClient, resolveModel, type LlmClient, type Usage } from "@/lib/services/llm";
 import { resolveProvider } from "@/lib/services/llmProvider";
 import { resolveAnalyzer, type AnalyzerKind } from "@/lib/services/analyzerChoice";
 import { analyzeCompanyWithJev, type CompanyProfile } from "@/lib/services/jevAnalyzer";
-import { DEFAULT_JEV_MODEL, defaultJevClient } from "@/lib/services/typesafe";
+import { DEFAULT_JEV_MODEL, defaultJevClient, type JevClient } from "@/lib/services/typesafe";
 import { findCompanyIdentity } from "@/lib/repositories/companyRepository";
 import { parseAliases } from "@/lib/services/collectForCompany";
 import { logEvent } from "@/lib/services/logger";
@@ -74,6 +74,15 @@ export function analysisPath(llmModel: string, env: Record<string, string | unde
 }
 
 /**
+ * 분석기를 고르고, 파이프라인이 넘긴 옵션(모델·사실·프로필·강제 주제)을 통째로 넘긴다.
+ * 필드를 하나씩 옮겨 적으면 새 옵션이 조용히 빠진다 — 사람의 "주제" 판정이 실제로 그렇게 버려졌다.
+ */
+export function analyzerFor(clients: { llm: LlmClient; jev: JevClient | null }): PipelineDeps["analyze"] {
+  return (name, news, deps) =>
+    clients.jev ? analyzeCompanyWithJev(name, news, { ...deps, jev: clients.jev, llm: clients.llm }) : analyzeCompany(name, news, { ...deps, llm: clients.llm });
+}
+
+/**
  * 실제 LLM(과 ANALYZER=jev 면 Jev)으로 분석·검증하는 기본 의존성.
  */
 export function defaultPipelineDeps(model = resolveModel()): PipelineDeps {
@@ -83,10 +92,7 @@ export function defaultPipelineDeps(model = resolveModel()): PipelineDeps {
   return {
     model: path.model,
     formulaVersion: path.formulaVersion,
-    analyze: (name, news, deps) =>
-      jev
-        ? analyzeCompanyWithJev(name, news, { jev, llm, model: deps.model, facts: deps.facts, profile: deps.profile })
-        : analyzeCompany(name, news, { llm, model: deps.model, facts: deps.facts, profile: deps.profile }),
+    analyze: analyzerFor({ llm, jev }),
     verify: (result) => verifyAnalysis(result, { llm }),
     persistEvents: upsertEvents,
     loadFacts: async (companyId) => publicFactLines(buildCompanyFacts({ businessNo: null, snapshots: await listSourceSnapshots(companyId) })),

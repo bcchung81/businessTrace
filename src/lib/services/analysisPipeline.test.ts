@@ -4,7 +4,9 @@ import { resetDatabase } from "@/lib/test-support/db";
 import { findVerification } from "@/lib/repositories/verificationResult";
 import { listEvents } from "@/lib/repositories/eventRepository";
 import type { AnalysisResult, AnalyzeEvent } from "@/lib/services/analyzer";
-import { analysisPath, runCompanyAnalysis, type PipelineDeps } from "@/lib/services/analysisPipeline";
+import { analysisPath, analyzerFor, runCompanyAnalysis, type PipelineDeps } from "@/lib/services/analysisPipeline";
+import type { LlmClient } from "@/lib/services/llm";
+import type { JevClient } from "@/lib/services/typesafe";
 import type { NewsItem } from "@/lib/services/newsTypes";
 import type { VerificationOutput } from "@/lib/services/verification";
 
@@ -432,5 +434,44 @@ describe("analysisPath", () => {
       formulaVersion: "v3-jev",
     });
     expect(analysisPath("claude-sonnet-5", { ANALYZER: "jev" }).model).toBe("jev-latest+claude-sonnet-5");
+  });
+});
+
+describe("analyzerFor — the analyzer production uses", () => {
+  const usage = { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 };
+  const rejectingLlm = (): LlmClient => ({
+    json: vi.fn(async ({ prompt }: { prompt: string }) => {
+      if (prompt.includes("동향실적을 분석해주세요")) {
+        return { data: { trend_analysis: { is_about_company: "N", about_confidence: 0.1, news_trend_summary: "요약", sentiment_score: 0, sentiment_label: "중립" } }, usage };
+      }
+      if (prompt.includes("수상을 받았는지 찾아주세요")) return { data: { award_analysis: { is_award_related: "N", award_name: "", award_reason: "" } }, usage };
+      if (prompt.includes("투자 관련 정보를 찾아주세요")) return { data: { investment_analysis: { is_investment_related: "N", investment_name: "", investment_reason: "" } }, usage };
+      return { data: { comprehensive_opinion: "종합의견" }, usage };
+    }) as unknown as LlmClient["json"],
+  });
+
+  async function firstAnalysis(generator: AsyncGenerator<AnalyzeEvent>) {
+    const events: AnalyzeEvent[] = [];
+    for await (const event of generator) events.push(event);
+    const last = events.at(-1);
+    if (last?.type !== "complete") throw new Error(`expected complete, got ${last?.type}`);
+    return last.result.analyses[0];
+  }
+
+  it("carries a person's 'about' verdict into the LLM analyzer", async () => {
+    const analyze = analyzerFor({ llm: rejectingLlm(), jev: null });
+
+    const analysis = await firstAnalysis(analyze("누아", [NEWS[0]], { model: "m", forceAbout: new Set([NEWS[0].link]) }));
+
+    expect(analysis.isAboutCompany).toBe(true);
+  });
+
+  it("carries a person's 'about' verdict into the Jev analyzer", async () => {
+    const jev: JevClient = { ask: vi.fn(async () => ({ model: "jev", answers: { same_entity: { type: "noul" as const, noul: 0.1 } }, inputTokens: 1 })) };
+    const analyze = analyzerFor({ llm: rejectingLlm(), jev });
+
+    const analysis = await firstAnalysis(analyze("누아", [NEWS[0]], { model: "m", forceAbout: new Set([NEWS[0].link]) }));
+
+    expect(analysis.isAboutCompany).toBe(true);
   });
 });
