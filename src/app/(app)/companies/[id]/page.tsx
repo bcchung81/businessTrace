@@ -9,6 +9,10 @@ import { listSourceSnapshots } from "@/lib/repositories/sourceSnapshot";
 import { parseId } from "@/lib/services/routeParams";
 import { buildExplanation } from "@/lib/repositories/explainInputs";
 import { buildReviewItems } from "@/lib/repositories/reviewItems";
+import { latestAnalysedArticles } from "@/lib/repositories/analysisRun";
+import { findJudgmentsByLink } from "@/lib/repositories/articleJudgment";
+import { ArticleList } from "@/components/company/article-list";
+import { queueArticleAction } from "@/app/(app)/judgments/actions";
 import { ReviewBlock } from "@/components/company/review-block";
 import { confirmEventsAction, decideDartAction, decideFscAction, decideNpsAction, holdNpsAction, reviewVerificationAction, saveAliasesAction, saveBusinessNoAction, undoVerificationReviewAction } from "@/app/(app)/companies/[id]/actions";
 import { EditCompanyDialog } from "@/components/company/edit-company-dialog";
@@ -62,6 +66,7 @@ export default async function CompanyDetailPage({ params, searchParams }: PagePr
   const facts = buildCompanyFacts({ businessNo: company.businessNo, snapshots });
   const queue = parseQueue((await searchParams).queue);
   const neighbours = await listNeighbours(company.id, await queueIds(queue, company.year));
+  const [latest, judgments] = await Promise.all([latestAnalysedArticles(company.id), findJudgmentsByLink(company.id)]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -185,6 +190,24 @@ export default async function CompanyDetailPage({ params, searchParams }: PagePr
 
       <Panel index="02" title="사건 이력" id="events" className="scroll-mt-20">
         <EventTimeline events={events} />
+      </Panel>
+
+      <Panel
+        index="03"
+        title="기사"
+        id="articles"
+        className="scroll-mt-20"
+        note={latest ? `마지막 분석 실행 #${latest.runId} · ${latest.articles.length}건 · 분석기가 틀려 보이면 판정 대기열에 올린다` : undefined}
+        empty="아직 끝낸 분석이 없습니다."
+      >
+        {latest && latest.articles.length > 0 ? (
+          <ArticleList
+            companyId={company.id}
+            runId={latest.runId}
+            articles={latest.articles.map((article) => ({ ...article, judgment: judgments.get(article.link) ?? null }))}
+            queue={queueArticleAction}
+          />
+        ) : null}
       </Panel>
     </div>
   );

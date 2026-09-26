@@ -34,6 +34,8 @@ describe("buildRibbonGroups", () => {
     ],
     needsReviewItems: [{ id: 9, name: "㈜나", reasons: ["검토 필요"], failed: ["근거 충실도", "출처 인용"] }],
     openEvents: [{ id: 11, companyId: 7, companyName: "㈜다", title: "폐업 위험", severity: "alert" as const }],
+    pendingJudgments: 3,
+    reflectPending: 2,
     year: 2025,
   };
 
@@ -65,7 +67,13 @@ describe("buildRibbonGroups", () => {
       },
       { text: "미확인 경보·주의 16", todo: { kind: "events", rows: [{ companyId: 7, name: "㈜다", note: "경보 · 폐업 위험", selectable: true }] } },
       { text: "검토 필요 7", todo: { kind: "verification", rows: [{ companyId: 9, name: "㈜나", note: "근거 충실도 · 출처 인용", selectable: true }] } },
+      { text: "기사 판정 3건 · 반영 대기 2개사", href: "/judgments" },
     ]);
+  });
+
+  it("links the judgment queue even at zero and drops the re-analysis note when nothing waits", () => {
+    const [, todo] = buildRibbonGroups({ ...base, pendingJudgments: 0, reflectPending: 0 });
+    expect(todo.items.at(-1)).toEqual({ text: "기사 판정 0건", href: "/judgments" });
   });
 
   it("falls back to a plain label when no gate can be named", () => {
@@ -84,11 +92,11 @@ describe("buildRibbonGroups", () => {
   });
 
   it("keeps zero counts visible and dashes out dates that never happened", () => {
-    const [dates, todo] = buildRibbonGroups({ ...base, latestNewsAt: null, fullSourceRefreshAt: null, reviewCompanies: 0, openAlertNotice: 0, needsReview: 0, reviewItems: [], needsReviewItems: [], openEvents: [] });
+    const [dates, todo] = buildRibbonGroups({ ...base, latestNewsAt: null, fullSourceRefreshAt: null, reviewCompanies: 0, openAlertNotice: 0, needsReview: 0, reviewItems: [], needsReviewItems: [], openEvents: [], pendingJudgments: 0, reflectPending: 0 });
     expect(dates.items[0].text).toBe("뉴스 —");
     expect(dates.items[1].text).toBe("원천 —");
-    expect(todo.items.map((i) => i.text)).toEqual(["확인 필요 0개사", "미확인 경보·주의 0", "검토 필요 0"]);
-    expect(todo.items.every((i) => i.href === undefined && i.todo === undefined)).toBe(true);
+    expect(todo.items.map((i) => i.text)).toEqual(["확인 필요 0개사", "미확인 경보·주의 0", "검토 필요 0", "기사 판정 0건"]);
+    expect(todo.items.slice(0, 3).every((i) => i.href === undefined && i.todo === undefined)).toBe(true);
   });
 
   it("groups open events by company so one company is one row, with the count and the latest title", () => {

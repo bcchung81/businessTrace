@@ -35,12 +35,13 @@ describe("AppShell", () => {
     render(<AppShell>본문</AppShell>);
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
 
-    expect(within(nav).getAllByRole("link")).toHaveLength(5);
+    expect(within(nav).getAllByRole("link")).toHaveLength(6);
     expect(within(nav).getByRole("link", { name: /동향/ })).toHaveAttribute("href", "/dashboard?year=2025");
     expect(within(nav).getByRole("link", { name: /기업/ })).toHaveAttribute("href", "/companies?year=2025");
     expect(within(nav).getByRole("link", { name: /랭킹/ })).toHaveAttribute("href", "/ranking?year=2025");
     expect(within(nav).getByRole("link", { name: /이력/ })).toHaveAttribute("href", "/history?year=2025");
     expect(within(nav).getByRole("link", { name: /리포트/ })).toHaveAttribute("href", "/reports?year=2025");
+    expect(within(nav).getByRole("link", { name: /판정/ })).toHaveAttribute("href", "/judgments?year=2025");
     expect(within(nav).getByRole("link", { name: /동향/ })).toHaveClass("lg:[writing-mode:vertical-rl]");
   });
 
@@ -65,6 +66,7 @@ describe("AppShell", () => {
     expect(within(nav).getByRole("link", { name: /랭킹/ })).toHaveTextContent("03");
     expect(within(nav).getByRole("link", { name: /이력/ })).toHaveTextContent("04");
     expect(within(nav).getByRole("link", { name: /리포트/ })).toHaveTextContent("05");
+    expect(within(nav).getByRole("link", { name: /판정/ })).toHaveTextContent("06");
     const rail = nav.closest("aside");
     expect(rail).toHaveClass("lg:fixed");
     expect(rail?.className).toContain("lg:right-[max(");

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "@/lib/test-support/db";
-import { createCollectionRun, createRun, listRunHistory, summariseRunActivity } from "@/lib/repositories/analysisRun";
+import { createCollectionRun, createRun, latestAnalysedArticles, listRunHistory, summariseRunActivity } from "@/lib/repositories/analysisRun";
 
 async function seedCompanyAndUser() {
   const company = await prisma.company.create({ data: { name: "크립토랩", year: 2024 } });
@@ -206,5 +206,41 @@ describe("listRunHistory", () => {
     }
 
     expect(await listRunHistory({ year: company.year })).toHaveLength(105);
+  });
+});
+
+describe("latestAnalysedArticles", () => {
+  beforeEach(resetDatabase);
+
+  const analysis = (link: string, isAboutCompany: boolean, confidence: number, held = false) => ({
+    news: { title: `제목 ${link}`, link, description: "", content: "본문", published: "2026-09-20", source: "전자신문", provider: "naver", titleMatch: true, mentions: 2, relevance: "primary" },
+    isAboutCompany,
+    ...(held ? { held: true } : {}),
+    trend: { is_about_company: isAboutCompany ? "Y" : "N", about_confidence: confidence, news_trend_summary: "요약", sentiment_score: 0, sentiment_label: "중립" },
+    award: { is_award_related: "N", award_name: "", award_reason: "" },
+    investment: { is_investment_related: "N", investment_name: "", investment_reason: "" },
+  });
+
+  it("lists the articles of the last finished analysis, skipping collect-only and failed runs", async () => {
+    const { company, user } = await seedCompanyAndUser();
+    const finished = await prisma.analysisRun.create({
+      data: { companyId: company.id, userId: user.id, model: "m", status: "completed", newsJson: "[]", createdAt: new Date("2026-09-20T00:00:00Z"), resultJson: JSON.stringify({ analyses: [analysis("https://n/1", true, 0.9), analysis("https://n/2", false, 0.5, true)] }) },
+    });
+    await prisma.analysisRun.create({ data: { companyId: company.id, userId: user.id, model: "m", status: "collected", newsJson: "[]", createdAt: new Date("2026-09-21T00:00:00Z") } });
+    await prisma.analysisRun.create({ data: { companyId: company.id, userId: user.id, model: "m", status: "failed", newsJson: "[]", createdAt: new Date("2026-09-22T00:00:00Z") } });
+
+    expect(await latestAnalysedArticles(company.id)).toEqual({
+      runId: finished.id,
+      articles: [
+        { link: "https://n/1", title: "제목 https://n/1", source: "전자신문", published: "2026-09-20", isAbout: true, held: false, confidence: 0.9 },
+        { link: "https://n/2", title: "제목 https://n/2", source: "전자신문", published: "2026-09-20", isAbout: false, held: true, confidence: 0.5 },
+      ],
+    });
+  });
+
+  it("has nothing to list before any analysis finished", async () => {
+    const { company } = await seedCompanyAndUser();
+
+    expect(await latestAnalysedArticles(company.id)).toBeNull();
   });
 });

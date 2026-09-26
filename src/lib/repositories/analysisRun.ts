@@ -59,6 +59,39 @@ export async function createCollectionRun(input: {
  * 분석 결과와 토큰 사용량을 저장하고 실행을 닫는다.
  * 집계 대상이 0건이면 completed 가 아니라 no_news 다.
  */
+export type AnalysedArticle = { link: string; title: string; source: string; published: string; isAbout: boolean; held: boolean; confidence: number | null };
+
+/**
+ * 기업이 마지막으로 끝낸 분석(completed·no_news)의 기사 — 기업 상세에서 판정 대기열에 올릴 후보다.
+ * 수집만 한 실행과 실패한 실행에는 분석기의 판정이 없다.
+ */
+export async function latestAnalysedArticles(companyId: number): Promise<{ runId: number; articles: AnalysedArticle[] } | null> {
+  const run = await prisma.analysisRun.findFirst({
+    where: { companyId, status: { in: ["completed", "no_news"] } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: { id: true, resultJson: true },
+  });
+  if (!run) return null;
+  let analyses: AnalysisResult["analyses"] = [];
+  try {
+    analyses = (JSON.parse(run.resultJson ?? "{}") as Partial<AnalysisResult>).analyses ?? [];
+  } catch {
+    analyses = [];
+  }
+  return {
+    runId: run.id,
+    articles: analyses.map((analysis) => ({
+      link: analysis.news.link,
+      title: analysis.news.title,
+      source: analysis.news.source,
+      published: analysis.news.published,
+      isAbout: analysis.isAboutCompany,
+      held: analysis.held === true,
+      confidence: analysis.trend.about_confidence ?? null,
+    })),
+  };
+}
+
 export async function completeRun(id: number, result: AnalysisResult) {
   return prisma.analysisRun.update({
     where: { id },

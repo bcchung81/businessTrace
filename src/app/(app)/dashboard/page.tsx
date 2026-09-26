@@ -13,6 +13,7 @@ import { listLatestVerifications } from "@/lib/repositories/verificationResult";
 import { summariseRunActivity } from "@/lib/repositories/analysisRun";
 import { summariseSourceFreshness } from "@/lib/repositories/sourceSnapshot";
 import { buildRibbonGroups } from "@/lib/services/freshness";
+import { countPendingJudgments, listReflectPending } from "@/lib/repositories/articleJudgment";
 import { countReviewCompanies, fullSourceRefreshAt, summariseCells, summariseCollection } from "@/lib/repositories/pipelineRepo";
 import { buildPipelineFacts } from "@/lib/services/pipelineFacts";
 import { PipelineBand } from "@/components/dashboard/pipeline-band";
@@ -105,6 +106,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     staleNews: silence.length,
     reviewCompanies: review.companies,
   });
+  const [pendingJudgments, reflectPending] = await Promise.all([countPendingJudgments(), listReflectPending()]);
   const ribbon = buildRibbonGroups({
     now,
     latestNewsAt: activity.latestAt,
@@ -116,6 +118,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     reviewItems: review.items,
     needsReviewItems: review.items.filter((item) => review.needsReviewIds.includes(item.id)),
     openEvents: review.openEvents,
+    pendingJudgments,
+    reflectPending: reflectPending.length,
     year,
   });
 

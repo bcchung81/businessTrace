@@ -38,6 +38,10 @@ export type RibbonInput = {
   reviewItems: ReviewListItem[];
   needsReviewItems: ReviewListItem[];
   openEvents: OpenEventItem[];
+  /** 사람이 아직 판정하지 않은 기사 수(06 판정 대기열). */
+  pendingJudgments: number;
+  /** 판정이 마지막 분석보다 늦어 다시 분석해야 하는 기업 수. */
+  reflectPending: number;
   year: number;
 };
 
@@ -143,6 +147,10 @@ export function buildRibbonGroups(input: RibbonInput): RibbonGroup[] {
         {
           text: `검토 필요 ${input.needsReview}`,
           todo: todo("verification", input.needsReviewItems.map((item) => ({ companyId: item.id, name: item.name, note: item.failed.length > 0 ? item.failed.join(" · ") : "검증 검토", selectable: true }))),
+        },
+        {
+          text: `기사 판정 ${input.pendingJudgments}건${input.reflectPending > 0 ? ` · 반영 대기 ${input.reflectPending}개사` : ""}`,
+          href: "/judgments",
         },
       ],
     },
