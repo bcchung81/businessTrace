@@ -1,7 +1,9 @@
 import { completeRun, createRun, failRun } from "@/lib/repositories/analysisRun";
+import { enqueueJudgments, judgmentOverrides, type EnqueueInput } from "@/lib/repositories/articleJudgment";
 import { upsertEvents } from "@/lib/repositories/eventRepository";
 import { saveVerification } from "@/lib/repositories/verificationResult";
-import { analyzeCompany, type AnalysisResult, type AnalyzeEvent } from "@/lib/services/analyzer";
+import { analyzeCompany, type AnalysisResult, type AnalyzeEvent, type NewsAnalysis } from "@/lib/services/analyzer";
+import { applyJudgments, heldEnqueueRows } from "@/lib/services/judgments";
 import { extractAnalysisEvents, type NewEvent } from "@/lib/services/eventRules";
 import { defaultLlmClient, resolveModel, type Usage } from "@/lib/services/llm";
 import { resolveProvider } from "@/lib/services/llmProvider";
@@ -28,13 +30,17 @@ export type PipelineDeps = {
   model: string;
   /** 실행 기록에 남길 분석 경로 — 없으면 스키마 기본값. */
   formulaVersion?: string;
-  analyze: (name: string, news: NewsItem[], deps: { model: string; facts?: string[]; profile?: CompanyProfile }) => AsyncGenerator<AnalyzeEvent>;
+  analyze: (name: string, news: NewsItem[], deps: { model: string; facts?: string[]; profile?: CompanyProfile; forceAbout?: ReadonlySet<string> }) => AsyncGenerator<AnalyzeEvent>;
   verify: (result: AnalysisResult) => Promise<VerificationOutput>;
   /** 기업의 공공데이터 사실을 한 줄씩 낸다 — 없으면 종합의견은 뉴스 통계만 본다. */
   loadFacts?: (companyId: number) => Promise<string[]>;
-  /** 동명 타사를 가리는 데 쓸 회사 식별 정보 — Jev 분석기만 쓴다. */
+  /** 동명 타사를 가리는 데 쓸 회사 식별 정보 — 두 분석기가 모두 쓴다. */
   loadProfile?: (companyId: number) => Promise<CompanyProfile | null>;
   persistEvents?: (events: NewEvent[]) => Promise<unknown>;
+  /** 사람 판정 — "주제 아님" 링크는 분석에서 빼고 "주제" 링크는 주제로 강제한다. */
+  loadJudgments?: (companyId: number) => Promise<{ exclude: string[]; include: string[] }>;
+  /** 분석기가 보류한 기사를 판정 대기열에 올린다. */
+  enqueueHeld?: (rows: EnqueueInput[]) => Promise<unknown>;
   onEvent?: (event: PipelineEvent) => void;
   isOpen?: () => boolean;
 };
@@ -47,6 +53,7 @@ export type PipelineOutcome = {
 };
 
 const NO_USAGE: Usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
+const NO_JUDGMENTS = { exclude: [] as string[], include: [] as string[] };
 
 function addUsage(a: Usage, b: Usage): Usage {
   return {
@@ -83,6 +90,8 @@ export function defaultPipelineDeps(model = resolveModel()): PipelineDeps {
     verify: (result) => verifyAnalysis(result, { llm }),
     persistEvents: upsertEvents,
     loadFacts: async (companyId) => publicFactLines(buildCompanyFacts({ businessNo: null, snapshots: await listSourceSnapshots(companyId) })),
+    loadJudgments: judgmentOverrides,
+    enqueueHeld: enqueueJudgments,
     loadProfile: async (companyId) => {
       const row = await findCompanyIdentity(companyId);
       return row ? { name: row.name, officialName: row.officialName, industry: row.industry, ceoName: row.ceoName, aliases: parseAliases(row.aliases) } : null;
@@ -128,6 +137,20 @@ export async function runCompanyAnalysis(
   return outcome;
 }
 
+/**
+ * 보류 기사를 판정 대기열에 올린다. 적재가 실패해도 분석·검증은 멈추지 않는다 — 대기열은 부가 기능이다.
+ */
+async function queueHeld(deps: PipelineDeps, companyId: number, run: { id: number; formulaVersion: string }, analyses: NewsAnalysis[]) {
+  if (!deps.enqueueHeld) return;
+  const rows = heldEnqueueRows({ companyId, runId: run.id, formulaVersion: run.formulaVersion, analyses });
+  if (rows.length === 0) return;
+  try {
+    await deps.enqueueHeld(rows);
+  } catch (error) {
+    logEvent("warn", "analysis.held_queue_failed", { companyId, runId: run.id, error });
+  }
+}
+
 async function analyseAndVerify(
   input: { company: { id: number; name: string }; userId: number; news: NewsItem[]; duplicatesRemoved?: number },
   deps: PipelineDeps,
@@ -147,7 +170,14 @@ async function analyseAndVerify(
   let usage = NO_USAGE;
   let analyseError: string | null = null;
 
-  const primary = input.news.filter((item) => item.relevance === "primary");
+  const overrides = deps.loadJudgments
+    ? await deps.loadJudgments(input.company.id).catch((error: unknown) => {
+        logEvent("warn", "analysis.judgments_unavailable", { companyId: input.company.id, error });
+        return NO_JUDGMENTS;
+      })
+    : NO_JUDGMENTS;
+  const judged = applyJudgments(input.news, overrides);
+  const primary = judged.news.filter((item) => item.relevance === "primary");
   if (primary.length === 0) {
     const result = emptyResult(input.company.name, deps.model, input.news.length);
     await completeRun(run.id, result);
@@ -159,7 +189,7 @@ async function analyseAndVerify(
   const profile = deps.loadProfile ? ((await deps.loadProfile(input.company.id).catch(() => null)) ?? undefined) : undefined;
 
   try {
-    for await (const event of deps.analyze(input.company.name, primary, { model: deps.model, facts, profile })) {
+    for await (const event of deps.analyze(input.company.name, primary, { model: deps.model, facts, profile, forceAbout: judged.forceAbout })) {
       if (!open()) {
         await failRun(run.id, "클라이언트가 연결을 끊었습니다.");
         return { runId: run.id, status: "aborted", usage };
@@ -172,6 +202,7 @@ async function analyseAndVerify(
 
       clock.analyzed = performance.now();
       await completeRun(run.id, event.result);
+      await queueHeld(deps, input.company.id, run, event.result.analyses);
       usage = addUsage(usage, event.result.usage);
       const partial = event.result.fallbacks > 0 ? { message: `LLM 응답 실패 ${event.result.fallbacks}건을 기본값으로 메움` } : {};
       if (event.result.fallbacks > 0) {

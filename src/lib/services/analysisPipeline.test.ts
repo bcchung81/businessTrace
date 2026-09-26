@@ -172,6 +172,85 @@ describe("runCompanyAnalysis", () => {
   });
 });
 
+describe("runCompanyAnalysis — human judgments", () => {
+  beforeEach(resetDatabase);
+
+  const heldAnalysis = (link: string): AnalysisResult["analyses"][number] => ({
+    news: { ...NEWS[0], link },
+    isAboutCompany: false,
+    held: true,
+    trend: { is_about_company: "Y", about_confidence: 0.5, news_trend_summary: "요약", sentiment_score: 0, sentiment_label: "중립", negative_kind: "none", growth_signals: [] },
+    award: { is_award_related: "N", award_name: "", award_reason: "" },
+    investment: { is_investment_related: "N", investment_name: "", investment_reason: "", investment_round: "none", investment_amount_krw: null },
+  });
+
+  it("keeps articles judged not about the company out of the analysis and forces the ones judged about it", async () => {
+    const { company, user } = await seed();
+    const news = [NEWS[0], { ...NEWS[0], link: "https://n/2", relevance: "mention" as const }, { ...NEWS[0], link: "https://n/3" }];
+    let seen: string[] = [];
+    let forced: string[] = [];
+
+    await runCompanyAnalysis(
+      { company, userId: user.id, news },
+      deps({
+        loadJudgments: async () => ({ exclude: ["https://n/1"], include: ["https://n/2"] }),
+        analyze: (_name, items, analyzeDeps) => {
+          seen = items.map((item) => item.link);
+          forced = [...(analyzeDeps.forceAbout ?? [])];
+          return completes(result());
+        },
+      }),
+    );
+
+    expect(seen).toEqual(["https://n/2", "https://n/3"]);
+    expect(forced).toEqual(["https://n/2"]);
+  });
+
+  it("ends with no news when every article was judged not about the company", async () => {
+    const { company, user } = await seed();
+    const analyze = vi.fn(() => completes(result()));
+
+    const outcome = await runCompanyAnalysis({ company, userId: user.id, news: NEWS }, deps({ loadJudgments: async () => ({ exclude: ["https://n/1"], include: [] }), analyze }));
+
+    expect(outcome.status).toBe("no_news");
+    expect(analyze).not.toHaveBeenCalled();
+  });
+
+  it("queues held articles for a person once the analysis is done, even when nothing was about the company", async () => {
+    const { company, user } = await seed();
+    const enqueueHeld = vi.fn(async () => 1);
+    const noneAbout = result({ analyses: [heldAnalysis("https://n/1")], stats: { ...result().stats, scoredNews: 0, excludedNews: 1, averageSentiment: null } });
+
+    const outcome = await runCompanyAnalysis({ company, userId: user.id, news: NEWS }, deps({ formulaVersion: "v2-anthropic", analyze: () => completes(noneAbout), enqueueHeld }));
+
+    expect(outcome.status).toBe("no_news");
+    expect(enqueueHeld).toHaveBeenCalledWith([
+      expect.objectContaining({ companyId: company.id, link: "https://n/1", origin: "held", model: expect.objectContaining({ runId: outcome.runId, formulaVersion: "v2-anthropic", held: true }) }),
+    ]);
+  });
+
+  it("keeps analysing and verifying when judgments cannot be read or queued", async () => {
+    const { company, user } = await seed();
+    const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const outcome = await runCompanyAnalysis(
+      { company, userId: user.id, news: NEWS },
+      deps({
+        loadJudgments: async () => {
+          throw new Error("db busy");
+        },
+        enqueueHeld: async () => {
+          throw new Error("db busy");
+        },
+        analyze: () => completes(result({ analyses: [heldAnalysis("https://n/9")] })),
+      }),
+    );
+    spy.mockRestore();
+
+    expect(outcome.status).toBe("verified");
+  });
+});
+
 describe("runCompanyAnalysis — relevance filter", () => {
   beforeEach(resetDatabase);
 
