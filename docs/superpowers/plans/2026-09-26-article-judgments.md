@@ -2,6 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 > **실행 방식:** 사용자가 "추천안대로 끝까지 개발"을 지시했다(2026-09-26) — executing-plans 로 이 세션에서 인라인 실행한다. 작업 브랜치는 main.
+> **진행(2026-09-26):** T1~T9 완료·커밋(`e1cc7b3`..T9). 결정 기록은 `.superpowers/sdd/2026-09-26-article-judgments/progress.md` 의 Ruling 줄과 인계 문서 `2026-09-26-next-session.md`.
 
 **Goal:** 사람 정답셋 검토 화면을 앱의 06 판정 탭으로 들이고, 판정을 다음 분석에 반영하며, 분석기 보류 기사가 자동으로 대기열에 오게 한다.
 
