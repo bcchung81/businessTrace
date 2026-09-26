@@ -5,7 +5,7 @@ import { createOpenAiClient } from "@/lib/services/llmOpenai";
 import { resolveModel as resolveActiveModel, resolveProvider } from "@/lib/services/llmProvider";
 
 /** 응답 상한. 8000 이면 judge 가 기사 여러 건의 주장을 되짚다 잘려 2026-09-25 배치 검증 30건 중 7건이 실패했다. */
-const MAX_TOKENS = 32_000;
+export const MAX_TOKENS = 32_000;
 /** 한 호출 상한. SDK 기본(약 10분) × 재시도 3회면 기사 하나가 배치를 40분 붙잡는다. */
 const TIMEOUT_MS = 120_000;
 

@@ -1,12 +1,10 @@
 import { z } from "zod";
-import { LlmParseError, LlmRefusalError, type LlmClient, type LlmRequest } from "@/lib/services/llm";
+import { LlmParseError, LlmRefusalError, MAX_TOKENS, type LlmClient, type LlmRequest } from "@/lib/services/llm";
 import { resolveModel } from "@/lib/services/llmProvider";
-
-const MAX_TOKENS = 8000;
 
 type ChatMessage = { role: "system" | "user"; content: string };
 type Completion = {
-  choices: Array<{ message: { content?: string | null; refusal?: string | null } }>;
+  choices: Array<{ message: { content?: string | null; refusal?: string | null }; finish_reason?: string | null }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } };
 };
 type ChatCompletions = { chat: { completions: { create(body: Record<string, unknown>): Promise<Completion> } } };
@@ -40,6 +38,9 @@ export function createOpenAiClient(sdk: ChatCompletions, model = resolveModel())
 
       const message = completion.choices[0]?.message;
       if (message?.refusal) throw new LlmRefusalError(message.refusal);
+      if (completion.choices[0]?.finish_reason === "length") {
+        throw new LlmParseError(`모델 응답이 출력 상한(${MAX_TOKENS} 토큰)에서 잘렸습니다.`);
+      }
 
       let raw: unknown;
       try {

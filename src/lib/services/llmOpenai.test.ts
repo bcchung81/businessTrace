@@ -54,6 +54,23 @@ describe("createOpenAiClient", () => {
     await expect(createOpenAiClient(client as never, "m").json({ system: "s", prompt: "p", schema })).rejects.toBeInstanceOf(LlmRefusalError);
   });
 
+  it("says the answer was cut off at the output cap instead of blaming the JSON", async () => {
+    const create = vi.fn(async () => ({ choices: [{ message: { content: '{"verdict": "Y", "reason": "잘' }, finish_reason: "length" }], usage: {} }));
+
+    const failure = createOpenAiClient({ chat: { completions: { create } } } as never, "m").json({ system: "s", prompt: "p", schema });
+
+    await expect(failure).rejects.toBeInstanceOf(LlmParseError);
+    await expect(failure).rejects.toThrow(/잘렸습니다/);
+  });
+
+  it("gives the judge as much room as the Anthropic adapter does", async () => {
+    const { client, create } = sdk({ content: JSON.stringify({ verdict: "Y", reason: "근거" }) });
+
+    await createOpenAiClient(client as never, "m").json({ system: "s", prompt: "p", schema });
+
+    expect((create.mock.calls[0] as unknown as [Record<string, number>])[0].max_completion_tokens).toBeGreaterThanOrEqual(32_000);
+  });
+
   it("raises a parse error when the answer does not fit the schema", async () => {
     const { client } = sdk({ content: JSON.stringify({ verdict: "MAYBE" }) });
 
