@@ -134,13 +134,14 @@ describe("highlightSegments", () => {
 });
 
 describe("gateEnqueueRows", () => {
-  it("joins the review items with their keys into gate rows", () => {
-    const rows = gateEnqueueRows(
-      [{ id: "g001", required: true, company: "비햅틱스", industry: "SW", officialName: "주식회사 비햅틱스", ceo: "곽기욱", aliases: [], title: "제목", source: "뉴스핌", published: "2026-06-10", link: "https://n/g1", body: "본문" }],
-      [{ id: "g001", stratum: "B", companyId: 27, link: "https://n/g1", sonnet: { yn: "N", conf: 0.2, isAbout: 0 }, jev: 0.22 }],
-    );
+  const gateItem = (id: string, company: string, link: string) => ({ id, required: true, company, industry: "SW", officialName: null, ceo: null, aliases: [], title: "제목", source: "뉴스핌", published: "2026-06-10", link, body: "본문" });
+  const gateKey = (id: string, companyId: number, link: string) => ({ id, stratum: "B", companyId, link, sonnet: { yn: "N", conf: 0.2, isAbout: 0 }, jev: 0.22 });
 
-    expect(rows).toEqual([
+  it("joins the review items with their keys into gate rows", () => {
+    const result = gateEnqueueRows([gateItem("g001", "비햅틱스", "https://n/g1")], [gateKey("g001", 27, "https://n/g1")], new Map([[27, "비햅틱스"]]));
+
+    expect(result.skipped).toEqual([]);
+    expect(result.rows).toEqual([
       {
         companyId: 27,
         link: "https://n/g1",
@@ -154,6 +155,20 @@ describe("gateEnqueueRows", () => {
         required: true,
         model: { gate: true, sonnet: { yn: "N", conf: 0.2, isAbout: 0 }, jevFirst: 0.22 },
       },
+    ]);
+  });
+
+  it("refuses an id that names a different company in this database — the sample was built on another one", () => {
+    const result = gateEnqueueRows(
+      [gateItem("g001", "코난 테크놀로지", "https://n/g1"), gateItem("g002", "누아", "https://n/g2"), gateItem("g003", "페어리", "https://n/g3")],
+      [gateKey("g001", 3, "https://n/g1"), gateKey("g002", 24, "https://n/g2"), gateKey("g003", 99, "https://n/g3")],
+      new Map([[3, "코난테크놀로지"], [24, "다른 회사"]]),
+    );
+
+    expect(result.rows.map((row) => row.link)).toEqual(["https://n/g1"]);
+    expect(result.skipped).toEqual([
+      { id: "g002", reason: "mismatch", expected: "누아", found: "다른 회사" },
+      { id: "g003", reason: "missing", expected: "페어리", found: null },
     ]);
   });
 });

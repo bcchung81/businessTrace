@@ -143,30 +143,41 @@ export type GateItem = {
 
 export type GateKey = { id: string; stratum: string; companyId: number; link: string; sonnet: { yn: string; conf: number; isAbout: number }; jev: number };
 
+export type GateSkip = { id: string; reason: "missing" | "mismatch"; expected: string; found: string | null };
+
+const sameName = (a: string, b: string) => a.replace(/\s+/g, "") === b.replace(/\s+/g, "");
+
 /**
  * 게이트 검토 표본(review-items)과 채점 키(review-key)를 이어 판정 대기열 행으로 만든다. 키가 없는 항목은 버린다.
+ * 표본의 기업 id 는 표본을 만든 DB 의 것이다 — 이 DB 에서 이름이 다르거나 없으면 붙이지 않고 알린다.
  */
-export function gateEnqueueRows(items: GateItem[], keys: GateKey[]): EnqueueInput[] {
+export function gateEnqueueRows(items: GateItem[], keys: GateKey[], names: Map<number, string>): { rows: EnqueueInput[]; skipped: GateSkip[] } {
   const keyById = new Map(keys.map((key) => [key.id, key]));
-  return items.flatMap((item) => {
+  const rows: EnqueueInput[] = [];
+  const skipped: GateSkip[] = [];
+  for (const item of items) {
     const key = keyById.get(item.id);
-    if (!key) return [];
-    return [
-      {
-        companyId: key.companyId,
-        link: item.link,
-        title: item.title,
-        source: item.source,
-        published: item.published,
-        body: item.body,
-        origin: "gate" as const,
-        setKey: GATE_SET_KEY,
-        stratum: key.stratum,
-        required: item.required,
-        model: { gate: true, sonnet: key.sonnet, jevFirst: key.jev },
-      },
-    ];
-  });
+    if (!key) continue;
+    const found = names.get(key.companyId) ?? null;
+    if (found === null || !sameName(found, item.company)) {
+      skipped.push({ id: item.id, reason: found === null ? "missing" : "mismatch", expected: item.company, found });
+      continue;
+    }
+    rows.push({
+      companyId: key.companyId,
+      link: item.link,
+      title: item.title,
+      source: item.source,
+      published: item.published,
+      body: item.body,
+      origin: "gate",
+      setKey: GATE_SET_KEY,
+      stratum: key.stratum,
+      required: item.required,
+      model: { gate: true, sonnet: key.sonnet, jevFirst: key.jev },
+    });
+  }
+  return { rows, skipped };
 }
 
 export type JudgmentView = {
