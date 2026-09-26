@@ -12,6 +12,7 @@ export async function resetDatabase() {
   await prisma.sourceSnapshot.deleteMany();
   await prisma.sourceDecision.deleteMany();
   await prisma.procurementAward.deleteMany();
+  await prisma.articleJudgment.deleteMany();
   await prisma.company.deleteMany();
   await prisma.user.deleteMany();
   await prisma.dartCorpCode.deleteMany();

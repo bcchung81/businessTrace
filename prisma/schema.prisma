@@ -40,6 +40,7 @@ model Company {
   sourceDecisions SourceDecision[]
   selections   SelectionRecord[]
   procurementAwards ProcurementAward[]
+  judgments    ArticleJudgment[]
 
   @@unique([name, year])
   @@index([year])
@@ -258,4 +259,31 @@ model JobLock {
   holder     String
   acquiredAt DateTime @default(now())
   expiresAt  DateTime
+}
+
+model ArticleJudgment {
+  id        Int       @id @default(autoincrement())
+  companyId Int
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  link      String
+  title     String
+  source    String    @default("")
+  published String    @default("")
+  body      String    @default("")
+  origin    String
+  setKey    String?
+  stratum   String?
+  required  Boolean   @default(false)
+  modelJson String    @default("{}")
+  entity    String?
+  role      String?
+  form      String?
+  about     String?
+  note      String?
+  judgedAt  DateTime?
+  judgedBy  Int?
+  queuedAt  DateTime  @default(now())
+
+  @@unique([companyId, link])
+  @@index([about])
 }
