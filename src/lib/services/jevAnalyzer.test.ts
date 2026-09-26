@@ -120,6 +120,13 @@ describe("interpretAnswers", () => {
     expect(analysis.isAboutCompany).toBe(false);
   });
 
+  it("treats an article a person judged about the company as about it, whatever Jev says", () => {
+    const analysis = interpretAnswers(ITEM, context, answersFor({ same_entity: noul(0.1) }), true);
+
+    expect(analysis.isAboutCompany).toBe(true);
+    expect(analysis.held).toBe(false);
+  });
+
   it("does not report an amount or round when Jev says the article is not about an investment", () => {
     const analysis = interpretAnswers(ITEM, context, answersFor({ investment: noul(0.2) }));
 
@@ -158,6 +165,18 @@ describe("analyzeCompanyWithJev", () => {
       stats: { totalNews: 2, scoredNews: 2, heldNews: 0, awardCount: 2, investmentCount: 2 },
     });
     expect(complete.result.usage.inputTokens).toBe(100);
+  });
+
+  it("forces only the articles a person judged about the company", async () => {
+    const jev: JevClient = { ask: vi.fn(async () => ({ model: "jev-1.13.0", answers: answersFor({ same_entity: noul(0.1) }), inputTokens: 900 })) };
+
+    const events = await drain(
+      analyzeCompanyWithJev("크립토랩", [ITEM, { ...ITEM, link: "https://n/2" }], { jev, llm: llm(), model: "m", profile: PROFILE, forceAbout: new Set(["https://n/2"]) }),
+    );
+
+    const complete = events.at(-1);
+    if (complete?.type !== "complete") throw new Error("no complete event");
+    expect(complete.result.analyses.map((analysis) => analysis.isAboutCompany)).toEqual([false, true]);
   });
 
   it("fills a failed article with a neutral fallback and counts it", async () => {

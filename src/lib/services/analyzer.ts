@@ -19,6 +19,8 @@ export type NegativeKind = (typeof NEGATIVE_KINDS)[number];
 
 /** 이 아래면 모델이 "그 회사" 라고 했어도 집계에서 뺀다 — 동명 타사(옥타코) 기사가 평균을 흔들었다. */
 export const ABOUT_CONFIDENCE_MIN = 0.7;
+/** 이 아래 확신은 주제가 아니라고 확정한다. 이 값과 ABOUT_CONFIDENCE_MIN 사이는 사람이 가린다. */
+export const HOLD_FLOOR = 0.3;
 
 const trendSchema = z.object({
   trend_analysis: z.object({
@@ -147,6 +149,14 @@ export function isAboutCompany(trend: Trend): boolean {
   return trend.is_about_company === "Y" && (trend.about_confidence ?? 1) >= ABOUT_CONFIDENCE_MIN;
 }
 
+/**
+ * 주제로 치지 않았는데 확신도가 하한 이상이면 사람이 가릴 보류다.
+ * 문턱 아래 회색지대와, "N" 이라 답하고도 확신도를 높게 준 모순 답이 여기 든다. 두 분석기가 같은 규칙을 쓴다.
+ */
+export function isHeld(trend: Trend, about: boolean): boolean {
+  return !about && trend.about_confidence !== undefined && trend.about_confidence >= HOLD_FLOOR;
+}
+
 const NO_AWARD: Award = {
   is_award_related: "N",
   award_name: "",
@@ -195,7 +205,7 @@ export function summarise(analyses: NewsAnalysis[]): AnalysisStats {
  * 뉴스별 3분석과 종합의견을 만들며 진행 상황을 흘린다.
  * 회사가 주제가 아닌 기사는 집계에서 빼되 결과에는 남긴다.
  */
-type Deps = { llm: LlmClient; model?: string; concurrency?: number; facts?: string[]; profile?: CompanyProfile };
+type Deps = { llm: LlmClient; model?: string; concurrency?: number; facts?: string[]; profile?: CompanyProfile; forceAbout?: ReadonlySet<string> };
 
 function eventQueue() {
   const buffer: AnalyzeEvent[] = [];
@@ -286,12 +296,14 @@ export async function* analyzeCompany(
       })),
     ]);
 
+    const about = deps.forceAbout?.has(item.link) === true || isAboutCompany(trend);
     const analysis: NewsAnalysis = {
       news: item,
-      isAboutCompany: isAboutCompany(trend),
+      isAboutCompany: about,
       trend,
       award,
       investment,
+      ...(isHeld(trend, about) ? { held: true } : {}),
     };
     analyses[index] = analysis;
     queue.push({ type: "news_done", index, analysis });

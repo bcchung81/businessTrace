@@ -20,7 +20,7 @@ function news(patch: Partial<NewsItem> = {}): NewsItem {
   };
 }
 
-type TrendOverride = { isAbout?: "Y" | "N"; score?: number; label?: string };
+type TrendOverride = { isAbout?: "Y" | "N"; score?: number; label?: string; confidence?: number };
 
 function fakeLlm(trendFor: (prompt: string) => TrendOverride = () => ({})) {
   const usage = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0 };
@@ -32,6 +32,7 @@ function fakeLlm(trendFor: (prompt: string) => TrendOverride = () => ({})) {
           data: {
             trend_analysis: {
               is_about_company: override.isAbout ?? "Y",
+              ...(override.confidence === undefined ? {} : { about_confidence: override.confidence }),
               news_trend_summary: "요약",
               sentiment_score: override.score ?? 6,
               sentiment_label: override.label ?? "긍정적",
@@ -196,6 +197,42 @@ describe("analyzeCompany — company profile", () => {
 
     const contexts = (llm.json as ReturnType<typeof vi.fn>).mock.calls.slice(0, 3).map((call) => (call[0] as { context?: string }).context ?? "");
     expect(contexts.every((context) => context.includes("업종 클라우드") && context.includes("대표 서덕진"))).toBe(true);
+  });
+});
+
+describe("analyzeCompany — held and forced articles", () => {
+  it("holds what the model is unsure about or contradicts itself on, and not what it plainly rejects", async () => {
+    const items = [
+      news({ title: "반쯤 확신", link: "https://n/half" }),
+      news({ title: "분명히 아님", link: "https://n/no" }),
+      news({ title: "모순된 답", link: "https://n/odd" }),
+      news({ title: "분명히 주제", link: "https://n/sure" }),
+    ];
+    const confidences: Record<string, TrendOverride> = {
+      "반쯤 확신": { isAbout: "Y", confidence: 0.5 },
+      "분명히 아님": { isAbout: "N", confidence: 0.2 },
+      "모순된 답": { isAbout: "N", confidence: 0.8 },
+      "분명히 주제": { isAbout: "Y", confidence: 0.9 },
+    };
+    const llm = fakeLlm((prompt) => Object.entries(confidences).find(([title]) => prompt.includes(title))?.[1] ?? {});
+
+    const byLink = new Map(complete(await drain(analyzeCompany("누아", items, { llm }))).result.analyses.map((analysis) => [analysis.news.link, analysis]));
+
+    expect(byLink.get("https://n/half")).toMatchObject({ isAboutCompany: false, held: true });
+    expect(byLink.get("https://n/no")?.held).toBeUndefined();
+    expect(byLink.get("https://n/odd")?.held).toBe(true);
+    expect(byLink.get("https://n/sure")?.isAboutCompany).toBe(true);
+    expect(byLink.get("https://n/sure")?.held).toBeUndefined();
+  });
+
+  it("counts an article a person judged about the company even when the model rejects it", async () => {
+    const llm = fakeLlm(() => ({ isAbout: "N", confidence: 0.1, score: 4 }));
+
+    const result = complete(await drain(analyzeCompany("누아", [news({ link: "https://n/forced" })], { llm, forceAbout: new Set(["https://n/forced"]) }))).result;
+
+    expect(result.analyses[0].isAboutCompany).toBe(true);
+    expect(result.analyses[0].held).toBeUndefined();
+    expect(result.stats.scoredNews).toBe(1);
   });
 });
 

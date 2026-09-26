@@ -4,6 +4,7 @@ import {
   NEGATIVE_KINDS,
   ROUND_LABEL,
   isAboutCompany,
+  isHeld,
   summarise,
   type AnalysisResult,
   type AnalyzeEvent,
@@ -20,8 +21,6 @@ import type { JevAnswer, JevClient, JevQuestion } from "@/lib/services/typesafe"
 
 export type CompanyProfile = { name: string; officialName?: string | null; industry?: string | null; ceoName?: string | null; aliases: string[] };
 
-/** 이 아래 확신은 주제가 아니라고 확정한다. 이 값과 ABOUT_CONFIDENCE_MIN 사이는 사람이 가린다. */
-export const HOLD_FLOOR = 0.3;
 const GROWTH_MIN = 0.6;
 const GROWTH_CAP = 8;
 const SENTIMENT_ANCHORS = [-9, -5.5, -2, 0, 2, 5.5, 9];
@@ -194,8 +193,9 @@ const sentenceWith = (sentences: string[], span: string | null) => (span ? sente
 /**
  * Jev 의 원답을 기존 분석 결과 모양으로 옮긴다. 금액·수상명·요약·성장 문장은 전부 원문에서 고른 스팬이다.
  * 주제 확신 = P(같은 회사) × P(주인공 또는 명시된 당사자). 문턱 미만·하한 이상은 보류로 표시해 집계에서 뺀다.
+ * 사람이 주제로 판정한 기사(forced)는 Jev 의 답과 무관하게 주제다.
  */
-export function interpretAnswers(item: NewsItem, context: ArticleContext, answers: Record<string, JevAnswer>): NewsAnalysis {
+export function interpretAnswers(item: NewsItem, context: ArticleContext, answers: Record<string, JevAnswer>, forced = false): NewsAnalysis {
   const sameEntity = noulOf(answers.same_entity);
   const role = choiceOf(answers.role)?.probabilities ?? {};
   const aboutConfidence = round3(sameEntity * ((role.main ?? 0) + (role.party ?? 0)));
@@ -214,7 +214,7 @@ export function interpretAnswers(item: NewsItem, context: ArticleContext, answer
     negative_kind: (NEGATIVE_KINDS as readonly string[]).includes(kind) ? (kind as NegativeKind) : "none",
     growth_signals: [],
   };
-  const about = isAboutCompany(trend);
+  const about = forced || isAboutCompany(trend);
   if (about) trend.growth_signals = context.growth.filter((_, index) => noulOf(answers[`g${index}`]) >= GROWTH_MIN);
 
   const awardYes = noulOf(answers.award) >= 0.5;
@@ -243,7 +243,7 @@ export function interpretAnswers(item: NewsItem, context: ArticleContext, answer
       investment_round: round,
       investment_amount_krw: amountSpan ? parseKrw(amountSpan) : null,
     },
-    held: !about && aboutConfidence >= HOLD_FLOOR,
+    held: isHeld(trend, about),
     jev: { sameEntity, role, articleType: choiceOf(answers.article_type)?.choice ?? "single", sentimentScore: rawScore },
   };
 }
@@ -268,7 +268,7 @@ function fallbackAnalysis(item: NewsItem): NewsAnalysis {
 const opinionSchema = z.object({ comprehensive_opinion: z.string() });
 const NO_USAGE: Usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
 
-type Deps = { jev: JevClient; llm: LlmClient; model: string; facts?: string[]; profile?: CompanyProfile; concurrency?: number };
+type Deps = { jev: JevClient; llm: LlmClient; model: string; facts?: string[]; profile?: CompanyProfile; concurrency?: number; forceAbout?: ReadonlySet<string> };
 
 /**
  * 기사마다 Jev 로 판정하고(요청 하나에 질문 묶음), 종합의견만 LLM 으로 쓴다. 이벤트 모양은 LLM 분석기와 같다.
@@ -301,7 +301,7 @@ export async function* analyzeCompanyWithJev(companyName: string, news: NewsItem
       if (outcome.status === "fulfilled") {
         inputTokens += outcome.value.response.inputTokens;
         jevModel = outcome.value.response.model;
-        analyses[index] = interpretAnswers(news[index], outcome.value.request.context, outcome.value.response.answers);
+        analyses[index] = interpretAnswers(news[index], outcome.value.request.context, outcome.value.response.answers, deps.forceAbout?.has(news[index].link) === true);
       } else {
         fallbacks += 1;
         lastFailure = outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason);
